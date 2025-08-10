@@ -1,0 +1,19 @@
+manifest:
+  remotes:
+    - name: zmkfirmware
+      url-base: https://github.com/zmkfirmware
+    - name: moergo-sc
+      url-base: https://github.com/moergo-sc
+    - name: darknao
+      url-base: https://github.com/darknao
+  projects:
+    - name: zmk
+      remote: darknao  
+      revision: rgb-layer-24.12
+      import: app/west.yml
+    - name: glove80-zmk-config
+      remote: moergo-sc
+      revision: main
+      path: config/glove80_base
+  self:
+    path: config

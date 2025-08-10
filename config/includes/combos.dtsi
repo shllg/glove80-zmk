@@ -1,0 +1,96 @@
+/*
+ * Combo definitions for Glove80
+ * Optimized for small hands - minimal finger stretching
+ */
+
+/ {
+    combos {
+        compatible = "zmk,combos";
+        
+        // Home row combos for common actions
+        combo_esc {
+            timeout-ms = <30>;
+            key-positions = <22 23>;  // S+D
+            bindings = <&kp ESC>;
+            layers = <0>;
+        };
+        
+        combo_tab {
+            timeout-ms = <30>;
+            key-positions = <23 24>;  // D+F
+            bindings = <&kp TAB>;
+            layers = <0>;
+        };
+        
+        combo_enter {
+            timeout-ms = <30>;
+            key-positions = <26 27>;  // J+K
+            bindings = <&kp RET>;
+            layers = <0>;
+        };
+        
+        // Vertical combos (less stretching for small hands)
+        combo_lpar {
+            timeout-ms = <30>;
+            key-positions = <13 23>;  // E+D
+            bindings = <&kp LPAR>;
+            layers = <0>;
+        };
+        
+        combo_rpar {
+            timeout-ms = <30>;
+            key-positions = <16 26>;  // I+J
+            bindings = <&kp RPAR>;
+            layers = <0>;
+        };
+        
+        combo_lbkt {
+            timeout-ms = <30>;
+            key-positions = <14 24>;  // R+F
+            bindings = <&kp LBKT>;
+            layers = <0>;
+        };
+        
+        combo_rbkt {
+            timeout-ms = <30>;
+            key-positions = <15 25>;  // U+H
+            bindings = <&kp RBKT>;
+            layers = <0>;
+        };
+        
+        // Copy/Paste combos
+        combo_copy {
+            timeout-ms = <50>;
+            key-positions = <32 22>;  // X+S (vertical)
+            bindings = <&kp LC(C)>;
+            layers = <0>;
+        };
+        
+        combo_paste {
+            timeout-ms = <50>;
+            key-positions = <33 23>;  // C+D (vertical)
+            bindings = <&kp LC(V)>;
+            layers = <0>;
+        };
+        
+        combo_cut {
+            timeout-ms = <50>;
+            key-positions = <31 21>;  // Z+W (vertical)
+            bindings = <&kp LC(X)>;
+            layers = <0>;
+        };
+        
+        // Emergency combos
+        combo_bootloader_left {
+            timeout-ms = <100>;
+            key-positions = <0 10 20 30>;  // Left edge column
+            bindings = <&bootloader>;
+        };
+        
+        combo_bootloader_right {
+            timeout-ms = <100>;
+            key-positions = <9 19 29 39>;  // Right edge column
+            bindings = <&bootloader>;
+        };
+    };
+};
