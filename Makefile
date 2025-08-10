@@ -1,7 +1,7 @@
 # Glove80 ZMK Firmware Makefile
 # Quick access to common commands
 
-.PHONY: help build clean flash import setup docker-check all
+.PHONY: help build clean flash setup docker-check
 
 # Default target
 help:
@@ -13,14 +13,11 @@ help:
 	@echo "  make clean       - Clean firmware outputs"
 	@echo "  make clean-all   - Full clean (removes Docker container)"
 	@echo "  make flash       - Flash firmware to keyboard"
-	@echo "  make all         - Import, build, and prepare for flash"
 	@echo ""
 	@echo "Quick workflow:"
-	@echo "  1. Export from https://my.glove80.com"
-	@echo "  2. Save to config/web_import/glove80_web.keymap"
-	@echo "  3. make import"
-	@echo "  4. make build"
-	@echo "  5. make flash"
+	@echo "  1. Edit keymap: make edit-keymap"
+	@echo "  2. Build firmware: make build"
+	@echo "  3. Flash keyboard: make flash"
 	@echo ""
 	@echo "Container management:"
 	@echo "  make container-status - Check Docker container status"
@@ -57,32 +54,12 @@ flash:
 	@echo "⚡ Starting flash process..."
 	@./scripts/flash.sh
 
-# Import from web interface
-import:
-	@echo "📥 Importing from web interface..."
-	@./scripts/import_web.sh
-
-# Complete workflow
-all: import build
-	@echo ""
-	@echo "✅ Build complete! Ready to flash."
-	@echo "Run 'make flash' to flash the firmware."
-
 # Setup and checks
 setup: docker-check
 	@echo "🔧 Checking environment..."
 	@command -v docker >/dev/null 2>&1 || { echo "❌ Docker not installed. Please install Docker first."; exit 1; }
 	@docker info >/dev/null 2>&1 || { echo "❌ Docker daemon not running. Start with: sudo systemctl start docker"; exit 1; }
 	@echo "✅ Docker is ready"
-	@echo ""
-	@if [ ! -f config/web_import/glove80_web.keymap ]; then \
-		echo "⚠️  No web export found. Please:"; \
-		echo "  1. Export from https://my.glove80.com"; \
-		echo "  2. Save to config/web_import/glove80_web.keymap"; \
-		echo "  3. Run 'make import'"; \
-	else \
-		echo "✅ Web export found"; \
-	fi
 	@echo ""
 	@if [ -f firmware/glove80_left.uf2 ] && [ -f firmware/glove80_right.uf2 ]; then \
 		echo "✅ Firmware files exist"; \
@@ -100,14 +77,6 @@ docker-check:
 status:
 	@echo "📊 Project Status"
 	@echo "================"
-	@echo ""
-	@echo "Web Export:"
-	@if [ -f config/web_import/glove80_web.keymap ]; then \
-		echo "  ✅ Found: config/web_import/glove80_web.keymap"; \
-		echo "  📅 Modified: $$(stat -c %y config/web_import/glove80_web.keymap | cut -d' ' -f1,2)"; \
-	else \
-		echo "  ❌ Not found"; \
-	fi
 	@echo ""
 	@echo "Main Keymap:"
 	@if [ -f config/glove80.keymap ]; then \
@@ -210,16 +179,6 @@ backup:
 	@echo "✅ Backup saved to backups/"
 	@ls -lh backups/ | tail -5
 
-# Show diff between web export and current keymap
-diff:
-	@if [ -f config/web_import/glove80_web.keymap ] && [ -f config/glove80.keymap ]; then \
-		echo "📊 Differences between web export and current keymap:"; \
-		echo "===================================================="; \
-		diff -u --color=always config/web_import/glove80_web.keymap config/glove80.keymap || true; \
-	else \
-		echo "❌ Missing files for comparison"; \
-	fi
-
 # Validate configuration files
 validate:
 	@echo "🔍 Validating configuration files..."
@@ -280,6 +239,12 @@ keys:
 # Show visual keymap layout
 keymap: 
 	@./scripts/show_keymap.py || (echo "❌ Python required. Install with: sudo pacman -S python"; exit 1)
+
+# Generate HTML visualization
+keymap-html:
+	@echo "🎨 Generating HTML visualization..."
+	@./scripts/generate_layout_html.py
+	@echo "✅ Generated layout.html - Open in your browser to view"
 
 # Show visual keymap for specific layer
 keymap-layer:

@@ -6,7 +6,6 @@ Personal ZMK firmware configuration for Glove80 keyboard with per-key RGB suppor
 
 - 🎨 Per-key RGB lighting control (community fork)
 - 🔧 Local Docker-based builds (no GitHub Actions)
-- 🌐 Web interface integration with custom extensions
 - ⚡ Symmetric home row mods optimized for small hands
 - 🩹 RSI-conscious layout design
 - 🚀 Persistent Docker container for fast rebuilds
@@ -30,15 +29,15 @@ Personal ZMK firmware configuration for Glove80 keyboard with per-key RGB suppor
    # Log out and back in
    ```
 
-2. **Export layout from web interface:**
-   - Go to https://my.glove80.com
-   - Configure your layout
-   - Export and save to `config/web_import/glove80_web.keymap`
-
-3. **Import and build:**
+2. **Edit your keymap:**
    ```bash
-   make import    # Import web configuration
-   make build     # Build firmware (10-15 min first time, ~1 min after)
+   make edit-keymap    # Edit config/glove80.keymap
+   make edit-conf      # Edit config/glove80.conf (optional)
+   ```
+
+3. **Build firmware:**
+   ```bash
+   make build     # 10-15 min first time, ~1 min after
    ```
 
 4. **Flash to keyboard:**
@@ -51,14 +50,17 @@ Personal ZMK firmware configuration for Glove80 keyboard with per-key RGB suppor
 ```
 .
 ├── config/
-│   ├── glove80.keymap          # Main keymap (auto-generated)
+│   ├── glove80.keymap          # Main keymap file
 │   ├── glove80.conf            # System configuration
-│   ├── web_import/             # Web interface exports
 │   └── includes/               # Custom behaviors and macros
+│       ├── behaviors.dtsi      # Home row mods, custom behaviors
+│       ├── combos.dtsi         # Key combinations
+│       └── macros.dtsi         # Text macros, shortcuts
 ├── scripts/
 │   ├── build.sh                # Docker build script
 │   ├── flash.sh                # Firmware flashing tool
-│   └── import_web.sh           # Web import tool
+│   └── show_keymap.py          # Visual keymap display
+├── firmware/                   # Built .uf2 files
 ├── CLAUDE.md                   # Project requirements
 └── build.yaml                  # ZMK build configuration
 ```
