@@ -192,13 +192,17 @@
 #define KEYS_R_ROW5 58 59 60 61 62 63
 #define KEYS_R_ROW6 75 76 77 78 79
 
-// All left main keys (no thumbs)
-#define KEYS_L KEYS_L_ROW1 KEYS_L_ROW2 KEYS_L_ROW3 KEYS_L_ROW4 KEYS_L_ROW5 KEYS_L_ROW6
+// All left main keys (no thumbs) - commented out as defined in behaviors.dtsi
+// #define KEYS_L KEYS_L_ROW1 KEYS_L_ROW2 KEYS_L_ROW3 KEYS_L_ROW4 KEYS_L_ROW5 KEYS_L_ROW6
 
-// All right main keys (no thumbs)
-#define KEYS_R KEYS_R_ROW1 KEYS_R_ROW2 KEYS_R_ROW3 KEYS_R_ROW4 KEYS_R_ROW5 KEYS_R_ROW6
+// All right main keys (no thumbs) - commented out as defined in behaviors.dtsi
+// #define KEYS_R KEYS_R_ROW1 KEYS_R_ROW2 KEYS_R_ROW3 KEYS_R_ROW4 KEYS_R_ROW5 KEYS_R_ROW6
 
-// Thumb clusters
+// Thumb clusters - commented out as defined in behaviors.dtsi
+// #define THUMBS_L 52 53 54 69 70 71
+// #define THUMBS_R 55 56 57 72 73 74
+
+// Alternative names for thumb clusters
 #define KEYS_L_THUMB 52 53 54 69 70 71
 #define KEYS_R_THUMB 55 56 57 72 73 74
 

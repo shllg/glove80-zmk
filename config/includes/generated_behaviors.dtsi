@@ -1,0 +1,159 @@
+/*
+ * Auto-generated behavior definitions from Glove80 Layout Editor
+ * Home row mods for individual fingers
+ */
+
+/* Helper macro definitions for tap-dance layers */
+#define ZMK_BEHAVIOR_CORE_tap_dance  \
+    compatible = "zmk,behavior-tap-dance"; \
+    #binding-cells = <0>
+
+#define ZMK_BEHAVIOR(name, type, ...) \
+    name: name { \
+        ZMK_BEHAVIOR_CORE_ ## type; \
+        __VA_ARGS__ \
+    };
+
+#define ZMK_TAP_DANCE(name, ...) \
+    ZMK_BEHAVIOR(name, tap_dance, __VA_ARGS__)
+
+#define ZMK_TD_LAYER(name, layer) \
+    ZMK_TAP_DANCE(name, \
+        tapping-term-ms = <200>; \
+        bindings = <&mo layer>, <&to layer>; \
+)
+
+/* Layer definitions */
+#define LAYER_Base 0
+#define LAYER_Lower 1
+#define LAYER_Combos 2
+#define LAYER_Magic 3
+
+/ {
+    behaviors {
+        /* Helper macros for tap-dance layers */
+        ZMK_TD_LAYER(lower, LAYER_Lower)
+        
+        /* Magic layer behavior */
+        magic: magic {
+            compatible = "zmk,behavior-hold-tap";
+            label = "MAGIC_HOLD_TAP";
+            #binding-cells = <2>;
+            flavor = "tap-preferred";
+            tapping-term-ms = <200>;
+            bindings = <&mo>, <&rgb_ug_status_macro>;
+        };
+
+        /* Auto-generated home row mod behaviors */
+        
+        hmk_left_pinky: hmk_left_pinky {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            tapping-term-ms = <260>;
+            bindings = <&kp>, <&kp>;
+            flavor = "balanced";
+            quick-tap-ms = <300>;
+            require-prior-idle-ms = <150>;
+            hold-while-undecided;
+            hold-trigger-key-positions = <KEYS_R THUMBS_L THUMBS_R>;
+            hold-trigger-on-release;
+        };
+
+        hmk_right_pinky: hmk_right_pinky {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            tapping-term-ms = <260>;
+            bindings = <&kp>, <&kp>;
+            flavor = "balanced";
+            quick-tap-ms = <300>;
+            require-prior-idle-ms = <150>;
+            hold-while-undecided;
+            hold-trigger-key-positions = <KEYS_L THUMBS_L THUMBS_R>;
+            hold-trigger-on-release;
+        };
+
+        hmk_right_ring: hmk_right_ring {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            tapping-term-ms = <280>;
+            bindings = <&kp>, <&kp>;
+            flavor = "balanced";
+            quick-tap-ms = <300>;
+            require-prior-idle-ms = <150>;
+            hold-while-undecided;
+            hold-trigger-key-positions = <KEYS_L THUMBS_L THUMBS_R>;
+        };
+
+        hmk_left_ring: hmk_left_ring {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            tapping-term-ms = <260>;
+            bindings = <&kp>, <&kp>;
+            flavor = "balanced";
+            quick-tap-ms = <300>;
+            require-prior-idle-ms = <150>;
+            hold-while-undecided;
+            hold-trigger-key-positions = <KEYS_R THUMBS_L THUMBS_R>;
+        };
+
+        hmk_left_middle: hmk_left_middle {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            tapping-term-ms = <260>;
+            bindings = <&kp>, <&kp>;
+            flavor = "balanced";
+            quick-tap-ms = <300>;
+            require-prior-idle-ms = <150>;
+            hold-while-undecided;
+            hold-trigger-key-positions = <KEYS_R THUMBS_L THUMBS_R>;
+        };
+
+        hmk_right_middle: hmk_right_middle {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            tapping-term-ms = <260>;
+            bindings = <&kp>, <&kp>;
+            flavor = "balanced";
+            quick-tap-ms = <300>;
+            require-prior-idle-ms = <150>;
+            hold-while-undecided;
+            hold-trigger-key-positions = <KEYS_L THUMBS_L THUMBS_R>;
+        };
+
+        hmk_right_index: hmk_right_index {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            tapping-term-ms = <260>;
+            bindings = <&kp>, <&kp>;
+            flavor = "balanced";
+            quick-tap-ms = <300>;
+            require-prior-idle-ms = <150>;
+            hold-while-undecided;
+            hold-trigger-key-positions = <KEYS_L THUMBS_L THUMBS_R>;
+        };
+
+        hmk_left_index: hmk_left_index {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            tapping-term-ms = <260>;
+            bindings = <&kp>, <&kp>;
+            flavor = "balanced";
+            quick-tap-ms = <300>;
+            require-prior-idle-ms = <150>;
+            hold-while-undecided;
+            hold-trigger-key-positions = <KEYS_R THUMBS_L THUMBS_R>;
+        };
+
+        hmk_left_thumb_middle_inner: hmk_left_thumb_middle_inner {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            tapping-term-ms = <260>;
+            bindings = <&lower>, <&kp>;
+            flavor = "balanced";
+            quick-tap-ms = <300>;
+            require-prior-idle-ms = <150>;
+            hold-while-undecided;
+            hold-trigger-key-positions = <KEYS_L KEYS_R>;
+        };
+    };
+};

@@ -3,6 +3,8 @@
  * Programming and productivity shortcuts
  */
 
+#include <dt-bindings/zmk/rgb.h>
+
 / {
     macros {
         // Programming shortcuts
@@ -108,6 +110,100 @@
             tap-ms = <10>;
             bindings = <&kp S &kp Y &kp S &kp T &kp E &kp M 
                        &kp C &kp T &kp L &kp SPACE>;
+        };
+
+        /* Auto-generated text editing macros */
+        
+        macro_parenthesis_open_close: macro_parenthesis_open_close {
+            label = "&MACRO_PARENTHESIS_OPEN_CLOSE";
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <&macro_tap>
+                , <&kp LPAR>
+                , <&kp RPAR>
+                , <&kp LEFT>;
+        };
+
+        macro_brace_open_close: macro_brace_open_close {
+            label = "&MACRO_BRACE_OPEN_CLOSE";
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <&macro_tap>
+                , <&kp LBRC>
+                , <&kp RBRC>
+                , <&kp LEFT>;
+        };
+
+        macro_bracket_open_close: macro_bracket_open_close {
+            label = "&MACRO_BRACKET_OPEN_CLOSE";
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <&macro_tap>
+                , <&kp LBKT>
+                , <&kp RBKT>
+                , <&kp LEFT>;
+        };
+
+        macro_lt_gt: macro_lt_gt {
+            label = "&MACRO_LT_GT";
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <&macro_tap>
+                , <&kp LT>
+                , <&kp GT>
+                , <&kp LEFT>;
+        };
+
+        macro_super_alt_b: macro_super_alt_b {
+            label = "&MACRO_SUPER_ALT_B";
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <&macro_press>
+                , <&kp LGUI>
+                , <&kp LALT>
+                , <&macro_press>
+                , <&kp B>
+                , <&macro_release>
+                , <&kp LGUI>
+                , <&kp LALT>;
+        };
+
+        macro_equal_gt: macro_equal_gt {
+            label = "&MACRO_EQUAL_GT";
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <&macro_tap>
+                , <&kp EQUAL>
+                , <&kp GT>;
+        };
+
+        macro_double_single_quotes: macro_double_single_quotes {
+            label = "&MACRO_DOUBLE_SINGLE_QUOTES";
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <&macro_tap>
+                , <&kp SQT>
+                , <&kp SQT>
+                , <&kp LEFT>;
+        };
+
+        macro_double_double_quotes: macro_double_double_quotes {
+            label = "&MACRO_DOUBLE_DOUBLE_QUOTES";
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <&macro_tap>
+                , <&kp DQT>
+                , <&kp DQT>
+                , <&kp LEFT>;
+        };
+
+        /* RGB underglow status macro */
+        rgb_ug_status_macro: rgb_ug_status_macro {
+            label = "RGB_UG_STATUS";
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings
+                = <&rgb_ug RGB_TOG>;
         };
     };
 };
