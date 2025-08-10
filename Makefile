@@ -240,11 +240,11 @@ keys:
 keymap: 
 	@./scripts/show_keymap.py || (echo "❌ Python required. Install with: sudo pacman -S python"; exit 1)
 
-# Generate HTML visualization
-keymap-html:
-	@echo "🎨 Generating HTML visualization..."
-	@./scripts/generate_layout_html.py
-	@echo "✅ Generated layout.html - Open in your browser to view"
+# Export keymap to JSON
+keymap-json:
+	@echo "📦 Exporting keymap to JSON..."
+	@./scripts/export_keymap_json.py
+	@echo "✅ Exported to keymap.json and keymap.min.json"
 
 # Show visual keymap for specific layer
 keymap-layer:

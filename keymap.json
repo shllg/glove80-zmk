@@ -1,0 +1,2745 @@
+{
+  "keyboard": "glove80",
+  "total_keys": 80,
+  "layers": [
+    {
+      "name": "Base",
+      "left": [
+        [
+          {
+            "raw": "kp F1",
+            "type": "key",
+            "label": "F1",
+            "hold": null,
+            "tap": "F1",
+            "class": "regular"
+          },
+          {
+            "raw": "kp F2",
+            "type": "key",
+            "label": "F2",
+            "hold": null,
+            "tap": "F2",
+            "class": "regular"
+          },
+          {
+            "raw": "kp F3",
+            "type": "key",
+            "label": "F3",
+            "hold": null,
+            "tap": "F3",
+            "class": "regular"
+          },
+          {
+            "raw": "kp F4",
+            "type": "key",
+            "label": "F4",
+            "hold": null,
+            "tap": "F4",
+            "class": "regular"
+          },
+          {
+            "raw": "kp F5",
+            "type": "key",
+            "label": "F5",
+            "hold": null,
+            "tap": "F5",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp EQUAL",
+            "type": "key",
+            "label": "=",
+            "hold": null,
+            "tap": "EQUAL",
+            "class": "regular"
+          },
+          {
+            "raw": "kp N1",
+            "type": "key",
+            "label": "1",
+            "hold": null,
+            "tap": "N1",
+            "class": "regular"
+          },
+          {
+            "raw": "kp N2",
+            "type": "key",
+            "label": "2",
+            "hold": null,
+            "tap": "N2",
+            "class": "regular"
+          },
+          {
+            "raw": "kp N3",
+            "type": "key",
+            "label": "3",
+            "hold": null,
+            "tap": "N3",
+            "class": "regular"
+          },
+          {
+            "raw": "kp N4",
+            "type": "key",
+            "label": "4",
+            "hold": null,
+            "tap": "N4",
+            "class": "regular"
+          },
+          {
+            "raw": "kp N5",
+            "type": "key",
+            "label": "5",
+            "hold": null,
+            "tap": "N5",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp TAB",
+            "type": "key",
+            "label": "Tab",
+            "hold": null,
+            "tap": "TAB",
+            "class": "regular"
+          },
+          {
+            "raw": "kp Q",
+            "type": "key",
+            "label": "Q",
+            "hold": null,
+            "tap": "Q",
+            "class": "regular"
+          },
+          {
+            "raw": "kp W",
+            "type": "key",
+            "label": "W",
+            "hold": null,
+            "tap": "W",
+            "class": "regular"
+          },
+          {
+            "raw": "kp E",
+            "type": "key",
+            "label": "E",
+            "hold": null,
+            "tap": "E",
+            "class": "regular"
+          },
+          {
+            "raw": "kp R",
+            "type": "key",
+            "label": "R",
+            "hold": null,
+            "tap": "R",
+            "class": "regular"
+          },
+          {
+            "raw": "kp T",
+            "type": "key",
+            "label": "T",
+            "hold": null,
+            "tap": "T",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp ESC",
+            "type": "key",
+            "label": "Esc",
+            "hold": null,
+            "tap": "ESC",
+            "class": "regular"
+          },
+          {
+            "raw": "hmk_left_pinky LGUI A",
+            "type": "hold_tap",
+            "label": "A/G",
+            "hold": "LGUI",
+            "tap": "A",
+            "class": "hrm"
+          },
+          {
+            "raw": "hmk_left_ring LALT S",
+            "type": "hold_tap",
+            "label": "S/A",
+            "hold": "LALT",
+            "tap": "S",
+            "class": "hrm"
+          },
+          {
+            "raw": "hmk_left_middle LSHFT D",
+            "type": "hold_tap",
+            "label": "D/S",
+            "hold": "LSHFT",
+            "tap": "D",
+            "class": "hrm"
+          },
+          {
+            "raw": "hmk_left_index LCTRL F",
+            "type": "hold_tap",
+            "label": "F/C",
+            "hold": "LCTRL",
+            "tap": "F",
+            "class": "hrm"
+          },
+          {
+            "raw": "kp G",
+            "type": "key",
+            "label": "G",
+            "hold": null,
+            "tap": "G",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp GRAVE",
+            "type": "key",
+            "label": "`",
+            "hold": null,
+            "tap": "GRAVE",
+            "class": "regular"
+          },
+          {
+            "raw": "kp Z",
+            "type": "key",
+            "label": "Z",
+            "hold": null,
+            "tap": "Z",
+            "class": "regular"
+          },
+          {
+            "raw": "kp X",
+            "type": "key",
+            "label": "X",
+            "hold": null,
+            "tap": "X",
+            "class": "regular"
+          },
+          {
+            "raw": "kp C",
+            "type": "key",
+            "label": "C",
+            "hold": null,
+            "tap": "C",
+            "class": "regular"
+          },
+          {
+            "raw": "kp V",
+            "type": "key",
+            "label": "V",
+            "hold": null,
+            "tap": "V",
+            "class": "regular"
+          },
+          {
+            "raw": "kp B",
+            "type": "key",
+            "label": "B",
+            "hold": null,
+            "tap": "B",
+            "class": "regular"
+          }
+        ]
+      ],
+      "right": [
+        [
+          {
+            "raw": "kp F6",
+            "type": "key",
+            "label": "F6",
+            "hold": null,
+            "tap": "F6",
+            "class": "regular"
+          },
+          {
+            "raw": "kp F7",
+            "type": "key",
+            "label": "F7",
+            "hold": null,
+            "tap": "F7",
+            "class": "regular"
+          },
+          {
+            "raw": "kp F8",
+            "type": "key",
+            "label": "F8",
+            "hold": null,
+            "tap": "F8",
+            "class": "regular"
+          },
+          {
+            "raw": "kp F9",
+            "type": "key",
+            "label": "F9",
+            "hold": null,
+            "tap": "F9",
+            "class": "regular"
+          },
+          {
+            "raw": "kp F10",
+            "type": "key",
+            "label": "F10",
+            "hold": null,
+            "tap": "F10",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp N6",
+            "type": "key",
+            "label": "6",
+            "hold": null,
+            "tap": "N6",
+            "class": "regular"
+          },
+          {
+            "raw": "kp N7",
+            "type": "key",
+            "label": "7",
+            "hold": null,
+            "tap": "N7",
+            "class": "regular"
+          },
+          {
+            "raw": "kp N8",
+            "type": "key",
+            "label": "8",
+            "hold": null,
+            "tap": "N8",
+            "class": "regular"
+          },
+          {
+            "raw": "kp N9",
+            "type": "key",
+            "label": "9",
+            "hold": null,
+            "tap": "N9",
+            "class": "regular"
+          },
+          {
+            "raw": "kp N0",
+            "type": "key",
+            "label": "0",
+            "hold": null,
+            "tap": "N0",
+            "class": "regular"
+          },
+          {
+            "raw": "kp MINUS",
+            "type": "key",
+            "label": "-",
+            "hold": null,
+            "tap": "MINUS",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp Y",
+            "type": "key",
+            "label": "Y",
+            "hold": null,
+            "tap": "Y",
+            "class": "regular"
+          },
+          {
+            "raw": "kp U",
+            "type": "key",
+            "label": "U",
+            "hold": null,
+            "tap": "U",
+            "class": "regular"
+          },
+          {
+            "raw": "kp I",
+            "type": "key",
+            "label": "I",
+            "hold": null,
+            "tap": "I",
+            "class": "regular"
+          },
+          {
+            "raw": "kp O",
+            "type": "key",
+            "label": "O",
+            "hold": null,
+            "tap": "O",
+            "class": "regular"
+          },
+          {
+            "raw": "kp P",
+            "type": "key",
+            "label": "P",
+            "hold": null,
+            "tap": "P",
+            "class": "regular"
+          },
+          {
+            "raw": "kp BSLH",
+            "type": "key",
+            "label": "\\",
+            "hold": null,
+            "tap": "BSLH",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp H",
+            "type": "key",
+            "label": "H",
+            "hold": null,
+            "tap": "H",
+            "class": "regular"
+          },
+          {
+            "raw": "hmk_right_index RCTRL J",
+            "type": "hold_tap",
+            "label": "J/C",
+            "hold": "RCTRL",
+            "tap": "J",
+            "class": "hrm"
+          },
+          {
+            "raw": "hmk_right_middle RSHFT K",
+            "type": "hold_tap",
+            "label": "K/S",
+            "hold": "RSHFT",
+            "tap": "K",
+            "class": "hrm"
+          },
+          {
+            "raw": "hmk_right_ring LALT L",
+            "type": "hold_tap",
+            "label": "L/A",
+            "hold": "LALT",
+            "tap": "L",
+            "class": "hrm"
+          },
+          {
+            "raw": "hmk_right_pinky RGUI SEMI",
+            "type": "hold_tap",
+            "label": ";/G",
+            "hold": "RGUI",
+            "tap": "SEMI",
+            "class": "hrm"
+          },
+          {
+            "raw": "kp SQT",
+            "type": "key",
+            "label": "'",
+            "hold": null,
+            "tap": "SQT",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp N",
+            "type": "key",
+            "label": "N",
+            "hold": null,
+            "tap": "N",
+            "class": "regular"
+          },
+          {
+            "raw": "kp M",
+            "type": "key",
+            "label": "M",
+            "hold": null,
+            "tap": "M",
+            "class": "regular"
+          },
+          {
+            "raw": "kp COMMA",
+            "type": "key",
+            "label": ",",
+            "hold": null,
+            "tap": "COMMA",
+            "class": "regular"
+          },
+          {
+            "raw": "kp DOT",
+            "type": "key",
+            "label": ".",
+            "hold": null,
+            "tap": "DOT",
+            "class": "regular"
+          },
+          {
+            "raw": "kp FSLH",
+            "type": "key",
+            "label": "/",
+            "hold": null,
+            "tap": "FSLH",
+            "class": "regular"
+          },
+          {
+            "raw": "kp PG_UP",
+            "type": "key",
+            "label": "PgUp",
+            "hold": null,
+            "tap": "PG_UP",
+            "class": "regular"
+          }
+        ]
+      ],
+      "left_thumb": [
+        [
+          {
+            "raw": "lower",
+            "type": "layer",
+            "label": "LOWER",
+            "hold": null,
+            "tap": null,
+            "class": "layer"
+          }
+        ],
+        [
+          {
+            "raw": "magic LAYER_Magic",
+            "type": "magic",
+            "label": "MAGIC",
+            "hold": null,
+            "tap": null,
+            "class": "magic"
+          },
+          {
+            "raw": "kp HOME",
+            "type": "key",
+            "label": "Home",
+            "hold": null,
+            "tap": "HOME",
+            "class": "regular"
+          },
+          {
+            "raw": "kp END",
+            "type": "key",
+            "label": "End",
+            "hold": null,
+            "tap": "END",
+            "class": "regular"
+          },
+          {
+            "raw": "kp LEFT",
+            "type": "key",
+            "label": "\u2190",
+            "hold": null,
+            "tap": "LEFT",
+            "class": "regular"
+          },
+          {
+            "raw": "kp RIGHT",
+            "type": "key",
+            "label": "\u2192",
+            "hold": null,
+            "tap": "RIGHT",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp SPACE",
+            "type": "key",
+            "label": "Space",
+            "hold": null,
+            "tap": "SPACE",
+            "class": "regular"
+          },
+          {
+            "raw": "hmk_left_thumb_middle_inner MACRO_PLACEHOLDER SPACE",
+            "type": "hold_tap",
+            "label": "Space/M",
+            "hold": "MACRO_PLACEHOLDER",
+            "tap": "SPACE",
+            "class": "hrm"
+          },
+          {
+            "raw": "kp BSPC",
+            "type": "key",
+            "label": "BkSp",
+            "hold": null,
+            "tap": "BSPC",
+            "class": "regular"
+          }
+        ]
+      ],
+      "right_thumb": [
+        [
+          {
+            "raw": "kp LCTRL",
+            "type": "key",
+            "label": "LCtrl",
+            "hold": null,
+            "tap": "LCTRL",
+            "class": "regular"
+          },
+          {
+            "raw": "kp RALT",
+            "type": "key",
+            "label": "RAlt",
+            "hold": null,
+            "tap": "RALT",
+            "class": "regular"
+          },
+          {
+            "raw": "kp LGUI",
+            "type": "key",
+            "label": "LGui",
+            "hold": null,
+            "tap": "LGUI",
+            "class": "regular"
+          },
+          {
+            "raw": "kp RCTRL",
+            "type": "key",
+            "label": "RCtrl",
+            "hold": null,
+            "tap": "RCTRL",
+            "class": "regular"
+          },
+          {
+            "raw": "kp RSHFT",
+            "type": "key",
+            "label": "RShift",
+            "hold": null,
+            "tap": "RSHFT",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp UP",
+            "type": "key",
+            "label": "\u2191",
+            "hold": null,
+            "tap": "UP",
+            "class": "regular"
+          },
+          {
+            "raw": "kp DOWN",
+            "type": "key",
+            "label": "\u2193",
+            "hold": null,
+            "tap": "DOWN",
+            "class": "regular"
+          },
+          {
+            "raw": "kp LBKT",
+            "type": "key",
+            "label": "[",
+            "hold": null,
+            "tap": "LBKT",
+            "class": "regular"
+          },
+          {
+            "raw": "kp RBKT",
+            "type": "key",
+            "label": "]",
+            "hold": null,
+            "tap": "RBKT",
+            "class": "regular"
+          },
+          {
+            "raw": "kp PG_DN",
+            "type": "key",
+            "label": "PgDn",
+            "hold": null,
+            "tap": "PG_DN",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp DEL",
+            "type": "key",
+            "label": "Del",
+            "hold": null,
+            "tap": "DEL",
+            "class": "regular"
+          },
+          {
+            "raw": "kp RET",
+            "type": "key",
+            "label": "Enter",
+            "hold": null,
+            "tap": "RET",
+            "class": "regular"
+          },
+          {
+            "raw": "kp LGUI",
+            "type": "key",
+            "label": "LGui",
+            "hold": null,
+            "tap": "LGUI",
+            "class": "regular"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "Lower",
+      "left": [
+        [
+          {
+            "raw": "kp C_BRI_DN",
+            "type": "key",
+            "label": "C_BRI_DN",
+            "hold": null,
+            "tap": "C_BRI_DN",
+            "class": "regular"
+          },
+          {
+            "raw": "kp C_BRI_UP",
+            "type": "key",
+            "label": "C_BRI_UP",
+            "hold": null,
+            "tap": "C_BRI_UP",
+            "class": "regular"
+          },
+          {
+            "raw": "kp C_PREV",
+            "type": "key",
+            "label": "C_PREV",
+            "hold": null,
+            "tap": "C_PREV",
+            "class": "regular"
+          },
+          {
+            "raw": "kp C_PP",
+            "type": "key",
+            "label": "C_PP",
+            "hold": null,
+            "tap": "C_PP",
+            "class": "regular"
+          },
+          {
+            "raw": "kp C_NEXT",
+            "type": "key",
+            "label": "C_NEXT",
+            "hold": null,
+            "tap": "C_NEXT",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "trans",
+            "type": "transparent",
+            "label": "\u25bd",
+            "hold": null,
+            "tap": null,
+            "class": "trans"
+          },
+          {
+            "raw": "kp GRAVE",
+            "type": "key",
+            "label": "`",
+            "hold": null,
+            "tap": "GRAVE",
+            "class": "regular"
+          },
+          {
+            "raw": "kp LPAR",
+            "type": "key",
+            "label": "(",
+            "hold": null,
+            "tap": "LPAR",
+            "class": "regular"
+          },
+          {
+            "raw": "kp RPAR",
+            "type": "key",
+            "label": ")",
+            "hold": null,
+            "tap": "RPAR",
+            "class": "regular"
+          },
+          {
+            "raw": "kp SEMI",
+            "type": "key",
+            "label": ";",
+            "hold": null,
+            "tap": "SEMI",
+            "class": "regular"
+          },
+          {
+            "raw": "kp COMMA",
+            "type": "key",
+            "label": ",",
+            "hold": null,
+            "tap": "COMMA",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp EXCL",
+            "type": "key",
+            "label": "EXCL",
+            "hold": null,
+            "tap": "EXCL",
+            "class": "regular"
+          },
+          {
+            "raw": "kp LBRC",
+            "type": "key",
+            "label": "{",
+            "hold": null,
+            "tap": "LBRC",
+            "class": "regular"
+          },
+          {
+            "raw": "kp SQT",
+            "type": "key",
+            "label": "'",
+            "hold": null,
+            "tap": "SQT",
+            "class": "regular"
+          },
+          {
+            "raw": "kp DQT",
+            "type": "key",
+            "label": "\"",
+            "hold": null,
+            "tap": "DQT",
+            "class": "regular"
+          },
+          {
+            "raw": "kp RBRC",
+            "type": "key",
+            "label": "}",
+            "hold": null,
+            "tap": "RBRC",
+            "class": "regular"
+          },
+          {
+            "raw": "kp QMARK",
+            "type": "key",
+            "label": "QMARK",
+            "hold": null,
+            "tap": "QMARK",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp HASH",
+            "type": "key",
+            "label": "HASH",
+            "hold": null,
+            "tap": "HASH",
+            "class": "regular"
+          },
+          {
+            "raw": "kp CARET",
+            "type": "key",
+            "label": "CARET",
+            "hold": null,
+            "tap": "CARET",
+            "class": "regular"
+          },
+          {
+            "raw": "kp EQUAL",
+            "type": "key",
+            "label": "=",
+            "hold": null,
+            "tap": "EQUAL",
+            "class": "regular"
+          },
+          {
+            "raw": "kp UNDER",
+            "type": "key",
+            "label": "UNDER",
+            "hold": null,
+            "tap": "UNDER",
+            "class": "regular"
+          },
+          {
+            "raw": "kp DLLR",
+            "type": "key",
+            "label": "DLLR",
+            "hold": null,
+            "tap": "DLLR",
+            "class": "regular"
+          },
+          {
+            "raw": "kp STAR",
+            "type": "key",
+            "label": "STAR",
+            "hold": null,
+            "tap": "STAR",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp LS(GRAVE)",
+            "type": "key",
+            "label": "LS(GRAVE)",
+            "hold": null,
+            "tap": "LS(GRAVE)",
+            "class": "regular"
+          },
+          {
+            "raw": "kp LT",
+            "type": "key",
+            "label": "LT",
+            "hold": null,
+            "tap": "LT",
+            "class": "regular"
+          },
+          {
+            "raw": "kp LS(NON_US_BSLH)",
+            "type": "key",
+            "label": "LS(NON_US_BSLH)",
+            "hold": null,
+            "tap": "LS(NON_US_BSLH)",
+            "class": "regular"
+          },
+          {
+            "raw": "kp MINUS",
+            "type": "key",
+            "label": "-",
+            "hold": null,
+            "tap": "MINUS",
+            "class": "regular"
+          },
+          {
+            "raw": "kp GT",
+            "type": "key",
+            "label": "GT",
+            "hold": null,
+            "tap": "GT",
+            "class": "regular"
+          },
+          {
+            "raw": "kp FSLH",
+            "type": "key",
+            "label": "/",
+            "hold": null,
+            "tap": "FSLH",
+            "class": "regular"
+          }
+        ]
+      ],
+      "right": [
+        [
+          {
+            "raw": "kp C_MUTE",
+            "type": "key",
+            "label": "C_MUTE",
+            "hold": null,
+            "tap": "C_MUTE",
+            "class": "regular"
+          },
+          {
+            "raw": "kp C_VOL_DN",
+            "type": "key",
+            "label": "C_VOL_DN",
+            "hold": null,
+            "tap": "C_VOL_DN",
+            "class": "regular"
+          },
+          {
+            "raw": "kp C_VOL_UP",
+            "type": "key",
+            "label": "C_VOL_UP",
+            "hold": null,
+            "tap": "C_VOL_UP",
+            "class": "regular"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "kp PAUSE_BREAK",
+            "type": "key",
+            "label": "PAUSE_BREAK",
+            "hold": null,
+            "tap": "PAUSE_BREAK",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp DQT",
+            "type": "key",
+            "label": "\"",
+            "hold": null,
+            "tap": "DQT",
+            "class": "regular"
+          },
+          {
+            "raw": "macro_equal_gt",
+            "type": "macro",
+            "label": "MACRO",
+            "hold": null,
+            "tap": null,
+            "class": "macro"
+          },
+          {
+            "raw": "macro_double_single_quotes",
+            "type": "macro",
+            "label": "MACRO",
+            "hold": null,
+            "tap": null,
+            "class": "macro"
+          },
+          {
+            "raw": "macro_double_double_quotes",
+            "type": "macro",
+            "label": "MACRO",
+            "hold": null,
+            "tap": null,
+            "class": "macro"
+          },
+          {
+            "raw": "kp KP_MULTIPLY",
+            "type": "key",
+            "label": "KP_MULTIPLY",
+            "hold": null,
+            "tap": "KP_MULTIPLY",
+            "class": "regular"
+          },
+          {
+            "raw": "kp PRINTSCREEN",
+            "type": "key",
+            "label": "PRINTSCREEN",
+            "hold": null,
+            "tap": "PRINTSCREEN",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp COLON",
+            "type": "key",
+            "label": "COLON",
+            "hold": null,
+            "tap": "COLON",
+            "class": "regular"
+          },
+          {
+            "raw": "macro_bracket_open_close",
+            "type": "macro",
+            "label": "MACRO",
+            "hold": null,
+            "tap": null,
+            "class": "macro"
+          },
+          {
+            "raw": "kp LBKT",
+            "type": "key",
+            "label": "[",
+            "hold": null,
+            "tap": "LBKT",
+            "class": "regular"
+          },
+          {
+            "raw": "kp RBKT",
+            "type": "key",
+            "label": "]",
+            "hold": null,
+            "tap": "RBKT",
+            "class": "regular"
+          },
+          {
+            "raw": "kp MINUS",
+            "type": "key",
+            "label": "-",
+            "hold": null,
+            "tap": "MINUS",
+            "class": "regular"
+          },
+          {
+            "raw": "kp SCROLLLOCK",
+            "type": "key",
+            "label": "SCROLLLOCK",
+            "hold": null,
+            "tap": "SCROLLLOCK",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp MINUS",
+            "type": "key",
+            "label": "-",
+            "hold": null,
+            "tap": "MINUS",
+            "class": "regular"
+          },
+          {
+            "raw": "macro_parenthesis_open_close",
+            "type": "macro",
+            "label": "MACRO",
+            "hold": null,
+            "tap": null,
+            "class": "macro"
+          },
+          {
+            "raw": "kp LPAR",
+            "type": "key",
+            "label": "(",
+            "hold": null,
+            "tap": "LPAR",
+            "class": "regular"
+          },
+          {
+            "raw": "kp RPAR",
+            "type": "key",
+            "label": ")",
+            "hold": null,
+            "tap": "RPAR",
+            "class": "regular"
+          },
+          {
+            "raw": "kp UNDER",
+            "type": "key",
+            "label": "UNDER",
+            "hold": null,
+            "tap": "UNDER",
+            "class": "regular"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "kp UNDER",
+            "type": "key",
+            "label": "UNDER",
+            "hold": null,
+            "tap": "UNDER",
+            "class": "regular"
+          },
+          {
+            "raw": "macro_lt_gt",
+            "type": "macro",
+            "label": "MACRO",
+            "hold": null,
+            "tap": null,
+            "class": "macro"
+          },
+          {
+            "raw": "kp LT",
+            "type": "key",
+            "label": "LT",
+            "hold": null,
+            "tap": "LT",
+            "class": "regular"
+          },
+          {
+            "raw": "kp GT",
+            "type": "key",
+            "label": "GT",
+            "hold": null,
+            "tap": "GT",
+            "class": "regular"
+          },
+          {
+            "raw": "kp KP_ENTER",
+            "type": "key",
+            "label": "KP_ENTER",
+            "hold": null,
+            "tap": "KP_ENTER",
+            "class": "regular"
+          },
+          {
+            "raw": "trans",
+            "type": "transparent",
+            "label": "\u25bd",
+            "hold": null,
+            "tap": null,
+            "class": "trans"
+          }
+        ]
+      ],
+      "left_thumb": [
+        [
+          {
+            "raw": "trans",
+            "type": "transparent",
+            "label": "\u25bd",
+            "hold": null,
+            "tap": null,
+            "class": "trans"
+          }
+        ],
+        [
+          {
+            "raw": "kp LS(N2)",
+            "type": "key",
+            "label": "LS(N2)",
+            "hold": null,
+            "tap": "LS(N2)",
+            "class": "regular"
+          },
+          {
+            "raw": "kp AMPS",
+            "type": "key",
+            "label": "AMPS",
+            "hold": null,
+            "tap": "AMPS",
+            "class": "regular"
+          },
+          {
+            "raw": "kp LBKT",
+            "type": "key",
+            "label": "[",
+            "hold": null,
+            "tap": "LBKT",
+            "class": "regular"
+          },
+          {
+            "raw": "kp RBKT",
+            "type": "key",
+            "label": "]",
+            "hold": null,
+            "tap": "RBKT",
+            "class": "regular"
+          },
+          {
+            "raw": "kp PLUS",
+            "type": "key",
+            "label": "PLUS",
+            "hold": null,
+            "tap": "PLUS",
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "kp PRCNT",
+            "type": "key",
+            "label": "PRCNT",
+            "hold": null,
+            "tap": "PRCNT",
+            "class": "regular"
+          },
+          {
+            "raw": "kp COLON",
+            "type": "key",
+            "label": "COLON",
+            "hold": null,
+            "tap": "COLON",
+            "class": "regular"
+          },
+          {
+            "raw": "kp SEMI",
+            "type": "key",
+            "label": ";",
+            "hold": null,
+            "tap": "SEMI",
+            "class": "regular"
+          }
+        ]
+      ],
+      "right_thumb": [
+        [
+          {
+            "raw": "trans",
+            "type": "transparent",
+            "label": "\u25bd",
+            "hold": null,
+            "tap": null,
+            "class": "trans"
+          },
+          {
+            "raw": "to 0",
+            "type": "layer",
+            "label": "TO 0",
+            "hold": null,
+            "tap": null,
+            "class": "layer"
+          },
+          {
+            "raw": "trans",
+            "type": "transparent",
+            "label": "\u25bd",
+            "hold": null,
+            "tap": null,
+            "class": "trans"
+          },
+          {
+            "raw": "trans",
+            "type": "transparent",
+            "label": "\u25bd",
+            "hold": null,
+            "tap": null,
+            "class": "trans"
+          },
+          {
+            "raw": "trans",
+            "type": "transparent",
+            "label": "\u25bd",
+            "hold": null,
+            "tap": null,
+            "class": "trans"
+          }
+        ],
+        [
+          {
+            "raw": "macro_brace_open_close",
+            "type": "macro",
+            "label": "MACRO",
+            "hold": null,
+            "tap": null,
+            "class": "macro"
+          },
+          {
+            "raw": "kp LBRC",
+            "type": "key",
+            "label": "{",
+            "hold": null,
+            "tap": "LBRC",
+            "class": "regular"
+          },
+          {
+            "raw": "kp RBRC",
+            "type": "key",
+            "label": "}",
+            "hold": null,
+            "tap": "RBRC",
+            "class": "regular"
+          },
+          {
+            "raw": "kp KP_ENTER",
+            "type": "key",
+            "label": "KP_ENTER",
+            "hold": null,
+            "tap": "KP_ENTER",
+            "class": "regular"
+          },
+          {
+            "raw": "trans",
+            "type": "transparent",
+            "label": "\u25bd",
+            "hold": null,
+            "tap": null,
+            "class": "trans"
+          }
+        ],
+        [
+          {
+            "raw": "trans",
+            "type": "transparent",
+            "label": "\u25bd",
+            "hold": null,
+            "tap": null,
+            "class": "trans"
+          },
+          {
+            "raw": "trans",
+            "type": "transparent",
+            "label": "\u25bd",
+            "hold": null,
+            "tap": null,
+            "class": "trans"
+          },
+          {
+            "raw": "trans",
+            "type": "transparent",
+            "label": "\u25bd",
+            "hold": null,
+            "tap": null,
+            "class": "trans"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "Combos",
+      "left": [
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ]
+      ],
+      "right": [
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ]
+      ],
+      "left_thumb": [
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ]
+      ],
+      "right_thumb": [
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "Magic",
+      "left": [
+        [
+          {
+            "raw": "bt BT_CLR",
+            "type": "bluetooth",
+            "label": "BT CLR",
+            "hold": null,
+            "tap": null,
+            "class": "bluetooth"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "rgb_ug RGB_SPI",
+            "type": "rgb",
+            "label": "SPI",
+            "hold": null,
+            "tap": null,
+            "class": "rgb"
+          },
+          {
+            "raw": "rgb_ug RGB_SAI",
+            "type": "rgb",
+            "label": "SAI",
+            "hold": null,
+            "tap": null,
+            "class": "rgb"
+          },
+          {
+            "raw": "rgb_ug RGB_HUI",
+            "type": "rgb",
+            "label": "HUI",
+            "hold": null,
+            "tap": null,
+            "class": "rgb"
+          },
+          {
+            "raw": "rgb_ug RGB_BRI",
+            "type": "rgb",
+            "label": "BRI",
+            "hold": null,
+            "tap": null,
+            "class": "rgb"
+          },
+          {
+            "raw": "rgb_ug RGB_TOG",
+            "type": "rgb",
+            "label": "TOG",
+            "hold": null,
+            "tap": null,
+            "class": "rgb"
+          }
+        ],
+        [
+          {
+            "raw": "bootloader",
+            "type": "system",
+            "label": "BOOT",
+            "hold": null,
+            "tap": null,
+            "class": "system"
+          },
+          {
+            "raw": "rgb_ug RGB_SPD",
+            "type": "rgb",
+            "label": "SPD",
+            "hold": null,
+            "tap": null,
+            "class": "rgb"
+          },
+          {
+            "raw": "rgb_ug RGB_SAD",
+            "type": "rgb",
+            "label": "SAD",
+            "hold": null,
+            "tap": null,
+            "class": "rgb"
+          },
+          {
+            "raw": "rgb_ug RGB_HUD",
+            "type": "rgb",
+            "label": "HUD",
+            "hold": null,
+            "tap": null,
+            "class": "rgb"
+          },
+          {
+            "raw": "rgb_ug RGB_BRD",
+            "type": "rgb",
+            "label": "BRD",
+            "hold": null,
+            "tap": null,
+            "class": "rgb"
+          },
+          {
+            "raw": "rgb_ug RGB_EFF",
+            "type": "rgb",
+            "label": "EFF",
+            "hold": null,
+            "tap": null,
+            "class": "rgb"
+          }
+        ],
+        [
+          {
+            "raw": "sys_reset",
+            "type": "system",
+            "label": "RESET",
+            "hold": null,
+            "tap": null,
+            "class": "system"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ]
+      ],
+      "right": [
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "bt BT_CLR_ALL",
+            "type": "bluetooth",
+            "label": "BT CLR ALL",
+            "hold": null,
+            "tap": null,
+            "class": "bluetooth"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "bootloader",
+            "type": "system",
+            "label": "BOOT",
+            "hold": null,
+            "tap": null,
+            "class": "system"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "sys_reset",
+            "type": "system",
+            "label": "RESET",
+            "hold": null,
+            "tap": null,
+            "class": "system"
+          }
+        ]
+      ],
+      "left_thumb": [
+        [
+          {
+            "raw": "bt_2",
+            "type": "key",
+            "label": "bt_2",
+            "hold": null,
+            "tap": null,
+            "class": "regular"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "bt_0",
+            "type": "key",
+            "label": "bt_0",
+            "hold": null,
+            "tap": null,
+            "class": "regular"
+          },
+          {
+            "raw": "bt_1",
+            "type": "key",
+            "label": "bt_1",
+            "hold": null,
+            "tap": null,
+            "class": "regular"
+          },
+          {
+            "raw": "out OUT_USB",
+            "type": "output",
+            "label": "USB",
+            "hold": null,
+            "tap": null,
+            "class": "output"
+          }
+        ]
+      ],
+      "right_thumb": [
+        [
+          {
+            "raw": "bt_3",
+            "type": "key",
+            "label": "bt_3",
+            "hold": null,
+            "tap": null,
+            "class": "regular"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ],
+        [
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          },
+          {
+            "raw": "none",
+            "type": "none",
+            "label": "",
+            "hold": null,
+            "tap": null,
+            "class": "none"
+          }
+        ]
+      ]
+    }
+  ],
+  "layout_type": "split",
+  "metadata": {
+    "left_keys": 26,
+    "right_keys": 26,
+    "left_thumb_keys": 14,
+    "right_thumb_keys": 14
+  }
+}

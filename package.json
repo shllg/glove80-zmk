@@ -1,0 +1,25 @@
+{
+  "name": "glove80-zmk-keymap",
+  "version": "1.0.0",
+  "description": "Glove80 ZMK keymap configuration and visualization",
+  "main": "keymap.json",
+  "types": "types/keyboard.d.ts",
+  "scripts": {
+    "export": "make keymap-json",
+    "build": "make build"
+  },
+  "files": [
+    "keymap.json",
+    "keymap.min.json",
+    "types/keyboard.d.ts"
+  ],
+  "keywords": [
+    "glove80",
+    "zmk",
+    "keyboard",
+    "keymap",
+    "ergonomic"
+  ],
+  "author": "",
+  "license": "MIT"
+}
