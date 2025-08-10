@@ -10,38 +10,55 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 
 # Glove80 physical layout structure
-# Total 80 keys: 26 left main, 26 right main, 14 left thumb area, 14 right thumb area
+# Total 80 keys following Moergo documentation
+# Column numbering: Main keys inner->outer (C0-C5), Thumbs outer->inner (T0-T5)
 LAYOUT_STRUCTURE = {
     'left': {
         'rows': [
-            {'start': 0, 'count': 5},   # F1-F5
-            {'start': 10, 'count': 6},  # = 1-5
-            {'start': 22, 'count': 6},  # Tab Q-T
-            {'start': 34, 'count': 6},  # Esc A-G
-            {'start': 46, 'count': 6},  # ` Z-B
+            # Row 0: F-keys (5 keys, missing C5)
+            {'positions': [0, 1, 2, 3, 4]},        # L_R0_C4 to L_R0_C0
+            # Row 1: Number row (6 keys)
+            {'positions': [10, 11, 12, 13, 14, 15]},  # L_R1_C5 to L_R1_C0
+            # Row 2: QWERTY top (6 keys)
+            {'positions': [22, 23, 24, 25, 26, 27]},  # L_R2_C5 to L_R2_C0
+            # Row 3: Home row (6 keys)
+            {'positions': [34, 35, 36, 37, 38, 39]},  # L_R3_C5 to L_R3_C0
+            # Row 4: Bottom alpha (6 keys)
+            {'positions': [46, 47, 48, 49, 50, 51]},  # L_R4_C5 to L_R4_C0
+            # Row 5: Nav row (5 keys, missing C5)
+            {'positions': [64, 65, 66, 67, 68]},      # L_R5_C4 to L_R5_C0
         ]
     },
     'right': {
         'rows': [
-            {'start': 5, 'count': 5},   # F6-F10
-            {'start': 16, 'count': 6},  # 6-0 -
-            {'start': 28, 'count': 6},  # Y-P \
-            {'start': 40, 'count': 6},  # H-; '
-            {'start': 58, 'count': 6},  # N-/ PgUp
+            # Row 0: F-keys (5 keys, missing C5)
+            {'positions': [5, 6, 7, 8, 9]},           # R_R0_C0 to R_R0_C4
+            # Row 1: Number row (6 keys)
+            {'positions': [16, 17, 18, 19, 20, 21]},  # R_R1_C0 to R_R1_C5
+            # Row 2: QWERTY top (6 keys)
+            {'positions': [28, 29, 30, 31, 32, 33]},  # R_R2_C0 to R_R2_C5
+            # Row 3: Home row (6 keys)
+            {'positions': [40, 41, 42, 43, 44, 45]},  # R_R3_C0 to R_R3_C5
+            # Row 4: Bottom alpha (6 keys)
+            {'positions': [58, 59, 60, 61, 62, 63]},  # R_R4_C0 to R_R4_C5
+            # Row 5: Nav row (5 keys, missing C5)
+            {'positions': [75, 76, 77, 78, 79]},      # R_R5_C0 to R_R5_C4
         ]
     },
     'left_thumb': {
         'rows': [
-            {'positions': [52]},         # Lower key
-            {'positions': [64, 65, 66, 67, 68]},  # Magic, nav keys
-            {'positions': [69, 70, 71]}, # Space cluster
+            # Upper row (T0-T2, outer to inner)
+            {'positions': [52, 53, 54]},     # L_T0, L_T1, L_T2
+            # Lower row (T3-T5, outer to inner)
+            {'positions': [69, 70, 71]},     # L_T3, L_T4, L_T5
         ]
     },
     'right_thumb': {
         'rows': [
-            {'positions': [53, 54, 55, 56, 57]},  # Center mods
-            {'positions': [75, 76, 77, 78, 79]},  # Nav keys, PgDn
-            {'positions': [72, 73, 74]}, # Backspace, Del, Enter
+            # Upper row (T0-T2, outer to inner)
+            {'positions': [55, 56, 57]},     # R_T0, R_T1, R_T2
+            # Lower row (T3-T5, outer to inner)
+            {'positions': [72, 73, 74]},     # R_T3, R_T4, R_T5
         ]
     }
 }
@@ -297,10 +314,9 @@ def structure_layer(name: str, keys: List[Dict]) -> Dict[str, Any]:
     # Process left main keys
     for row_info in LAYOUT_STRUCTURE['left']['rows']:
         row = []
-        for i in range(row_info['count']):
-            idx = row_info['start'] + i
-            if idx < len(keys):
-                row.append(keys[idx])
+        for pos in row_info['positions']:
+            if pos < len(keys):
+                row.append(keys[pos])
             else:
                 row.append({'type': 'none', 'label': '', 'class': 'none'})
         layer['left'].append(row)
@@ -308,10 +324,9 @@ def structure_layer(name: str, keys: List[Dict]) -> Dict[str, Any]:
     # Process right main keys
     for row_info in LAYOUT_STRUCTURE['right']['rows']:
         row = []
-        for i in range(row_info['count']):
-            idx = row_info['start'] + i
-            if idx < len(keys):
-                row.append(keys[idx])
+        for pos in row_info['positions']:
+            if pos < len(keys):
+                row.append(keys[pos])
             else:
                 row.append({'type': 'none', 'label': '', 'class': 'none'})
         layer['right'].append(row)
@@ -343,6 +358,7 @@ def main():
     project_root = Path(__file__).parent.parent
     keymap_path = project_root / 'config' / 'glove80.keymap'
     output_path = project_root / 'keymap.json'
+    preview_data_path = project_root / 'preview' / 'src' / 'data'
     
     print(f"Parsing keymap from {keymap_path}...")
     keymap_data = parse_keymap(keymap_path)
@@ -351,18 +367,28 @@ def main():
     for layer in keymap_data['layers']:
         print(f"  - {layer['name']}")
     
-    # Write JSON
+    # Write JSON to project root
     with open(output_path, 'w') as f:
         json.dump(keymap_data, f, indent=2)
     
     print(f"Exported keymap to {output_path}")
     
-    # Also write a minified version
+    # Also write a minified version to project root
     output_min_path = project_root / 'keymap.min.json'
     with open(output_min_path, 'w') as f:
         json.dump(keymap_data, f, separators=(',', ':'))
     
     print(f"Exported minified version to {output_min_path}")
+    
+    # Create preview data directory if it doesn't exist
+    preview_data_path.mkdir(parents=True, exist_ok=True)
+    
+    # Write JSON to preview data folder
+    preview_output_path = preview_data_path / 'keymap.json'
+    with open(preview_output_path, 'w') as f:
+        json.dump(keymap_data, f, indent=2)
+    
+    print(f"Exported keymap for preview to {preview_output_path}")
 
 if __name__ == '__main__':
     main()

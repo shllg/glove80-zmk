@@ -1,69 +1,83 @@
-# React + TypeScript + Vite
+# Glove80 ZMK Keymap Viewer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A beautiful, dark-themed interactive web application for previewing your Glove80 ZMK keyboard configuration with white keycaps that match your physical Glove80.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Dark Theme Interface**: Elegant dark background that highlights your keyboard layout
+- **White Keycaps**: Authentic-looking white keys that mirror your physical Glove80
+- **Layer Switching**: Easy navigation between all configured layers
+- **Color-Coded Keys**: Different key types are visually distinguished:
+  - Regular keys: White keycaps
+  - Home row mods: Amber accent
+  - Layer keys: Purple accent
+  - Bluetooth keys: Blue accent
+  - Macros: Green accent
+  - System keys: Red accent
+- **Interactive Tooltips**: Hover over keys to see detailed binding information
+- **Responsive Design**: Works on desktop and mobile devices
+- **Keyboard Navigation**: Full accessibility support
 
-## Expanding the ESLint configuration
+## Quick Start
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. Make sure you have generated the keymap data:
+   ```bash
+   python3 scripts/export_keymap_json.py
+   ```
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+2. Install dependencies:
+   ```bash
+   cd preview
+   pnpm install
+   ```
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+3. Start the development server:
+   ```bash
+   pnpm run dev
+   ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+4. Open your browser to `http://localhost:5173`
+
+## Build for Production
+
+```bash
+pnpm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The built files will be in the `dist` folder, ready for deployment to any static hosting service.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Auto-Generation
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+The keymap preview is automatically updated when you run the main build script:
+
+```bash
+make build
+```
+
+This will export your latest keymap configuration and make it available to the preview application.
+
+## Technology Stack
+
+- **React 19** with TypeScript
+- **Tailwind CSS 4** for styling
+- **Vite** for fast development and building
+- **pnpm** for package management
+
+## File Structure
+
+```
+preview/
+├── src/
+│   ├── components/
+│   │   ├── Key.tsx           # Individual key component
+│   │   ├── KeyboardLayout.tsx # Main keyboard layout
+│   │   └── LayerSelector.tsx  # Layer switching UI
+│   ├── data/
+│   │   └── keymap.json       # Auto-generated keymap data
+│   ├── types/
+│   │   └── keyboard.d.ts     # TypeScript definitions
+│   ├── App.tsx               # Main application
+│   ├── App.css               # Dark theme styles
+│   └── main.tsx              # Application entry point
+└── package.json              # Dependencies and scripts
 ```

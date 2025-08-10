@@ -1,42 +1,132 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* Custom styles for the Glove80 keymap viewer - Dark Theme */
+
+/* Dark theme base styles */
+body {
+  background-color: rgb(9 9 11); /* gray-950 */
+  color: rgb(244 244 245); /* gray-100 */
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Ensure proper font rendering for key labels */
+.font-mono {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
-@keyframes logo-spin {
+/* Custom animations with dark theme enhancements */
+@keyframes fadeIn {
   from {
-    transform: rotate(0deg);
+    opacity: 0;
+    transform: translateY(10px);
   }
   to {
-    transform: rotate(360deg);
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+@keyframes keyGlow {
+  from {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  to {
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1), 0 4px 10px rgba(0, 0, 0, 0.4);
   }
 }
 
-.card {
-  padding: 2em;
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
 }
 
-.read-the-docs {
-  color: #888;
+/* Keyboard specific styling */
+.keyboard-section {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Enhanced key hover effects for dark theme */
+.key-hover:hover {
+  animation: keyGlow 0.2s ease-out forwards;
+  transform: translateY(-2px);
+}
+
+/* Glove80 specific key styling - mimicking white keycaps */
+.glove80-key {
+  background: linear-gradient(145deg, #ffffff, #f8f9fa);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.glove80-key:hover {
+  background: linear-gradient(145deg, #f8f9fa, #e2e8f0);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Dark theme scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(17 24 39); /* gray-900 */
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(75 85 99); /* gray-600 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(107 114 128); /* gray-500 */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .keyboard-layout {
+    transform: scale(0.85);
+    transform-origin: center top;
+  }
+}
+
+@media (max-width: 640px) {
+  .keyboard-layout {
+    transform: scale(0.75);
+    transform-origin: center top;
+  }
+}
+
+@media (max-width: 480px) {
+  .keyboard-layout {
+    transform: scale(0.65);
+    transform-origin: center top;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus indicators for keyboard navigation */
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid rgb(59 130 246); /* blue-500 */
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .glove80-key {
+    border-width: 2px;
+    border-color: #000;
+  }
 }

@@ -36,6 +36,11 @@ if [ ! -f "$CONFIG_PATH/glove80.keymap" ]; then
     exit 1
 fi
 
+# Export keymap to JSON before building
+echo -e "${YELLOW}Exporting keymap to JSON...${NC}"
+python3 "$(dirname "$0")/export_keymap_json.py"
+echo -e "${GREEN}✅ Keymap exported${NC}"
+
 # Create firmware directory
 mkdir -p "$FIRMWARE_PATH"
 
@@ -115,6 +120,14 @@ echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━
 echo ""
 echo -e "${BLUE}Firmware files:${NC}"
 ls -lh "$FIRMWARE_PATH"/*.uf2
+echo ""
+echo -e "${BLUE}Preview application:${NC}"
+if [ -d "$(pwd)/preview" ]; then
+    echo "To start the keymap preview: cd preview && pnpm install && pnpm run dev"
+    echo "Preview URL: http://localhost:5173"
+else
+    echo "Preview application not found in ./preview/"
+fi
 echo ""
 echo -e "${BLUE}Next steps:${NC}"
 echo "1. Put keyboard half in bootloader mode"
