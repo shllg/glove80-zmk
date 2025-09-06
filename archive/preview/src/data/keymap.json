@@ -932,12 +932,12 @@
         ],
         [
           {
-            "raw": "kp LS(N2)",
-            "type": "key",
-            "label": "LS(N2)",
+            "raw": "trans",
+            "type": "transparent",
+            "label": "\u25bd",
             "hold": null,
-            "tap": "LS(N2)",
-            "class": "regular"
+            "tap": null,
+            "class": "trans"
           },
           {
             "raw": "kp AMPS",

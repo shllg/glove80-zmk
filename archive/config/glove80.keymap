@@ -100,7 +100,7 @@
       &kp EXCL      &kp LBRC              &kp SQT    &kp DQT    &kp RBRC  &kp QMARK                                                          &kp COLON      &macro_bracket_open_close                     &kp LBKT                     &kp RBKT        &kp MINUS   &kp SCROLLLOCK
       &kp HASH     &kp CARET            &kp EQUAL  &kp UNDER    &kp DLLR   &kp STAR                                                          &kp MINUS  &macro_parenthesis_open_close                     &kp LPAR                     &kp RPAR        &kp UNDER            &none
  &kp LS(GRAVE)        &kp LT  &kp LS(NON_US_BSLH)  &kp MINUS      &kp GT   &kp FSLH     &trans     &trans     &to 0  &trans  &trans  &trans  &kp UNDER                   &macro_lt_gt                       &kp LT                       &kp GT     &kp KP_ENTER           &trans
-    &kp LS(N2)      &kp AMPS             &kp LBKT   &kp RBKT    &kp PLUS             &kp PRCNT  &kp COLON  &kp SEMI  &trans  &trans  &trans                   &macro_brace_open_close                     &kp LBRC                     &kp RBRC     &kp KP_ENTER           &trans
+    &trans      &kp AMPS             &kp LBKT   &kp RBKT    &kp PLUS             &kp PRCNT  &kp COLON  &kp SEMI  &trans  &trans  &trans                   &macro_brace_open_close                     &kp LBRC                     &kp RBRC     &kp KP_ENTER           &trans
             >;
         };
 
