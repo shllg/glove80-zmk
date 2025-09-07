@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { execa } from "execa";
 import { Layout } from "./schema";
+import { generateKeymapDtsi } from "./generateDtsi";
 import { assembleDtsi } from "./assemble";
 import { toDrawerYaml } from "./drawer";
 import { makeLedDtsi } from "./led";
@@ -13,15 +14,10 @@ async function main() {
   const layoutJson = JSON.parse(fs.readFileSync(root("config/layout.json"), "utf8"));
   const layout = Layout.parse(layoutJson);
 
-  const devicetreeFrag = fs.readFileSync(root("templates/fragments/custom-device-tree.dtsi"), "utf8");
-  const behaviorsFragBase = fs.readFileSync(root("templates/fragments/custom-behaviors.dtsi"), "utf8");
-  const behaviorsFrag = behaviorsFragBase + "\n" + makeLedDtsi(JSON.parse(fs.readFileSync(root("config/led.json"), "utf8")));
-
-  const dtsi = assembleDtsi(
-    root("templates/keymap.template.dtsi"),
-    devicetreeFrag,
-    behaviorsFrag
-  );
+  // Always use the new generator - we've removed the template approach
+  console.log("🔨 Generating keymap from JSON...");
+  const dtsi = generateKeymapDtsi(layout);
+  
   fs.mkdirSync(root("out"), { recursive: true });
   fs.writeFileSync(root("out/keymap.dtsi"), dtsi);
 
