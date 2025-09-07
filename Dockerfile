@@ -1,13 +1,5 @@
-FROM debian:bookworm-slim
-RUN apt-get update
+FROM zmkfirmware/zmk-build-arm:stable
 
-# for Unicode in YAML files
-ENV LANG en_US.UTF-8
-RUN apt-get install -y locales \
-  && sed -i "s/^# $LANG/$LANG/" /etc/locale.gen \
-  && locale-gen
-
-RUN apt-get install -y ruby rake graphviz graphicsmagick poppler-utils
-
-WORKDIR /opt
+# Ensure west folder
+RUN cd /tmp && rm -rf zmk-workspace && mkdir -p zmk-workspace
 

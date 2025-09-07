@@ -30,15 +30,18 @@ pnpm install
 
 # Build the keymap (generates out/keymap.dtsi, out/keymap.yaml, out/keymap.svg, out/keymap.pdf)
 pnpm build
-# or
-npm run build
-# or
-ts-node src/index.ts
 
-# Legacy Ruby/Rake build (partial implementation)
-rake          # Generate dtsi and dot files
-rake dtsi     # Generate only dtsi files
-rake dot      # Generate only dot/svg diagrams
+# Compile firmware to UF2 files (requires Docker)
+pnpm compile
+
+# Generate SVG diagram (requires keymap-drawer)
+pnpm draw
+
+# Convert SVG to PDF (requires inkscape)
+pnpm pdf
+
+# Complete workflow
+pnpm build && pnpm compile
 ```
 
 ## Dependencies
