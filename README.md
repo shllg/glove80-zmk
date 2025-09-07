@@ -122,7 +122,7 @@ This will:
 
 ## Flashing
 
-1. Put keyboard in bootloader mode (Magic + F1+F3+F5)
+1. Put keyboard in bootloader mode (https://docs.moergo.com/glove80-user-guide/customizing-key-layout/#putting-glove80-into-bootloader-for-firmware-loading)
 2. Copy the appropriate `.uf2` file to the mounted drive
 3. Repeat for the other half
 
