@@ -1,0 +1,370 @@
+// Extracted macros from Glove80 export
+
+/ {
+  macros {
+    ////////////////////////////////////////////////////////////////////////
+    // German letters
+    ////////////////////////////////////////////////////////////////////////
+ 
+    de_ae: de_ae {
+      compatible = "zmk,behavior-macro";
+      label = "ae_umlaut";
+      #binding-cells = <0>;
+      wait-ms = <30>;
+      tap-ms = <30>;
+      bindings = 
+        <&macro_tap &kp LC(LS(U))>,
+        <&macro_tap &kp N0 &kp N0 &kp E &kp N4>,  // 00e4 is ä
+        <&macro_tap &kp SPACE>;
+    };
+
+    de_ae_upper: de_ae_upper {
+      compatible = "zmk,behavior-macro";
+      label = "AE_umlaut";
+      #binding-cells = <0>;
+      wait-ms = <30>;
+      tap-ms = <30>;
+      bindings = 
+        <&macro_tap &kp LC(LS(U))>,
+        <&macro_tap &kp N0 &kp N0 &kp C &kp N4>,  // 00c4 is Ä
+        <&macro_tap &kp SPACE>;
+    };
+
+    de_oe: de_oe {
+      compatible = "zmk,behavior-macro";
+      label = "oe_umlaut";
+      #binding-cells = <0>;
+      wait-ms = <30>;
+      tap-ms = <30>;
+      bindings = 
+        <&macro_tap &kp LC(LS(U))>,
+        <&macro_tap &kp N0 &kp N0 &kp F &kp N6>,  // 00f6 is ö
+        <&macro_tap &kp SPACE>;
+    };
+
+    de_oe_upper: de_oe_upper {
+      compatible = "zmk,behavior-macro";
+      label = "OE_umlaut";
+      #binding-cells = <0>;
+      wait-ms = <30>;
+      tap-ms = <30>;
+      bindings = 
+        <&macro_tap &kp LC(LS(U))>,
+        <&macro_tap &kp N0 &kp N0 &kp D &kp N6>,  // 00d6 is Ö
+        <&macro_tap &kp SPACE>;
+    };
+
+    de_ue: de_ue {
+      compatible = "zmk,behavior-macro";
+      label = "ue_umlaut";
+      #binding-cells = <0>;
+      wait-ms = <30>;
+      tap-ms = <30>;
+      bindings = 
+        <&macro_tap &kp LC(LS(U))>,
+        <&macro_tap &kp N0 &kp N0 &kp F &kp C>,  // 00fc is ü
+        <&macro_tap &kp SPACE>;
+    };
+
+    de_ue_upper: de_ue_upper {
+      compatible = "zmk,behavior-macro";
+      label = "UE_umlaut";
+      #binding-cells = <0>;
+      wait-ms = <30>;
+      tap-ms = <30>;
+      bindings = 
+        <&macro_tap &kp LC(LS(U))>,
+        <&macro_tap &kp N0 &kp N0 &kp D &kp C>,  // 00dc is Ü
+        <&macro_tap &kp SPACE>;
+    };
+
+    ////////////////////////////////////////////////////////////////////////
+    // German SZ
+    ////////////////////////////////////////////////////////////////////////
+
+    de_sz: de_sz {
+      compatible = "zmk,behavior-macro";
+      label = "eszett";
+      #binding-cells = <0>;
+      wait-ms = <30>;
+      tap-ms = <30>;
+      bindings = 
+        <&macro_tap &kp LC(LS(U))>,
+        <&macro_tap &kp N0 &kp N0 &kp D &kp F>,  // 00df is ß
+        <&macro_tap &kp SPACE>;
+    };
+
+    de_sz_upper: de_sz_upper {
+      compatible = "zmk,behavior-macro";
+      label = "ESZETT";
+      #binding-cells = <0>;
+      wait-ms = <30>;
+      tap-ms = <30>;
+      bindings = 
+        <&macro_tap &kp LC(LS(U))>,
+        <&macro_tap &kp N1 &kp E &kp N9 &kp E>,  // 1e9e is ẞ
+        <&macro_tap &kp SPACE>;
+    };
+
+    ////////////////////////////////////////////////////////////////////////
+    // Signs
+    ////////////////////////////////////////////////////////////////////////
+
+    euro_sign: euro_sign {
+      compatible = "zmk,behavior-macro";
+      label = "euro";
+      #binding-cells = <0>;
+      wait-ms = <30>;
+      tap-ms = <30>;
+      bindings = 
+        <&macro_tap &kp LC(LS(U))>,
+        <&macro_tap &kp N2 &kp N0 &kp A &kp C>,  // 20ac is €
+        <&macro_tap &kp SPACE>;
+    };
+
+    macro_parenthesis_open_close: macro_parenthesis_open_close {
+      label = "&MACRO_PARENTHESIS_OPEN_CLOSE";
+      compatible = "zmk,behavior-macro";
+      #binding-cells = <0>;
+      bindings = 
+        <&macro_tap>, 
+        <&kp LPAR>, 
+        <&kp RPAR>, 
+        <&kp LEFT>;
+    };
+
+    macro_brace_open_close: macro_brace_open_close {
+      label = "&MACRO_BRACE_OPEN_CLOSE";
+      compatible = "zmk,behavior-macro";
+      #binding-cells = <0>;
+      bindings = 
+        <&macro_tap>, 
+        <&kp LBRC>, 
+        <&kp RBRC>, 
+        <&kp LEFT>;
+    };
+
+    macro_bracket_open_close: macro_bracket_open_close {
+      label = "&MACRO_BRACKET_OPEN_CLOSE";
+      compatible = "zmk,behavior-macro";
+      #binding-cells = <0>;
+      bindings = 
+        <&macro_tap>, 
+        <&kp LBKT>, 
+        <&kp RBKT>, 
+        <&kp LEFT>;
+    };
+
+    macro_lt_gt: macro_lt_gt {
+      label = "&MACRO_LT_GT";
+      compatible = "zmk,behavior-macro";
+      #binding-cells = <0>;
+      bindings = 
+        <&macro_tap>, 
+        <&kp LT>, 
+        <&kp GT>, 
+        <&kp LEFT>;
+    };
+
+    macro_super_alt_b: macro_super_alt_b {
+      label = "&MACRO_SUPER_ALT_B";
+      compatible = "zmk,behavior-macro";
+      #binding-cells = <0>;
+      bindings = 
+        <&macro_press>, 
+        <&kp LGUI>, 
+        <&kp LALT>, 
+        <&macro_tap>, 
+        <&kp B>, 
+        <&macro_release>, 
+        <&kp LGUI>, 
+        <&kp LALT>;
+    };
+
+    macro_equal_gt: macro_equal_gt {
+      label = "&MACRO_EQUAL_GT";
+      compatible = "zmk,behavior-macro";
+      #binding-cells = <0>;
+      bindings = 
+        <&macro_tap>, 
+        <&kp EQUAL>, 
+        <&kp GT>;
+    };
+
+    macro_double_single_quotes: macro_double_single_quotes {
+      label = "&MACRO_DOUBLE_SINGLE_QUOTES";
+      compatible = "zmk,behavior-macro";
+      #binding-cells = <0>;
+      bindings = 
+        <&macro_tap>, 
+        <&kp SQT>, 
+        <&kp SQT>, 
+        <&kp LEFT>;
+    };
+
+    macro_double_double_quotes: macro_double_double_quotes {
+      label = "&MACRO_DOUBLE_DOUBLE_QUOTES";
+      compatible = "zmk,behavior-macro";
+      #binding-cells = <0>;
+      bindings = 
+        <&macro_tap>, 
+        <&kp DQT>, 
+        <&kp DQT>, 
+        <&kp LEFT>;
+    };
+
+    macro_super_shift_space: macro_super_shift_space {
+      label = "&MACRO_SUPER_SHIFT_SPACE";
+      compatible = "zmk,behavior-macro";
+      #binding-cells = <0>;
+      tap-ms = <30>;
+      wait-ms = <15>;
+      bindings = 
+        <&macro_press>, 
+        <&kp LGUI>, 
+        <&kp LSHFT>, 
+        <&macro_tap>, 
+        <&kp SPACE>, 
+        <&macro_release>, 
+        <&kp LGUI>, 
+        <&kp LSHFT>;
+    };
+
+    macro_super_space: macro_super_space {
+      label = "&MACRO_SUPER_SPACE";
+      compatible = "zmk,behavior-macro";
+      #binding-cells = <0>;
+      tap-ms = <30>;
+      wait-ms = <15>;
+      bindings = 
+        <&macro_press>, 
+        <&kp LGUI>, 
+        <&macro_tap>, 
+        <&kp SPACE>, 
+        <&macro_release>, 
+        <&kp LGUI>;
+    };
+
+    macro_super_print: macro_super_print {
+      label = "&MACRO_SUPER_PRINT";
+      compatible = "zmk,behavior-macro";
+      #binding-cells = <0>;
+      tap-ms = <30>;
+      wait-ms = <15>;
+      bindings = 
+        <&macro_press>, 
+        <&kp LGUI>, 
+        <&macro_tap>, 
+        <&kp PSCRN>, 
+        <&macro_release>, 
+        <&kp LGUI>;
+    };
+
+    macro_tmux_ctrl_b_n: macro_tmux_ctrl_b_n {
+      label = "&MACRO_TMUX_CTRL_B_N";
+      compatible = "zmk,behavior-macro";
+      #binding-cells = <0>;
+      bindings = 
+        <&macro_press>, 
+        <&kp RCTRL>, 
+        <&macro_tap>, 
+        <&kp B>, 
+        <&macro_release>, 
+        <&kp RCTRL>, 
+        <&macro_tap>, 
+        <&kp N>;
+    };
+
+    macro_tmux_ctrl_b_o: macro_tmux_ctrl_b_o {
+      label = "&MACRO_TMUX_CTRL_B_O";
+      compatible = "zmk,behavior-macro";
+      #binding-cells = <0>;
+      bindings = 
+        <&macro_press>, 
+        <&kp RCTRL>, 
+        <&macro_tap>, 
+        <&kp B>, 
+        <&macro_release>, 
+        <&kp RCTRL>, 
+        <&macro_tap>, 
+        <&kp O>;
+    };
+
+    // RGB status macro for magic layer
+    rgb_ug_status_macro: rgb_ug_status_macro {
+      label = "RGB_UG_STATUS";
+      compatible = "zmk,behavior-macro";
+      #binding-cells = <0>;
+      bindings = <&rgb_ug RGB_STATUS>;
+    };
+    
+#ifdef BT_DISC_CMD
+    bt_select_0: bt_select_0 {
+        label = "BT_SELECT_0";
+        compatible = "zmk,behavior-macro";
+        #binding-cells = <0>;
+        bindings
+            = <&out OUT_BLE>,
+              <&bt BT_SEL 0>;
+    };
+    bt_select_1: bt_select_1 {
+        label = "BT_SELECT_1";
+        compatible = "zmk,behavior-macro";
+        #binding-cells = <0>;
+        bindings
+            = <&out OUT_BLE>,
+              <&bt BT_SEL 1>;
+    };
+    bt_select_2: bt_select_2 {
+        label = "BT_SELECT_2";
+        compatible = "zmk,behavior-macro";
+        #binding-cells = <0>;
+        bindings
+            = <&out OUT_BLE>,
+              <&bt BT_SEL 2>;
+    };
+    bt_select_3: bt_select_3 {
+        label = "BT_SELECT_3";
+        compatible = "zmk,behavior-macro";
+        #binding-cells = <0>;
+        bindings
+            = <&out OUT_BLE>,
+              <&bt BT_SEL 3>;
+    };
+#else
+    bt_0: bt_0 {
+        label = "BT_0";
+        compatible = "zmk,behavior-macro";
+        #binding-cells = <0>;
+        bindings
+            = <&out OUT_BLE>,
+              <&bt BT_SEL 0>;
+    };
+    bt_1: bt_1 {
+        label = "BT_1";
+        compatible = "zmk,behavior-macro";
+        #binding-cells = <0>;
+        bindings
+            = <&out OUT_BLE>,
+              <&bt BT_SEL 1>;
+    };
+    bt_2: bt_2 {
+        label = "BT_2";
+        compatible = "zmk,behavior-macro";
+        #binding-cells = <0>;
+        bindings
+            = <&out OUT_BLE>,
+              <&bt BT_SEL 2>;
+    };
+    bt_3: bt_3 {
+        label = "BT_3";
+        compatible = "zmk,behavior-macro";
+        #binding-cells = <0>;
+        bindings
+            = <&out OUT_BLE>,
+              <&bt BT_SEL 3>;
+    };
+#endif
+  };
+};
+
