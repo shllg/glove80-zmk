@@ -7,8 +7,7 @@
   "scripts": {
     "build": "tsx src/index.ts",
     "compile": "./scripts/compile.sh",
-    "draw": "keymap draw out/keymap.yaml --output out/keymap.svg",
-    "pdf": "inkscape out/keymap.svg --export-type=pdf --export-filename=out/keymap.pdf",
+    "pdf": "./scripts/generate-pdf.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
