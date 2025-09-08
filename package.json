@@ -7,6 +7,7 @@
   "scripts": {
     "build": "tsx src/index.ts",
     "compile": "./scripts/compile.sh",
+    "draw": "keymap draw out/keymap.yaml --output out/keymap.svg",
     "pdf": "./scripts/generate-pdf.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -15,12 +16,13 @@
   "license": "ISC",
   "packageManager": "pnpm@10.15.1",
   "devDependencies": {
+    "@types/json5": "^2.2.0",
     "@types/node": "^24.3.1",
     "execa": "^9.6.0",
+    "json5": "^2.2.3",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "zod": "^3.25.76"
   }
 }
-

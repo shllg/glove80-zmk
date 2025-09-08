@@ -226,13 +226,13 @@ export function toDrawerYaml(layout: Layout) {
       flatKeys.push(...structured.left[3]); // 34-39
       flatKeys.push(...structured.right[3]); // 40-45
 
-      // Row 4: ZXCVB/NM... (positions 46-57)
+      // Row 4: ZXCVB + upper thumb + NM... (positions 46-63)
       flatKeys.push(...structured.left[4]); // 46-51
-      flatKeys.push(...structured.right[4]); // 52-57
+      flatKeys.push(...structured.thumb_left[0]); // 52-54
+      flatKeys.push(...structured.thumb_right[0]); // 55-57
+      flatKeys.push(...structured.right[4]); // 58-63
 
-      // Lower thumb row and row 5 (positions 58-79)
-      flatKeys.push(...structured.thumb_left[0]); // 58-60
-      flatKeys.push(...structured.thumb_right[0]); // 61-63
+      // Row 5: left bottom + lower thumb + right bottom (positions 64-79)
       flatKeys.push(...structured.left[5]); // 64-68 (only 5 keys)
       flatKeys.push(...structured.thumb_left[1]); // 69-71
       flatKeys.push(...structured.thumb_right[1]); // 72-74
@@ -282,8 +282,9 @@ export function toDrawerYaml(layout: Layout) {
         ledFlat.push(...led.left[1], ...led.right[1]); // Numbers
         ledFlat.push(...led.left[2], ...led.right[2]); // QWERTY top
         ledFlat.push(...led.left[3], ...led.right[3]); // Home row
-        ledFlat.push(...led.left[4], ...led.right[4]); // Bottom row
+        ledFlat.push(...led.left[4]); // Left bottom row
         ledFlat.push(...led.thumb_left[0], ...led.thumb_right[0]); // Upper thumb
+        ledFlat.push(...led.right[4]); // Right bottom row
         ledFlat.push(...led.left[5]); // Left bottom corner
         ledFlat.push(...led.thumb_left[1], ...led.thumb_right[1]); // Lower thumb
         ledFlat.push(...led.right[5]); // Right bottom corner

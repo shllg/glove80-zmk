@@ -2,6 +2,7 @@
 import fs from "fs";
 import path from "path";
 import { execa } from "execa";
+import JSON5 from "json5";
 import { Layout } from "./schema";
 import { generateKeymapDtsi } from "./generateDtsi";
 import { assembleDtsi } from "./assemble";
@@ -10,7 +11,16 @@ import { toDrawerYaml } from "./drawer";
 const root = (...p: string[]) => path.join(process.cwd(), ...p);
 
 async function main() {
-  const layoutJson = JSON.parse(fs.readFileSync(root("config/layout.json"), "utf8"));
+  // Try JSON5 first, fall back to JSON
+  const configPath = fs.existsSync(root("config/layout.json5")) 
+    ? root("config/layout.json5") 
+    : root("config/layout.json");
+  
+  const layoutContent = fs.readFileSync(configPath, "utf8");
+  const layoutJson = configPath.endsWith(".json5") 
+    ? JSON5.parse(layoutContent)
+    : JSON.parse(layoutContent);
+  
   const layout = Layout.parse(layoutJson);
 
   // Always use the new generator - we've removed the template approach
