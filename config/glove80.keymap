@@ -13,6 +13,7 @@
 #include <dt-bindings/zmk/bt.h>
 #include <dt-bindings/zmk/outputs.h>
 #include <dt-bindings/zmk/rgb.h>
+#include <dt-bindings/zmk/rgb_colors.h>
 #include <dt-bindings/zmk/pointing.h>
 
 /* Helper Macros, based on https://github.com/urob/zmk-helpers/ */
@@ -46,18 +47,14 @@
         bindings = <&mo layer>, <&to layer>; \
 )
 
-/* Automatically generated layer name #define */
-#define LAYER_Base 0
-#define LAYER_Navigation 1
-#define LAYER_Chars 2
-#define LAYER_Special 3
-#define LAYER_Media 4
-#define LAYER_Magic 5
+/* PLACEHOLDER_LAYER_DEFINES */
 
 /* To deal with the situation where there is no Lower layer, to keep &lower happy */
 #ifndef LAYER_Lower
 #define LAYER_Lower 0
 #endif
+
+/* PLACEHOLDER_COLOR_DEFINES */
 
 /* #define for key positions */
 #define POS_LH_T1 52
@@ -160,6 +157,8 @@
     /* PLACEHOLDER_COMBOS */
 
     /* PLACEHOLDER_LED_CONFIG */
+
+    /* PLACEHOLDER_UNDERGLOW */
 
     /* PLACEHOLDER_KEYMAP */
 };

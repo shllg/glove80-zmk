@@ -1,3 +1,9 @@
+# Claude settings
 .claude/settings.local.json
+
+# tmp
+out/temp_pdf
+
+# system 
 node_modules
 
