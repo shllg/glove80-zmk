@@ -1,5 +1,24 @@
 {
   "keyboard": "glove80",
+  "colorDefinitions": {
+    "MAIN_RGB": [0, 255, 200],
+    "MAIN_HRM_RGB": [0, 255, 255],
+    "MAIN_O_RGB": [0, 255, 150],
+
+    "MCYN": [0, 255, 240],
+    "HCYN": [50, 255, 240],
+
+
+    "RED": [255, 0, 0],
+    "GRN": [0, 255, 0],
+    "BLU": [0, 0, 255],
+    "YEL": [255, 255, 0],
+    "CYN": [0, 255, 255],
+    "MAG": [255, 0, 255],
+    "WHT": [255, 255, 255],
+    "BLK": [0, 0, 0],
+    "___": [255, 255, 255]
+  },
   "layers": [
     {
       "name": "Base",
@@ -27,6 +46,32 @@
         "thumb_right": [
           ["&kp UP", "&magic LAYER_Magic 0", "&kp RSHFT"],
           ["&kp DOWN", "&lt 4 TAB", "&thumb_right 2 RET"]
+        ]
+      },
+      "led": {
+        "left": [
+          ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"],
+          ["MAIN_O_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB"],
+          ["MAIN_O_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB"],
+          ["MAIN_O_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_RGB"],
+          ["MAIN_O_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB"],
+          ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"]
+        ],
+        "right": [
+          ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"],
+          ["MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_O_RGB"],
+          ["MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_O_RGB"],
+          ["MAIN_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_O_RGB"],
+          ["MAIN_RGB", "MAIN_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"],
+          ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"]
+        ],
+        "thumb_left": [
+          ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"],
+          ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"]
+        ],
+        "thumb_right": [
+          ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"],
+          ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"]
         ]
       }
     },
@@ -57,17 +102,43 @@
           ["&macro_super_space", "&macro_super_shift_space", "&macro_super_alt_b"],
           ["&none", "&none", "&kp RET"]
         ]
+      },
+      "led": {
+        "left": [
+          ["RED", "___", "___", "___", "___"],
+          ["RED", "___", "___", "___", "___", "___"],
+          ["RED", "___", "___", "___", "___", "___"],
+          ["RED", "___", "___", "___", "___", "___"],
+          ["RED", "___", "___", "___", "___", "___"],
+          ["RED", "___", "___", "___", "___"]
+        ],
+        "right": [
+          ["___", "___", "___", "___", "BLU"],
+          ["___", "___", "___", "___", "___", "BLU"],
+          ["___", "___", "___", "___", "___", "BLU"],
+          ["___", "___", "___", "___", "___", "BLU"],
+          ["___", "___", "___", "___", "___", "BLU"],
+          ["___", "___", "___", "___", "BLU"]
+        ],
+        "thumb_left": [
+          ["GRN", "___", "___"],
+          ["YEL", "___", "___"]
+        ],
+        "thumb_right": [
+          ["___", "___", "CYN"],
+          ["___", "___", "MAG"]
+        ]
       }
     },
     {
       "name": "Chars",
       "keys": {
         "left": [
-          ["&none", "&none", "&none", "&none", "&kp LS(BSLH)"],
+          ["&none", "&none", "&none", "&none", "&none"],
           ["&kp LS(N2)", "&kp GRAVE", "&kp LS(N9)", "&kp LS(N0)", "&kp SEMI", "&kp COMMA"],
           ["&kp LS(N1)", "&kp LS(LBKT)", "&kp SQT", "&kp LS(SQT)", "&kp LS(RBKT)", "&kp LS(FSLH)"],
           ["&kp LS(N3)", "&hml LGUI LS(N6)", "&hml LALT EQUAL", "&hml LSHFT LS(MINUS)", "&hml LCTRL LS(N4)", "&kp LS(N8)"],
-          ["&kp LS(GRAVE)", "&kp LS(COMMA)", "&kp LS(NON_US_BSLH)", "&kp MINUS", "&kp LS(DOT)", "&kp FSLH"],
+          ["&kp LS(GRAVE)", "&kp LS(COMMA)", "&kp LS(BSLH)", "&kp MINUS", "&kp LS(DOT)", "&kp FSLH"],
           ["&magic LAYER_Magic 0", "&kp LS(N7)", "&kp LBKT", "&kp RBKT", "&kp LS(EQUAL)"]
         ],
         "right": [
@@ -79,12 +150,38 @@
           ["&kp RET", "&none", "&none", "&none", "&none"]
         ],
         "thumb_left": [
-          ["&kp BLSH", "&kp DOT", "&LS(N8)"],
-          ["&kp LS(N5)", "&LS(SEMI)", "&kp SEMI"]
+          ["&kp BSLH", "&kp DOT", "&kp LS(N8)"],
+          ["&kp LS(N5)", "&kp LS(SEMI)", "&kp SEMI"]
         ],
         "thumb_right": [
           ["&none", "&none", "&none"],
           ["&none", "&none", "&mo 2"]
+        ]
+      },
+      "led": {
+        "left": [
+          ["___", "___", "___", "___", "___"],
+          ["___", "___", "BLU", "BLU", "___", "___"],
+          ["___", "BLU", "___", "___", "BLU", "___"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "BLU", "___", "___", "BLU", "___"],
+          ["___", "___", "BLU", "BLU", "___"]
+        ],
+        "right": [
+          ["BLU", "BLU", "BLU", "BLU", "BLU"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "YEL", "YEL", "YEL", "YEL", "___"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "___", "___", "___", "___"]
+        ],
+        "thumb_left": [
+          ["___", "___", "___"],
+          ["CYN", "CYN", "___"]
+        ],
+        "thumb_right": [
+          ["___", "___", "___"],
+          ["___", "MAG", "MAG"]
         ]
       }
     },
@@ -115,6 +212,32 @@
           ["&none", "&none", "&kp RSHFT"],
           ["&none", "&none", "&none"]
         ]
+      },
+      "led": {
+        "left": [
+          ["RED", "RED", "RED", "RED", "RED"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "GRN", "GRN", "GRN", "GRN", "___"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "___", "___", "___", "___"]
+        ],
+        "right": [
+          ["BLU", "BLU", "BLU", "BLU", "BLU"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "YEL", "YEL", "YEL", "YEL", "___"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "___", "___", "___", "___"]
+        ],
+        "thumb_left": [
+          ["___", "___", "___"],
+          ["CYN", "CYN", "___"]
+        ],
+        "thumb_right": [
+          ["___", "___", "___"],
+          ["___", "MAG", "MAG"]
+        ]
       }
     },
     {
@@ -144,6 +267,32 @@
           ["&none", "&none", "&none"],
           ["&none", "&mo 4", "&none"]
         ]
+      },
+      "led": {
+        "left": [
+          ["RED", "RED", "RED", "RED", "RED"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "GRN", "GRN", "GRN", "GRN", "___"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "___", "___", "___", "___"]
+        ],
+        "right": [
+          ["BLU", "BLU", "BLU", "BLU", "BLU"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "YEL", "YEL", "YEL", "YEL", "___"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "___", "___", "___", "___"]
+        ],
+        "thumb_left": [
+          ["___", "___", "___"],
+          ["CYN", "CYN", "___"]
+        ],
+        "thumb_right": [
+          ["___", "___", "___"],
+          ["___", "MAG", "MAG"]
+        ]
       }
     },
     {
@@ -172,6 +321,32 @@
         "thumb_right": [
           ["&none", "&none", "&sys_reset"],
           ["&none", "&none", "&none"]
+        ]
+      },
+      "led": {
+        "left": [
+          ["RED", "RED", "RED", "RED", "RED"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "GRN", "GRN", "GRN", "GRN", "___"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "___", "___", "___", "___"]
+        ],
+        "right": [
+          ["BLU", "BLU", "BLU", "BLU", "BLU"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "YEL", "YEL", "YEL", "YEL", "___"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["___", "___", "___", "___", "___"]
+        ],
+        "thumb_left": [
+          ["___", "___", "___"],
+          ["CYN", "CYN", "___"]
+        ],
+        "thumb_right": [
+          ["___", "___", "___"],
+          ["___", "MAG", "MAG"]
         ]
       }
     }

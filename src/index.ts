@@ -6,7 +6,6 @@ import { Layout } from "./schema";
 import { generateKeymapDtsi } from "./generateDtsi";
 import { assembleDtsi } from "./assemble";
 import { toDrawerYaml } from "./drawer";
-import { makeLedDtsi } from "./led";
 
 const root = (...p: string[]) => path.join(process.cwd(), ...p);
 

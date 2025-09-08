@@ -13,6 +13,7 @@
 #include <dt-bindings/zmk/bt.h>
 #include <dt-bindings/zmk/outputs.h>
 #include <dt-bindings/zmk/rgb.h>
+#include <dt-bindings/zmk/rgb_colors.h>
 #include <dt-bindings/zmk/pointing.h>
 
 /* Helper Macros, based on https://github.com/urob/zmk-helpers/ */
@@ -46,7 +47,7 @@
         bindings = <&mo layer>, <&to layer>; \
 )
 
-/* Automatically generated layer name #define */
+/* Layer defines */
 #define LAYER_Base 0
 #define LAYER_Navigation 1
 #define LAYER_Chars 2
@@ -58,6 +59,22 @@
 #ifndef LAYER_Lower
 #define LAYER_Lower 0
 #endif
+
+/* Custom color defines */
+#define MAIN_RGB 0x00FFC8
+#define MAIN_HRM_RGB 0x00FFFF
+#define MAIN_O_RGB 0x00FF96
+#define MCYN 0x00FFF0
+#define HCYN 0x32FFF0
+#define RED 0xFF0000
+#define GRN 0x00FF00
+#define BLU 0x0000FF
+#define YEL 0xFFFF00
+#define CYN 0x00FFFF
+#define MAG 0xFF00FF
+#define WHT 0xFFFFFF
+#define BLK 0x000000
+#define ___ 0xFFFFFF
 
 /* #define for key positions */
 #define POS_LH_T1 52
@@ -150,13 +167,7 @@
 };
 
 
-/* Layer defines */
-#define LAYER_Base 0
-#define LAYER_Navigation 1
-#define LAYER_Chars 2
-#define LAYER_Special 3
-#define LAYER_Media 4
-#define LAYER_Magic 5
+/* PLACEHOLDER_LAYER_DEFINES */
 
 / {
     behaviors {
@@ -649,7 +660,83 @@
 
     
 
-    
+    /* PLACEHOLDER_LED_CONFIG */
+
+        underglow-layer {
+        compatible = "zmk,underglow-layer";
+
+        layer_Base {
+            bindings = <
+                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+            >;
+            layer-id = <0>;
+        };
+
+        layer_Navigation {
+            bindings = <
+                &ug RED &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug BLU
+                &ug RED &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug BLU
+                &ug RED &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug BLU
+                &ug RED &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug BLU
+                &ug RED &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug GRN &ug ___ &ug ___ &ug ___ &ug ___ &ug CYN &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug BLU
+                &ug RED &ug ___ &ug ___ &ug ___ &ug ___ &ug YEL &ug ___ &ug ___ &ug ___ &ug ___ &ug MAG &ug ___ &ug ___ &ug ___ &ug ___ &ug BLU
+            >;
+            layer-id = <1>;
+        };
+
+        layer_Chars {
+            bindings = <
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug BLU &ug BLU &ug BLU &ug BLU &ug BLU
+                &ug ___ &ug ___ &ug BLU &ug BLU &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug BLU &ug ___ &ug ___ &ug BLU &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug YEL &ug YEL &ug YEL &ug YEL &ug ___
+                &ug ___ &ug BLU &ug ___ &ug ___ &ug BLU &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug ___ &ug BLU &ug BLU &ug ___ &ug CYN &ug CYN &ug ___ &ug ___ &ug MAG &ug MAG &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+            >;
+            layer-id = <2>;
+        };
+
+        layer_Special {
+            bindings = <
+                &ug RED &ug RED &ug RED &ug RED &ug RED &ug BLU &ug BLU &ug BLU &ug BLU &ug BLU
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug GRN &ug GRN &ug GRN &ug GRN &ug ___ &ug ___ &ug YEL &ug YEL &ug YEL &ug YEL &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug CYN &ug CYN &ug ___ &ug ___ &ug MAG &ug MAG &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+            >;
+            layer-id = <3>;
+        };
+
+        layer_Media {
+            bindings = <
+                &ug RED &ug RED &ug RED &ug RED &ug RED &ug BLU &ug BLU &ug BLU &ug BLU &ug BLU
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug GRN &ug GRN &ug GRN &ug GRN &ug ___ &ug ___ &ug YEL &ug YEL &ug YEL &ug YEL &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug CYN &ug CYN &ug ___ &ug ___ &ug MAG &ug MAG &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+            >;
+            layer-id = <4>;
+        };
+
+        layer_Magic {
+            bindings = <
+                &ug RED &ug RED &ug RED &ug RED &ug RED &ug BLU &ug BLU &ug BLU &ug BLU &ug BLU
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug GRN &ug GRN &ug GRN &ug GRN &ug ___ &ug ___ &ug YEL &ug YEL &ug YEL &ug YEL &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug CYN &ug CYN &ug ___ &ug ___ &ug MAG &ug MAG &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+            >;
+            layer-id = <5>;
+        };
+    };
 
     keymap {
         compatible = "zmk,keymap";
@@ -678,12 +765,12 @@
 
         layer_Chars {
             bindings = <
-                &none &none &none &none &kp LS(BSLH) &none &none &none &none &none
+                &none &none &none &none &none &none &none &none &none &none
                 &kp LS(N2) &kp GRAVE &kp LS(N9) &kp LS(N0) &kp SEMI &kp COMMA &macro_parenthesis_open_close &macro_equal_gt &macro_double_single_quotes &macro_double_double_quotes &none &none
                 &kp LS(N1) &kp LS(LBKT) &kp SQT &kp LS(SQT) &kp LS(RBKT) &kp LS(FSLH) &macro_brace_open_close &none &none &none &none &none
                 &kp LS(N3) &hml LGUI LS(N6) &hml LALT EQUAL &hml LSHFT LS(MINUS) &hml LCTRL LS(N4) &kp LS(N8) &macro_lt_gt &kp RCTRL &kp RSHFT &kp LALT &kp RGUI &none
-                &kp LS(GRAVE) &kp LS(COMMA) &kp LS(NON_US_BSLH) &kp MINUS &kp LS(DOT) &kp FSLH &kp BLSH &kp DOT &LS(N8) &none &none &none &macro_lt_gt &none &none &none &none &none
-                &magic LAYER_Magic 0 &kp LS(N7) &kp LBKT &kp RBKT &kp LS(EQUAL) &kp LS(N5) &LS(SEMI) &kp SEMI &none &none &mo 2 &kp RET &none &none &none &none
+                &kp LS(GRAVE) &kp LS(COMMA) &kp LS(BSLH) &kp MINUS &kp LS(DOT) &kp FSLH &kp BSLH &kp DOT &kp LS(N8) &none &none &none &macro_lt_gt &none &none &none &none &none
+                &magic LAYER_Magic 0 &kp LS(N7) &kp LBKT &kp RBKT &kp LS(EQUAL) &kp LS(N5) &kp LS(SEMI) &kp SEMI &none &none &mo 2 &kp RET &none &none &none &none
             >;
         };
 
