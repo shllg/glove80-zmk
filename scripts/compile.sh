@@ -91,7 +91,7 @@ if [ "$WORKSPACE_EXISTS" = "no" ] || [ "$FORK_CORRECT" = "no" ]; then
 
   # Initialize workspace with darknao fork that supports RGB_STATUS and mouse features
   exec_in_container "cd /tmp && rm -rf zmk-workspace && mkdir -p zmk-workspace"
-  exec_in_container "cd /tmp/zmk-workspace && git clone -b rgb-layer-24.12 --depth 1 https://github.com/darknao/zmk.git zmk"
+  exec_in_container "cd /tmp/zmk-workspace && git clone -b rgb-layer-25.08 --depth 1 https://github.com/darknao/zmk.git zmk"
   exec_in_container "cd /tmp/zmk-workspace && west init -l zmk/app"
 
   echo "Downloading dependencies..."
@@ -143,4 +143,3 @@ echo "3. Repeat for right half with glove80_right.uf2"
 echo ""
 echo -e "${YELLOW}Note: Container '$CONTAINER_NAME' is kept running for faster rebuilds${NC}"
 echo "To stop it: docker stop $CONTAINER_NAME"
-

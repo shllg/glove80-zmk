@@ -48,7 +48,7 @@
           ["&kp F1", "&kp F2", "&kp F3", "&kp F4", "&kp F5"],
           ["&kp GRAVE", "&kp N1", "&kp N2", "&kp N3", "&kp N4", "&kp N5"],
           ["&kp HOME", "&kp Q", "&kp W", "&kp E", "&kp R", "&kp T"],
-          ["&kp ESC", "&hml LGUI A", "&hml LALT S", "&hml LSHFT D", "&hml LCTRL F", "&kp G"],
+          ["&kp ESC", "&hml LGUI A", "&hml LALT S", "&hml_middle LSHFT D", "&hml LCTRL F", "&kp G"],
           ["&kp LSHFT", "&kp Z", "&kp X", "&kp C", "&kp V", "&kp B"],
           ["&kp LEFT", "&kp RIGHT", "&kp FSLH", "&kp COMMA", "&kp DOT"]
         ],
@@ -56,7 +56,7 @@
           ["&kp F6", "&kp F7", "&kp F8", "&kp F9", "&kp F10"],
           ["&kp N6", "&kp N7", "&kp N8", "&kp N9", "&kp N0", "&kp MINUS"],
           ["&kp Y", "&kp U", "&kp I", "&kp O", "&kp P", "&kp BSLH"],
-          ["&kp H", "&hmr RCTRL J", "&hmr RSHFT K", "&hmr LALT L", "&hmr RGUI SEMI", "&kp SQT"],
+          ["&kp H", "&hmr RCTRL J", "&hmr_middle RSHFT K", "&hmr LALT L", "&hmr RGUI SEMI", "&kp SQT"],
           ["&kp N", "&kp M", "&kp COMMA", "&kp DOT", "&kp FSLH", "&kp PG_UP"],
           ["&none", "&kp RALT", "&kp LBKT", "&kp RBKT", "&kp PG_DN"]
         ],
@@ -138,15 +138,15 @@
           ["MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "___"],
           ["___", "___", "___", "___", "COR_RGB", "COR_RGB"],
           ["YEL", "YEL", "YEL", "YEL", "COR_RGB", "COR_RGB"],
-          ["___", "___", "___", "___", "___", "SPG_RGB"],
-          ["MAIN_RGB", "MAIN_RGB", "SPG_RGB", "SPG_RGB", "SPG_RGB"]
+          ["___", "___", "___", "___", "___", "CHU_RGB"],
+          ["GDN_RGB", "GDN_RGB", "CHU_RGB", "CHU_RGB", "CHU_RGB"]
         ],
         "thumb_left": [
           ["___", "___", "___"],
           ["MAG", "___", "___"]
         ],
         "thumb_right": [
-          ["MAIN_RGB", "MAIN_RGB", "MAIN_RGB"],
+          ["GDN_RGB", "GDN_RGB", "GDN_RGB"],
           ["___", "___", "MAIN_RGB"]
         ]
       }
@@ -155,24 +155,24 @@
       "name": "Chars",
       "keys": {
         "left": [
-          ["&none", "&none", "&none", "&none", "&none"],
-          ["&kp GRAVE", "&kp LS(N1)", "&kp LS(N9)", "&kp LS(N0)", "&kp SEMI", "&kp COMMA"],
-          ["&none", "&kp LS(LBKT)", "&kp SQT", "&kp LS(SQT)", "&kp LS(RBKT)", "&kp LS(FSLH)"],
-          ["&kp LS(N3)", "&hml LGUI LS(N6)", "&hml LALT EQUAL", "&hml LSHFT LS(MINUS)", "&hml LCTRL LS(N4)", "&kp LS(N8)"],
-          ["&kp LS(GRAVE)", "&kp LS(COMMA)", "&kp LS(BSLH)", "&kp MINUS", "&kp LS(DOT)", "&kp FSLH"],
-          ["&magic LAYER_Magic 0", "&kp LS(N7)", "&kp LBKT", "&kp RBKT", "&kp LS(EQUAL)"]
+          ["&none", "&none", "&none", "&none", "&kp BSLH"],
+          ["&kp GRAVE", "&kp EXCL", "&kp LPAR", "&kp RPAR", "&kp SEMI", "&kp COMMA"],
+          ["&kp PRCNT", "&kp LBRC", "&kp SQT", "&kp DQT", "&kp RBRC", "&kp QMARK"],
+          ["&kp HASH", "&hml LGUI CARET", "&hml LALT EQUAL", "&hml_middle LSHFT MINUS", "&hml LCTRL DLLR", "&kp ASTRK"],
+          ["&kp TILDE", "&kp LT", "&kp PIPE", "&kp UNDER", "&kp GT", "&kp FSLH"],
+          ["&none", "&kp AMPS", "&kp LBKT", "&kp RBKT", "&kp PLUS"]
         ],
         "right": [
           ["&none", "&none", "&none", "&none", "&none"],
-          ["&macro_parenthesis_open_close", "&macro_equal_gt", "&macro_double_single_quotes", "&macro_double_double_quotes", "&none", "&none"],
-          ["&macro_brace_open_close", "&kp SPACE", "&kp TAB", "&kp BSPC", "&none", "&none"],
-          ["&macro_lt_gt", "&kp RCTRL", "&kp RSHFT", "&kp LALT", "&kp RGUI", "&none"],
-          ["&macro_lt_gt", "&kp RET", "&none", "&none", "&none", "&none"],
-          ["&none", "&none", "&none", "&none", "&none"]
+          ["&none", "&none", "&none", "&none", "&none", "&none"],
+          ["&none", "&none", "&none", "&none", "&none", "&none"],
+          ["&kp LEFT", "&kp DOWN", "&kp UP", "&kp RIGHT", "&none", "&none"],
+          ["&none", "&kp RCTRL", "&none", "&none", "&none", "&none"],
+          ["&none", "&kp RET", "&kp TAB", "&none", "&none"]
         ],
         "thumb_left": [
-          ["&kp BSLH", "&kp DOT", "&kp LS(N8)"],
-          ["&kp LS(N5)", "&kp LS(SEMI)", "&kp LS(N2)"]
+          ["&kp COLON", "&kp DOT", "&kp AT"],
+          ["&kp SPACE", "&kp BSPC", "&kp DEL"]
         ],
         "thumb_right": [
           ["&none", "&none", "&none"],
@@ -181,24 +181,24 @@
       },
       "led": {
         "left": [
-          ["___", "___", "___", "___", "___"],
+          ["___", "___", "___", "___", "SPG_RGB"],
           ["MAIN_RGB", "MAIN_RGB", "BLU", "BLU", "SPG_RGB", "SPG_RGB"],
-          ["___", "BLU", "ORN_RGB", "ORN_RGB", "BLU", "YLW_RGB"],
+          ["YLW_RGB", "BLU", "ORN_RGB", "ORN_RGB", "BLU", "YLW_RGB"],
           ["YLW_RGB", "YLW_RGB", "MAIN_RGB", "MAIN_RGB", "YLW_RGB", "YLW_RGB"],
-          ["___", "BLU", "MAIN_RGB", "MAIN_RGB", "BLU", "YLW_RGB"],
+          ["MAIN_RGB", "BLU", "MAIN_RGB", "MAIN_RGB", "BLU", "YLW_RGB"],
           ["___", "MAIN_RGB", "BLU", "BLU", "MAIN_RGB"]
         ],
         "right": [
           ["___", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "___", "___"],
-          ["___", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "___", "___"],
-          ["___", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "___"],
+          ["___", "___", "___", "___", "___", "___"],
+          ["YEL", "YEL", "YEL", "YEL", "___", "___"],
           ["___", "MAIN_RGB", "___", "___", "___", "___"],
-          ["___", "___", "___", "___", "___"]
+          ["___", "MAIN_RGB", "MAIN_RGB", "___", "___"]
         ],
         "thumb_left": [
-          ["MAIN_RGB", "YLW_RGB", "YLW_RGB"],
-          ["YLW_RGB", "YLW_RGB", "YLW_RGB"]
+          ["YLW_RGB", "YLW_RGB", "YLW_RGB"],
+          ["MAIN_RGB", "MAIN_RGB", "MAIN_RGB"]
         ],
         "thumb_right": [
           ["___", "___", "___"],
@@ -266,53 +266,53 @@
       "keys": {
         "left": [
           ["&kp C_BRI_DN", "&kp C_BRI_UP", "&kp C_PREV", "&kp C_PP", "&kp C_NEXT"],
-          ["&none", "&none", "&kp C_VOL_DN", "&kp C_MUTE", "&kp C_VOL_UP", "&none"],
-          ["&none", "&none", "&none", "&none", "&none", "&none"],
-          ["&none", "&none", "&none", "&none", "&none", "&none"],
-          ["&none", "&none", "&none", "&none", "&none", "&none"],
-          ["&none", "&none", "&none", "&none", "&none"]
+          ["&none", "&none", "&kp C_VOL_DN", "&kp C_MUTE", "&kp C_VOL_UP", "&kp COMMA"],
+          ["&kp LPAR", "&kp RPAR", "&kp N7", "&kp N8", "&kp N9", "&kp MINUS"],
+          ["&none", "&none", "&kp N4", "&kp N5", "&kp N6", "&kp ASTRK"],
+          ["&none", "&none", "&kp N1", "&kp N2", "&kp N3", "&kp FSLH"],
+          ["&none", "&none", "&none", "&kp N0", "&kp PLUS"]
         ],
         "right": [
           ["&none", "&none", "&none", "&none", "&none"],
           ["&none", "&none", "&none", "&none", "&none", "&none"],
           ["&none", "&none", "&none", "&none", "&none", "&none"],
-          ["&none", "&none", "&none", "&none", "&none", "&none"],
+          ["&kp LEFT", "&kp DOWN", "&kp UP", "&kp RIGHT", "&none", "&none"],
           ["&none", "&none", "&none", "&none", "&none", "&none"],
           ["&none", "&none", "&none", "&none", "&none"]
         ],
         "thumb_left": [
-          ["&none", "&none", "&none"],
-          ["&none", "&none", "&none"]
+          ["&none", "&kp DOT", "&none"],
+          ["&kp SPACE", "&kp BSPC", "&kp DEL"]
         ],
         "thumb_right": [
           ["&none", "&none", "&none"],
-          ["&none", "&mo 4", "&none"]
+          ["&none", "&mo 4", "&kp RET"]
         ]
       },
       "led": {
         "left": [
           ["RED", "RED", "YEL", "YEL", "YEL"],
-          ["___", "___", "ORN_RGB", "ORN_RGB", "ORN_RGB", "___"],
-          ["___", "___", "___", "___", "___", "___"],
-          ["___", "___", "___", "___", "___", "___"],
-          ["___", "___", "___", "___", "___", "___"],
-          ["___", "___", "___", "___", "___"]
+          ["___", "___", "ORN_RGB", "ORN_RGB", "ORN_RGB", "BLU"],
+          ["BLU", "BLU", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "BLU"],
+          ["___", "___", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "BLU"],
+          ["___", "___", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "BLU"],
+          ["___", "___", "___", "MAIN_RGB", "BLU"]
         ],
         "right": [
           ["___", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "___", "___"],
-          ["___", "___", "___", "___", "___", "___"],
+          ["YEL", "YEL", "YEL", "YEL", "___", "___"],
           ["___", "___", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "___"]
         ],
         "thumb_left": [
-          ["___", "___", "___"],
-          ["CYN", "CYN", "___"]
+          ["___", "BLU", "___"],
+          ["MAIN_RGB", "MAIN_RGB", "MAIN_RGB"]
         ],
         "thumb_right": [
           ["___", "___", "___"],
-          ["___", "MAG", "MAG"]
+          ["___", "MAG", "BLU"]
         ]
       }
     },

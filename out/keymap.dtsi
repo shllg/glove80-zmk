@@ -61,9 +61,28 @@
 #endif
 
 /* Custom color defines */
-#define MAIN_RGB 0x00FFC8
+#define MAIN_RGB 0x00FF96
 #define MAIN_HRM_RGB 0x00FFFF
-#define MAIN_O_RGB 0x00FF96
+#define MAIN_O_RGB 0x00FF78
+#define RED_RGB 0xFF0000
+#define COR_RGB 0xFF7C4D
+#define ORN_RGB 0xFF8000
+#define GDN_RGB 0xD9A521
+#define GOL_RGB 0xFFD900
+#define YLW_RGB 0xFFFF00
+#define CHU_RGB 0x80FF00
+#define GRN_RGB 0x00FF00
+#define SPG_RGB 0x00FF80
+#define CYN_RGB 0x00FFFF
+#define AZU_RGB 0x99F5FF
+#define TEA_RGB 0x008080
+#define TUR_RGB 0x476E6A
+#define BLU_RGB 0x0000FF
+#define PUR_RGB 0x7A00FF
+#define MAJ_RGB 0xFF00FF
+#define PNK_RGB 0xFF80BF
+#define WHT_RGB 0xFFFFFF
+#define BLK_RGB 0x000000
 #define MCYN 0x00FFF0
 #define HCYN 0x32FFF0
 #define RED 0xFF0000
@@ -74,7 +93,7 @@
 #define MAG 0xFF00FF
 #define WHT 0xFFFFFF
 #define BLK 0x000000
-#define ___ 0xFFFFFF
+#define ___ 0x000000
 
 /* #define for key positions */
 #define POS_LH_T1 52
@@ -158,6 +177,44 @@
 #define POS_RH_C6R5 63
 #define POS_RH_C6R6 79
 
+//
+// Glove80 key positions index for positional hold-tap
+// - https://discord.com/channels/877392805654306816/937645688244826154/1066713913351221248
+// - https://media.discordapp.net/attachments/937645688244826154/1066713913133121556/image.png
+//
+// |------------------------|------------------------|
+// | LEFT_HAND_KEYS         |        RIGHT_HAND_KEYS |
+// |                        |                        |
+// |  0  1  2  3  4         |          5  6  7  8  9 |
+// | 10 11 12 13 14 15      |      16 17 18 19 20 21 |
+// | 22 23 24 25 26 27      |      28 29 30 31 32 33 |
+// | 34 35 36 37 38 39      |      40 41 42 43 44 45 |
+// | 46 47 48 49 50 51      |      58 59 60 61 62 63 |
+// | 64 65 66 67 68         |         75 76 77 78 79 |
+// |                69 52   |   57 74                |
+// |                 70 53  |  56 73                 |
+// |                  71 54 | 55 72                  |
+// |------------------------|------------------------|
+//
+#define LEFT_HAND_KEYS      \
+        0  1  2  3  4       \
+       10 11 12 13 14 15    \
+       22 23 24 25 26 27    \
+       34 35 36 37 38 39    \
+       46 47 48 49 50 51    \
+       64 65 66 67 68
+#define RIGHT_HAND_KEYS     \
+                                          5  6  7  8  9 \
+                                      16 17 18 19 20 21 \
+                                      28 29 30 31 32 33 \
+                                      40 41 42 43 44 45 \
+                                      58 59 60 61 62 63 \
+                                         75 76 77 78 79
+#define THUMB_KEYS          \
+                      69 52       57 74                \
+                       70 53     56 73                 \
+                        71 54   55 72
+
 /* Custom Device-tree */
 // Adjust lt behavior
 &lt {
@@ -219,45 +276,75 @@
     // Home row mods - left hand
     hml: hml {
       compatible = "zmk,behavior-hold-tap";
+      flavor = "tap-preferred";
       #binding-cells = <2>;
-      tapping-term-ms = <280>;
+      tapping-term-ms = <200>;
       bindings = <&kp>, <&kp>;
-      flavor = "balanced";
-      quick-tap-ms = <175>;
-      require-prior-idle-ms = <150>;
-      hold-trigger-key-positions = <5 6 7 8 9 16 17 18 19 20 21 28 29 30 31 32 33 40 41 42 43 44 45 52 53 54 55 56 57 58 59 60 61 62 63 69 70 71 72 73 74 75 76 77 78 79>;
+      quick-tap-ms = <150>;
+      require-prior-idle-ms = <0>;
+      hold-trigger-key-positions = <RIGHT_HAND_KEYS THUMB_KEYS>;
       hold-trigger-on-release;
+    };
+    hml_middle: hml_middle {
+      compatible = "zmk,behavior-hold-tap";
+      flavor = "balanced";
+      #binding-cells = <2>;
+      tapping-term-ms = <200>;
+      bindings = <&kp>, <&kp>;
+      quick-tap-ms = <175>;
+      require-prior-idle-ms = <50>;
+      hold-trigger-key-positions = <RIGHT_HAND_KEYS THUMB_KEYS>;
+      hold-trigger-on-release;
+      hold-while-undecided;
+      retro-tap;
     };
 
     // Home row mods - right hand
     hmr: hmr {
       compatible = "zmk,behavior-hold-tap";
+      flavor = "tap-preferred";
       #binding-cells = <2>;
-      tapping-term-ms = <280>;
+      tapping-term-ms = <200>;
       bindings = <&kp>, <&kp>;
-      flavor = "balanced";
-      quick-tap-ms = <200>;
+      quick-tap-ms = <150>;
       require-prior-idle-ms = <0>;
-      hold-trigger-key-positions = <0 1 2 3 4 10 11 12 13 14 15 22 23 24 25 26 27 34 35 36 37 38 39 47 48 49 50 51 52 53 54 55 56 57 64 66 67 68 69 70 71 72 73 74 65 46>;
+      hold-trigger-key-positions = <LEFT_HAND_KEYS THUMB_KEYS>;
       hold-trigger-on-release;
+    };
+    hmr_middle: hmr_middle {
+      compatible = "zmk,behavior-hold-tap";
+      flavor = "balanced";
+      #binding-cells = <2>;
+      tapping-term-ms = <200>;
+      bindings = <&kp>, <&kp>;
+      quick-tap-ms = <175>;
+      require-prior-idle-ms = <50>;
+      hold-trigger-key-positions = <LEFT_HAND_KEYS THUMB_KEYS>;
+      hold-trigger-on-release;
+      hold-while-undecided;
+      retro-tap;    
     };
 
     // Thumb layer keys - left
     thumb_left: thumb_left {
       compatible = "zmk,behavior-hold-tap";
+      flavor = "tap-preferred";
       #binding-cells = <2>;
       tapping-term-ms = <200>;
       bindings = <&mo>, <&kp>;
-      flavor = "tap-preferred";
+      quick-tap-ms = <175>;
+      require-prior-idle-ms = <75>;
     };
 
     // Thumb layer keys - right
     thumb_right: thumb_right {
       compatible = "zmk,behavior-hold-tap";
+      flavor = "tap-preferred";
       #binding-cells = <2>;
       tapping-term-ms = <200>;
       bindings = <&mo>, <&kp>;
-      flavor = "tap-preferred";
+      quick-tap-ms = <175>;
+      require-prior-idle-ms = <75>;
     };
 
 #ifdef BT_DISC_CMD
@@ -672,31 +759,31 @@
                 &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
                 &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB
                 &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
-                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
             >;
             layer-id = <0>;
         };
 
         layer_Navigation {
             bindings = <
-                &ug RED &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug BLU
-                &ug RED &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug BLU
-                &ug RED &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug BLU
-                &ug RED &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug BLU
-                &ug RED &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug GRN &ug ___ &ug ___ &ug ___ &ug ___ &ug CYN &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug BLU
-                &ug RED &ug ___ &ug ___ &ug ___ &ug ___ &ug YEL &ug ___ &ug ___ &ug ___ &ug ___ &ug MAG &ug ___ &ug ___ &ug ___ &ug ___ &ug BLU
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug COR_RGB &ug COR_RGB
+                &ug ___ &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug ___ &ug YEL &ug YEL &ug YEL &ug YEL &ug COR_RGB &ug COR_RGB
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug GDN_RGB &ug GDN_RGB &ug GDN_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug CHU_RGB
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug MAG &ug ___ &ug ___ &ug ___ &ug ___ &ug MAIN_RGB &ug GDN_RGB &ug GDN_RGB &ug CHU_RGB &ug CHU_RGB &ug CHU_RGB
             >;
             layer-id = <1>;
         };
 
         layer_Chars {
             bindings = <
-                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug BLU &ug BLU &ug BLU &ug BLU &ug BLU
-                &ug ___ &ug ___ &ug BLU &ug BLU &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
-                &ug ___ &ug BLU &ug ___ &ug ___ &ug BLU &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
-                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug YEL &ug YEL &ug YEL &ug YEL &ug ___
-                &ug ___ &ug BLU &ug ___ &ug ___ &ug BLU &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
-                &ug ___ &ug ___ &ug BLU &ug BLU &ug ___ &ug CYN &ug CYN &ug ___ &ug ___ &ug MAG &ug MAG &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug SPG_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug MAIN_RGB &ug MAIN_RGB &ug BLU &ug BLU &ug SPG_RGB &ug SPG_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug YLW_RGB &ug BLU &ug ORN_RGB &ug ORN_RGB &ug BLU &ug YLW_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug YLW_RGB &ug YLW_RGB &ug MAIN_RGB &ug MAIN_RGB &ug YLW_RGB &ug YLW_RGB &ug YEL &ug YEL &ug YEL &ug YEL &ug ___ &ug ___
+                &ug MAIN_RGB &ug BLU &ug MAIN_RGB &ug MAIN_RGB &ug BLU &ug YLW_RGB &ug YLW_RGB &ug YLW_RGB &ug YLW_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug MAIN_RGB &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug MAIN_RGB &ug BLU &ug BLU &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug ___ &ug ___ &ug MAG &ug ___ &ug MAIN_RGB &ug MAIN_RGB &ug ___ &ug ___
             >;
             layer-id = <2>;
         };
@@ -715,12 +802,12 @@
 
         layer_Media {
             bindings = <
-                &ug RED &ug RED &ug RED &ug RED &ug RED &ug BLU &ug BLU &ug BLU &ug BLU &ug BLU
-                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
-                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
-                &ug ___ &ug GRN &ug GRN &ug GRN &ug GRN &ug ___ &ug ___ &ug YEL &ug YEL &ug YEL &ug YEL &ug ___
-                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
-                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug CYN &ug CYN &ug ___ &ug ___ &ug MAG &ug MAG &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug RED &ug RED &ug YEL &ug YEL &ug YEL &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug ___ &ug ORN_RGB &ug ORN_RGB &ug ORN_RGB &ug BLU &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug BLU &ug BLU &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug BLU &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug ___ &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug BLU &ug YEL &ug YEL &ug YEL &ug YEL &ug ___ &ug ___
+                &ug ___ &ug ___ &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug BLU &ug ___ &ug BLU &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug ___ &ug ___ &ug MAIN_RGB &ug BLU &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug ___ &ug MAG &ug BLU &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
             >;
             layer-id = <4>;
         };
@@ -746,7 +833,7 @@
                 &kp F1 &kp F2 &kp F3 &kp F4 &kp F5 &kp F6 &kp F7 &kp F8 &kp F9 &kp F10
                 &kp GRAVE &kp N1 &kp N2 &kp N3 &kp N4 &kp N5 &kp N6 &kp N7 &kp N8 &kp N9 &kp N0 &kp MINUS
                 &kp HOME &kp Q &kp W &kp E &kp R &kp T &kp Y &kp U &kp I &kp O &kp P &kp BSLH
-                &kp ESC &hml LGUI A &hml LALT S &hml LSHFT D &hml LCTRL F &kp G &kp H &hmr RCTRL J &hmr RSHFT K &hmr LALT L &hmr RGUI SEMI &kp SQT
+                &kp ESC &hml LGUI A &hml LALT S &hml_middle LSHFT D &hml LCTRL F &kp G &kp H &hmr RCTRL J &hmr_middle RSHFT K &hmr LALT L &hmr RGUI SEMI &kp SQT
                 &kp LSHFT &kp Z &kp X &kp C &kp V &kp B &kp ESC &macro_tmux_ctrl_b_n &macro_tmux_ctrl_b_o &kp UP &magic LAYER_Magic 0 &kp RSHFT &kp N &kp M &kp COMMA &kp DOT &kp FSLH &kp PG_UP
                 &kp LEFT &kp RIGHT &kp FSLH &kp COMMA &kp DOT &thumb_left 1 SPACE &thumb_left 3 BSPC &kp DEL &kp DOWN &lt 4 TAB &thumb_right 2 RET &none &kp RALT &kp LBKT &kp RBKT &kp PG_DN
             >;
@@ -765,12 +852,12 @@
 
         layer_Chars {
             bindings = <
-                &none &none &none &none &none &none &none &none &none &none
-                &kp LS(N2) &kp GRAVE &kp LS(N9) &kp LS(N0) &kp SEMI &kp COMMA &macro_parenthesis_open_close &macro_equal_gt &macro_double_single_quotes &macro_double_double_quotes &none &none
-                &kp LS(N1) &kp LS(LBKT) &kp SQT &kp LS(SQT) &kp LS(RBKT) &kp LS(FSLH) &macro_brace_open_close &none &none &none &none &none
-                &kp LS(N3) &hml LGUI LS(N6) &hml LALT EQUAL &hml LSHFT LS(MINUS) &hml LCTRL LS(N4) &kp LS(N8) &macro_lt_gt &kp RCTRL &kp RSHFT &kp LALT &kp RGUI &none
-                &kp LS(GRAVE) &kp LS(COMMA) &kp LS(BSLH) &kp MINUS &kp LS(DOT) &kp FSLH &kp BSLH &kp DOT &kp LS(N8) &none &none &none &macro_lt_gt &none &none &none &none &none
-                &magic LAYER_Magic 0 &kp LS(N7) &kp LBKT &kp RBKT &kp LS(EQUAL) &kp LS(N5) &kp LS(SEMI) &kp SEMI &none &none &mo 2 &kp RET &none &none &none &none
+                &none &none &none &none &kp BSLH &none &none &none &none &none
+                &kp GRAVE &kp EXCL &kp LPAR &kp RPAR &kp SEMI &kp COMMA &none &none &none &none &none &none
+                &kp PRCNT &kp LBRC &kp SQT &kp DQT &kp RBRC &kp QMARK &none &none &none &none &none &none
+                &kp HASH &hml LGUI CARET &hml LALT EQUAL &hml_middle LSHFT MINUS &hml LCTRL DLLR &kp ASTRK &kp LEFT &kp DOWN &kp UP &kp RIGHT &none &none
+                &kp TILDE &kp LT &kp PIPE &kp UNDER &kp GT &kp FSLH &kp COLON &kp DOT &kp AT &none &none &none &none &kp RCTRL &none &none &none &none
+                &none &kp AMPS &kp LBKT &kp RBKT &kp PLUS &kp SPACE &kp BSPC &kp DEL &none &none &mo 2 &none &kp RET &kp TAB &none &none
             >;
         };
 
@@ -788,11 +875,11 @@
         layer_Media {
             bindings = <
                 &kp C_BRI_DN &kp C_BRI_UP &kp C_PREV &kp C_PP &kp C_NEXT &none &none &none &none &none
-                &none &none &kp C_VOL_DN &kp C_MUTE &kp C_VOL_UP &none &none &none &none &none &none &none
-                &none &none &none &none &none &none &none &none &none &none &none &none
-                &none &none &none &none &none &none &none &none &none &none &none &none
-                &none &none &none &none &none &none &none &none &none &none &none &none &none &none &none &none &none &none
-                &none &none &none &none &none &none &none &none &none &mo 4 &none &none &none &none &none &none
+                &none &none &kp C_VOL_DN &kp C_MUTE &kp C_VOL_UP &kp COMMA &none &none &none &none &none &none
+                &kp LPAR &kp RPAR &kp N7 &kp N8 &kp N9 &kp MINUS &none &none &none &none &none &none
+                &none &none &kp N4 &kp N5 &kp N6 &kp ASTRK &kp LEFT &kp DOWN &kp UP &kp RIGHT &none &none
+                &none &none &kp N1 &kp N2 &kp N3 &kp FSLH &none &kp DOT &none &none &none &none &none &none &none &none &none &none
+                &none &none &none &kp N0 &kp PLUS &kp SPACE &kp BSPC &kp DEL &none &mo 4 &kp RET &none &none &none &none &none
             >;
         };
 

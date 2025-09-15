@@ -15,7 +15,7 @@ export function toDrawerYaml(layout: Layout) {
     "N8": "8", "LS(N8)": "*",
     "N9": "9", "LS(N9)": "(",
     "N0": "0", "LS(N0)": ")",
-    
+
     // Special characters
     "GRAVE": "`", "LS(GRAVE)": "~",
     "MINUS": "-", "LS(MINUS)": "_",
@@ -28,7 +28,28 @@ export function toDrawerYaml(layout: Layout) {
     "COMMA": ",", "LS(COMMA)": "<",
     "DOT": ".", "LS(DOT)": ">",
     "FSLH": "/", "LS(FSLH)": "?",
-    
+    "EXCL": "!",
+    "AT": "@",
+    "HASH": "#",
+    "DLLR": "$",
+    "PRCNT": "%",
+    "CARET": "^",
+    "AMPS": "&",
+    "ASTRK": "*",
+    "LPAR": "(",
+    "RPAR": ")",
+    "UNDER": "_",
+    "PLUS": "+",
+    "LBRC": "{",
+    "RBRC": "}",
+    "PIPE": "|",
+    "COLON": ":",
+    "DQT": '"',
+    "LT": "<",
+    "GT": ">",
+    "QMARK": "?",
+    "TILDE": "tilde",
+
     // Keep some common ones as-is for clarity
     "SPACE": "Space",
     "TAB": "Tab",
@@ -37,30 +58,30 @@ export function toDrawerYaml(layout: Layout) {
     "DEL": "Del",
     "ESC": "Esc",
     "ESCAPE": "Esc",
-    
+
     // Arrow keys
     "UP": "↑",
     "DOWN": "↓",
     "LEFT": "←",
     "RIGHT": "→",
-    
+
     // Home/End/PageUp/PageDown
     "HOME": "Home",
     "END": "End",
     "PG_UP": "PgUp",
     "PG_DN": "PgDn",
-    
+
     // Function keys - keep as is
     "F1": "F1", "F2": "F2", "F3": "F3", "F4": "F4", "F5": "F5",
     "F6": "F6", "F7": "F7", "F8": "F8", "F9": "F9", "F10": "F10",
     "F11": "F11", "F12": "F12",
-    
+
     // Modifiers - keep for visibility when alone
     "LSHFT": "Shift", "RSHFT": "Shift",
     "LCTRL": "Ctrl", "RCTRL": "Ctrl",
     "LALT": "Alt", "RALT": "AltGr",
     "LGUI": "Cmd", "RGUI": "Cmd",
-    
+
     // Media keys
     "C_PP": "⏯",
     "C_PREV": "⏮",
@@ -70,34 +91,34 @@ export function toDrawerYaml(layout: Layout) {
     "C_MUTE": "Mute",
     "C_BRI_UP": "Bri+",
     "C_BRI_DN": "Bri-",
-    
+
     // Other common keys
     "CAPS": "Caps",
     "PSCRN": "PrtSc",
     "INS": "Ins",
-    
+
     // Special key combos
     "LS(LG(EQUAL))": "Zoom+",
     "LG(EQUAL)": "Cmd+=",
     "LS(LG(MINUS))": "Zoom-",
     "LG(MINUS)": "Cmd+-",
-    
+
     // Letters - keep as is
     "A": "A", "B": "B", "C": "C", "D": "D", "E": "E", "F": "F", "G": "G",
     "H": "H", "I": "I", "J": "J", "K": "K", "L": "L", "M": "M", "N": "N",
     "O": "O", "P": "P", "Q": "Q", "R": "R", "S": "S", "T": "T", "U": "U",
     "V": "V", "W": "W", "X": "X", "Y": "Y", "Z": "Z"
   };
-  
+
   // Helper to map key binding to display character
   const mapKeyToChar = (binding: string): string => {
     // Handle &none -> empty string
     if (binding === "&none") {
       return "";
     }
-    
+
     // Handle home row mods (hml/hmr) - extract both modifier and key
-    const hmlMatch = binding.match(/^&hml\s+(\w+)\s+(.+)$/);
+    const hmlMatch = binding.match(/^&hml\w*\s+(\w+)\s+(.+)$/);
     if (hmlMatch) {
       const mod = hmlMatch[1];
       const key = hmlMatch[2];
@@ -105,8 +126,8 @@ export function toDrawerYaml(layout: Layout) {
       const keyLabel = keyCharMap[key] || key;
       return `${keyLabel}\n${modLabel}`;  // Two-line format for keymap-drawer
     }
-    
-    const hmrMatch = binding.match(/^&hmr\s+(\w+)\s+(.+)$/);
+
+    const hmrMatch = binding.match(/^&hmr\w*\s+(\w+)\s+(.+)$/);
     if (hmrMatch) {
       const mod = hmrMatch[1];
       const key = hmrMatch[2];
@@ -114,7 +135,7 @@ export function toDrawerYaml(layout: Layout) {
       const keyLabel = keyCharMap[key] || key;
       return `${keyLabel}\n${modLabel}`;  // Two-line format for keymap-drawer
     }
-    
+
     // Handle thumb keys with layer info
     const thumbMatch = binding.match(/^&thumb_(left|right)\s+(\d+)\s+(.+)$/);
     if (thumbMatch) {
@@ -123,7 +144,7 @@ export function toDrawerYaml(layout: Layout) {
       const keyLabel = keyCharMap[key] || key;
       return `${keyLabel}\nL${layer}`;  // Show key with layer number
     }
-    
+
     // Handle layer tap (lt)
     const ltMatch = binding.match(/^&lt\s+(\d+)\s+(.+)$/);
     if (ltMatch) {
@@ -132,19 +153,19 @@ export function toDrawerYaml(layout: Layout) {
       const keyLabel = keyCharMap[key] || key;
       return `${keyLabel}\nL${layer}`;
     }
-    
+
     // Handle mo (momentary layer)
     const moMatch = binding.match(/^&mo\s+(\d+)$/);
     if (moMatch) {
       return `Layer ${moMatch[1]}`;
     }
-    
+
     // Handle magic layer
     const magicMatch = binding.match(/^&magic\s+LAYER_(\w+)\s+(\d+)$/);
     if (magicMatch) {
       return `Magic\n${magicMatch[1]}`;
     }
-    
+
     // Handle macros - show simplified names
     if (binding.includes("&macro_")) {
       // Special formatting for common macros
@@ -160,19 +181,19 @@ export function toDrawerYaml(layout: Layout) {
       if (binding === "&macro_equal_gt") return "=>";
       if (binding === "&macro_double_single_quotes") return "''";
       if (binding === "&macro_double_double_quotes") return '""';
-      
+
       // Default formatting for unknown macros
       const macroName = binding.replace(/&macro_/, "").replace(/_/g, " ");
       return `[${macroName}]`;
     }
-    
+
     // Remove the &kp prefix if present
     const keyMatch = binding.match(/^&kp\s+(.+)$/);
     if (keyMatch) {
       const key = keyMatch[1];
       return keyCharMap[key] || key;
     }
-    
+
     return binding;
   };
 
@@ -249,30 +270,30 @@ export function toDrawerYaml(layout: Layout) {
 
   // Build YAML string
   let yaml = `layout:\n  zmk_keyboard: glove80\n`;
-  
+
   // Add draw_config for styling
   yaml += `draw_config:\n`;
-  
+
   // Set columns to 1 for vertical layout (layers stacked)
   yaml += `  n_columns: 1\n`;
-  
+
   // Add footer text if we have LED configuration
   const hasLED = layout.layers.some(l => l.led);
   if (hasLED) {
     yaml += `  footer_text: "LED colors configured for underglow"\n`;
   }
-  
+
   // Always add custom CSS for better visualization
   yaml += `  svg_extra_style: |\n`;
-  
+
   // Add CSS for layer-specific key coloring based on LED configuration
   if (hasLED) {
     yaml += `    /* LED underglow color visualization */\n`;
-    
+
     // For each layer with LED config, create CSS to color the keys
     for (const [layerIndex, layer] of layout.layers.entries()) {
       if (!layer.led) continue;
-      
+
       // Flatten the LED configuration to match key order
       let ledFlat: string[] = [];
       if (!Array.isArray(layer.led)) {
@@ -289,7 +310,7 @@ export function toDrawerYaml(layout: Layout) {
         ledFlat.push(...led.thumb_left[1], ...led.thumb_right[1]); // Lower thumb
         ledFlat.push(...led.right[5]); // Right bottom corner
       }
-      
+
       // Create CSS rules for each key position with an LED color
       for (let i = 0; i < ledFlat.length && i < 80; i++) {
         const ledColor = ledFlat[i];
@@ -299,7 +320,7 @@ export function toDrawerYaml(layout: Layout) {
           const g = rgb[1];
           const b = rgb[2];
           const hex = `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-          
+
           // Target the specific key in the specific layer
           // keymap-drawer uses svg groups with classes like "layer-Base" and "keypos-0"
           yaml += `    .layer-${layer.name} .keypos-${i} rect.key { fill: ${hex}; fill-opacity: 0.25; stroke: ${hex}; stroke-width: 2; }\n`;
@@ -309,7 +330,7 @@ export function toDrawerYaml(layout: Layout) {
     }
     yaml += `\n`;
   }
-  
+
   yaml += `layers:\n`;
 
   for (const [name, keys] of Object.entries(layersObj)) {
@@ -318,14 +339,14 @@ export function toDrawerYaml(layout: Layout) {
       yaml += `    - ${key === "''" ? key : yamlQuote(key)}\n`;
     }
   }
-  
+
   // Add LED layout as comments for documentation
   if (hasLED) {
     yaml += `\n# LED Underglow Configuration\n`;
     for (const layer of layout.layers) {
       if (!layer.led) continue;
       yaml += `# Layer: ${layer.name}\n`;
-      
+
       // Convert structured LED format to readable grid
       if (!Array.isArray(layer.led)) {
         const led = layer.led as any;
