@@ -1,1 +1,29 @@
-// No combos found
+/ {
+    combos {
+        compatible = "zmk,combos";
+
+        /* 1.1.2: J+K → Escape */
+        combo_esc {
+            timeout-ms = <40>;
+            key-positions = <41 42>;
+            bindings = <&kp ESC>;
+            require-prior-idle-ms = <100>;
+        };
+
+        /* 1.1.4: D+F → Tab */
+        combo_tab {
+            timeout-ms = <40>;
+            key-positions = <37 38>;
+            bindings = <&kp TAB>;
+            require-prior-idle-ms = <100>;
+        };
+
+        /* 1.1.1: U+I → Backspace */
+        combo_bspc {
+            timeout-ms = <40>;
+            key-positions = <29 30>;
+            bindings = <&kp BSPC>;
+            require-prior-idle-ms = <100>;
+        };
+    };
+};

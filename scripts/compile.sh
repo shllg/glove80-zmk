@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 # Colors for output
 RED='\033[0;31m'
@@ -91,7 +91,8 @@ if [ "$WORKSPACE_EXISTS" = "no" ] || [ "$FORK_CORRECT" = "no" ]; then
 
   # Initialize workspace with darknao fork that supports RGB_STATUS and mouse features
   exec_in_container "cd /tmp && rm -rf zmk-workspace && mkdir -p zmk-workspace"
-  exec_in_container "cd /tmp/zmk-workspace && git clone -b rgb-layer-25.08 --depth 1 https://github.com/darknao/zmk.git zmk"
+  # Pin to specific commit for reproducible builds
+  exec_in_container "cd /tmp/zmk-workspace && git clone --depth 1 https://github.com/darknao/zmk.git zmk && cd zmk && git fetch --depth 1 origin 512f756b3be6a124424c1de295cfa68d86038139 && git checkout 512f756b3be6a124424c1de295cfa68d86038139"
   exec_in_container "cd /tmp/zmk-workspace && west init -l zmk/app"
 
   echo "Downloading dependencies..."

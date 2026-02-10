@@ -1,43 +1,28 @@
 {
   "keyboard": "glove80",
   "colorDefinitions": {
+    // Theme colors (custom to this keymap)
     "MAIN_RGB": [0, 255, 150],
     "MAIN_HRM_RGB": [0, 255, 255],
     "MAIN_O_RGB": [0, 255, 120],
-    
-    // Extended color palette with comments
-    "RED_RGB": [255, 0, 0],      // #FF0000 RED (red)
-    "COR_RGB": [255, 124, 77],    // #FF7C4D CORAL (coral)
-    "ORN_RGB": [255, 128, 0],     // #FF8000 ORANGE (ornj)
-    "GDN_RGB": [217, 165, 33],    // #D9A521 GOLDENROD (gold'nrod)
-    "GOL_RGB": [255, 217, 0],     // #FFD900 GOLD (gold)
-    "YLW_RGB": [255, 255, 0],     // #FFFF00 YELLOW (yellow)
-    "CHU_RGB": [128, 255, 0],     // #80FF00 CHARTREUSE (chartreuse)
-    "GRN_RGB": [0, 255, 0],       // #00FF00 GREEN (green)
-    "SPG_RGB": [0, 255, 128],     // #00FF80 SPRING GREEN (spring green)
-    "CYN_RGB": [0, 255, 255],     // #00FFFF CYAN (sigh-an)
-    "AZU_RGB": [153, 245, 255],   // #99F5FF AZURE (a-zur)
-    "TEA_RGB": [0, 128, 128],     // #008080 TEAL (teel)
-    "TUR_RGB": [71, 110, 106],    // #476E6A TURQUOISE (turquoise)
-    "BLU_RGB": [0, 0, 255],       // #0000FF BLUE (bloo)
-    "PUR_RGB": [122, 0, 255],     // #7A00FF PURPLE (purp)
-    "MAJ_RGB": [255, 0, 255],     // #FF00FF MAGENTA (mah-jenta)
-    "PNK_RGB": [255, 128, 191],   // #FF80BF PINK (pink)
-    "WHT_RGB": [255, 255, 255],   // #FFFFFF WHITE (white)
-    "BLK_RGB": [0, 0, 0],         // #000000 BLACK (blak)
-    
-    "MCYN": [0, 255, 240],
-    "HCYN": [50, 255, 240],
 
+    // Extended palette
+    "COR_RGB": [255, 124, 77],    // #FF7C4D CORAL
+    "ORN_RGB": [255, 128, 0],     // #FF8000 ORANGE
+    "GDN_RGB": [217, 165, 33],    // #D9A521 GOLDENROD
+    "GOL_RGB": [255, 217, 0],     // #FFD900 GOLD
+    "CHU_RGB": [128, 255, 0],     // #80FF00 CHARTREUSE
+    "SPG_RGB": [0, 255, 128],     // #00FF80 SPRING GREEN
+    "AZU_RGB": [153, 245, 255],   // #99F5FF AZURE
+    "PUR_RGB": [122, 0, 255],     // #7A00FF PURPLE
 
+    // Basic colors
     "RED": [255, 0, 0],
     "GRN": [0, 255, 0],
     "BLU": [0, 0, 255],
     "YEL": [255, 255, 0],
     "CYN": [0, 255, 255],
     "MAG": [255, 0, 255],
-    "WHT": [255, 255, 255],
-    "BLK": [0, 0, 0],
     "___": [0, 0, 0]
   },
   "layers": [
@@ -137,7 +122,7 @@
           ["MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB"],
           ["MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "___"],
           ["___", "___", "___", "___", "COR_RGB", "COR_RGB"],
-          ["YEL", "YEL", "YEL", "YEL", "COR_RGB", "COR_RGB"],
+          ["AZU_RGB", "AZU_RGB", "AZU_RGB", "AZU_RGB", "COR_RGB", "COR_RGB"],
           ["___", "___", "___", "___", "___", "CHU_RGB"],
           ["GDN_RGB", "GDN_RGB", "CHU_RGB", "CHU_RGB", "CHU_RGB"]
         ],
@@ -165,13 +150,13 @@
         "right": [
           ["&none", "&none", "&none", "&none", "&none"],
           ["&none", "&none", "&none", "&none", "&none", "&none"],
-          ["&none", "&none", "&none", "&none", "&none", "&none"],
+          ["&none", "&kp COLON", "&kp AT", "&none", "&none", "&none"],
           ["&kp LEFT", "&kp DOWN", "&kp UP", "&kp RIGHT", "&none", "&none"],
           ["&none", "&kp RCTRL", "&none", "&none", "&none", "&none"],
           ["&none", "&kp RET", "&kp TAB", "&none", "&none"]
         ],
         "thumb_left": [
-          ["&kp COLON", "&kp DOT", "&kp AT"],
+          ["&none", "&none", "&none"],
           ["&kp SPACE", "&kp BSPC", "&kp DEL"]
         ],
         "thumb_right": [
@@ -183,21 +168,21 @@
         "left": [
           ["___", "___", "___", "___", "SPG_RGB"],
           ["MAIN_RGB", "MAIN_RGB", "BLU", "BLU", "SPG_RGB", "SPG_RGB"],
-          ["YLW_RGB", "BLU", "ORN_RGB", "ORN_RGB", "BLU", "YLW_RGB"],
-          ["YLW_RGB", "YLW_RGB", "MAIN_RGB", "MAIN_RGB", "YLW_RGB", "YLW_RGB"],
-          ["MAIN_RGB", "BLU", "MAIN_RGB", "MAIN_RGB", "BLU", "YLW_RGB"],
+          ["YEL", "BLU", "ORN_RGB", "ORN_RGB", "BLU", "YEL"],
+          ["YEL", "YEL", "MAIN_RGB", "MAIN_RGB", "YEL", "YEL"],
+          ["MAIN_RGB", "BLU", "MAIN_RGB", "MAIN_RGB", "BLU", "YEL"],
           ["___", "MAIN_RGB", "BLU", "BLU", "MAIN_RGB"]
         ],
         "right": [
           ["___", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "___", "___"],
-          ["___", "___", "___", "___", "___", "___"],
-          ["YEL", "YEL", "YEL", "YEL", "___", "___"],
+          ["___", "YEL", "YEL", "___", "___", "___"],
+          ["AZU_RGB", "AZU_RGB", "AZU_RGB", "AZU_RGB", "___", "___"],
           ["___", "MAIN_RGB", "___", "___", "___", "___"],
           ["___", "MAIN_RGB", "MAIN_RGB", "___", "___"]
         ],
         "thumb_left": [
-          ["YLW_RGB", "YLW_RGB", "YLW_RGB"],
+          ["___", "___", "___"],
           ["MAIN_RGB", "MAIN_RGB", "MAIN_RGB"]
         ],
         "thumb_right": [
@@ -221,7 +206,7 @@
           ["&none", "&none", "&none", "&none", "&none"],
           ["&none", "&none", "&none", "&none", "&none", "&none"],
           ["&none", "&umlaut_u", "&none", "&umlaut_o", "&none", "&none"],
-          ["&none", "&none", "&none", "&none", "&none", "&none"],
+          ["&kp LEFT", "&kp DOWN", "&kp UP", "&kp RIGHT", "&none", "&none"],
           ["&none", "&none", "&none", "&none", "&none", "&none"],
           ["&none", "&none", "&none", "&none", "&none"]
         ],
@@ -236,28 +221,28 @@
       },
       "led": {
         "left": [
-          ["RED", "RED", "RED", "RED", "RED"],
+          ["___", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "___", "___"],
-          ["___", "___", "___", "___", "___", "___"],
-          ["___", "GRN", "GRN", "GRN", "GRN", "___"],
+          ["___", "___", "___", "GRN", "___", "___"],
+          ["___", "GRN", "GRN", "___", "___", "___"],
           ["___", "___", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "___"]
         ],
         "right": [
-          ["BLU", "BLU", "BLU", "BLU", "BLU"],
+          ["___", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "___", "___"],
-          ["___", "___", "___", "___", "___", "___"],
-          ["___", "YEL", "YEL", "YEL", "YEL", "___"],
+          ["___", "GRN", "___", "GRN", "___", "___"],
+          ["AZU_RGB", "AZU_RGB", "AZU_RGB", "AZU_RGB", "___", "___"],
           ["___", "___", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "___"]
         ],
         "thumb_left": [
           ["___", "___", "___"],
-          ["CYN", "CYN", "___"]
+          ["___", "CYN", "___"]
         ],
         "thumb_right": [
-          ["___", "___", "___"],
-          ["___", "MAG", "MAG"]
+          ["___", "___", "MAIN_RGB"],
+          ["___", "___", "___"]
         ]
       }
     },
@@ -273,9 +258,9 @@
           ["&none", "&none", "&none", "&kp N0", "&kp PLUS"]
         ],
         "right": [
-          ["&none", "&none", "&none", "&none", "&none"],
+          ["&none", "&none", "&none", "&kp F11", "&kp F12"],
           ["&none", "&none", "&none", "&none", "&none", "&none"],
-          ["&none", "&none", "&none", "&none", "&none", "&none"],
+          ["&kp EQUAL", "&none", "&none", "&none", "&none", "&none"],
           ["&kp LEFT", "&kp DOWN", "&kp UP", "&kp RIGHT", "&none", "&none"],
           ["&none", "&none", "&none", "&none", "&none", "&none"],
           ["&none", "&none", "&none", "&none", "&none"]
@@ -299,10 +284,10 @@
           ["___", "___", "___", "MAIN_RGB", "BLU"]
         ],
         "right": [
-          ["___", "___", "___", "___", "___"],
+          ["___", "___", "___", "MAIN_RGB", "MAIN_RGB"],
           ["___", "___", "___", "___", "___", "___"],
-          ["___", "___", "___", "___", "___", "___"],
-          ["YEL", "YEL", "YEL", "YEL", "___", "___"],
+          ["BLU", "___", "___", "___", "___", "___"],
+          ["AZU_RGB", "AZU_RGB", "AZU_RGB", "AZU_RGB", "___", "___"],
           ["___", "___", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "___"]
         ],
@@ -346,28 +331,28 @@
       },
       "led": {
         "left": [
-          ["RED", "RED", "RED", "RED", "RED"],
+          ["RED", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "___", "___"],
-          ["___", "___", "___", "___", "___", "___"],
-          ["___", "GRN", "GRN", "GRN", "GRN", "___"],
-          ["___", "___", "___", "___", "___", "___"],
+          ["___", "GRN", "GRN", "GRN", "GRN", "GOL_RGB"],
+          ["RED", "COR_RGB", "COR_RGB", "COR_RGB", "COR_RGB", "PUR_RGB"],
+          ["RED", "___", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "___"]
         ],
         "right": [
-          ["BLU", "BLU", "BLU", "BLU", "BLU"],
+          ["___", "___", "___", "___", "RED"],
           ["___", "___", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "___", "___"],
-          ["___", "YEL", "YEL", "YEL", "YEL", "___"],
-          ["___", "___", "___", "___", "___", "___"],
+          ["___", "___", "___", "___", "___", "RED"],
+          ["___", "___", "___", "___", "___", "RED"],
           ["___", "___", "___", "___", "___"]
         ],
         "thumb_left": [
-          ["___", "___", "___"],
-          ["CYN", "CYN", "___"]
+          ["BLU", "BLU", "___"],
+          ["BLU", "BLU", "ORN_RGB"]
         ],
         "thumb_right": [
-          ["___", "___", "___"],
-          ["___", "MAG", "MAG"]
+          ["___", "___", "RED"],
+          ["___", "___", "___"]
         ]
       }
     }

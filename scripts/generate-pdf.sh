@@ -3,7 +3,7 @@
 # Generate multi-page PDF with layers split across pages
 # Usage: ./scripts/generate-multipage-pdf.sh
 
-set -e
+set -euo pipefail
 
 echo "Generating multi-page PDF..."
 
@@ -36,10 +36,19 @@ draw_config:
 EOF
     
     # Copy the CSS styles from main YAML
-    awk '/svg_extra_style:/{flag=1; next} /^layers:/{flag=0} flag && /^    /' "$MAIN_YAML" >> "$TEMP_DIR/${group_name}.yaml"
+    awk '/svg_extra_style:/{flag=1; next} /^[^ ]/{flag=0} flag && /^    /' "$MAIN_YAML" >> "$TEMP_DIR/${group_name}.yaml"
     
+    # Include combos if present in main YAML
+    python3 -c "
+import yaml, sys
+with open('$MAIN_YAML', 'r') as f:
+    data = yaml.safe_load(f)
+if 'combos' in data and data['combos']:
+    yaml.dump({'combos': data['combos']}, sys.stdout, default_flow_style=None, allow_unicode=True, width=1000)
+" >> "$TEMP_DIR/${group_name}.yaml"
+
     echo "layers:" >> "$TEMP_DIR/${group_name}.yaml"
-    
+
     # Extract specified layers
     for layer in "${layers[@]}"; do
         echo "  Extracting layer: $layer"
@@ -85,7 +94,8 @@ else
     exit 1
 fi
 
-echo "✅ Multi-page PDF generated: out/keymap.pdf"
+cp "out/keymap.pdf" ~/glove80-mapping.pdf
+echo "✅ Multi-page PDF generated: out/keymap.pdf (copied to ~/glove80-mapping.pdf)"
 
 # Optional: clean up temp files
 # rm -rf "$TEMP_DIR"

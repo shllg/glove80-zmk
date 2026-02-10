@@ -5,8 +5,8 @@ import { execa } from "execa";
 import JSON5 from "json5";
 import { Layout } from "./schema";
 import { generateKeymapDtsi } from "./generateDtsi";
-import { assembleDtsi } from "./assemble";
 import { toDrawerYaml } from "./drawer";
+import { parseCombos } from "./combos";
 
 const root = (...p: string[]) => path.join(process.cwd(), ...p);
 
@@ -30,7 +30,8 @@ async function main() {
   fs.mkdirSync(root("out"), { recursive: true });
   fs.writeFileSync(root("out/keymap.dtsi"), dtsi);
 
-  const yaml = toDrawerYaml(layout);
+  const combos = parseCombos();
+  const yaml = toDrawerYaml(layout, combos);
   fs.writeFileSync(root("out/keymap.yaml"), yaml);
 
   // Try to render SVG via keymap-drawer CLI (optional, may fail)

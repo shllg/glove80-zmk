@@ -317,13 +317,13 @@ path.combo {
 .layer-Navigation .keypos-37 text { font-weight: bold; }
 .layer-Navigation .keypos-38 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
 .layer-Navigation .keypos-38 text { font-weight: bold; }
-.layer-Navigation .keypos-40 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
+.layer-Navigation .keypos-40 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Navigation .keypos-40 text { font-weight: bold; }
-.layer-Navigation .keypos-41 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
+.layer-Navigation .keypos-41 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Navigation .keypos-41 text { font-weight: bold; }
-.layer-Navigation .keypos-42 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
+.layer-Navigation .keypos-42 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Navigation .keypos-42 text { font-weight: bold; }
-.layer-Navigation .keypos-43 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
+.layer-Navigation .keypos-43 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Navigation .keypos-43 text { font-weight: bold; }
 .layer-Navigation .keypos-44 rect.key { fill: #ff7c4d; fill-opacity: 0.25; stroke: #ff7c4d; stroke-width: 2; }
 .layer-Navigation .keypos-44 text { font-weight: bold; }
@@ -377,10 +377,6 @@ path.combo {
 .layer-Chars .keypos-26 text { font-weight: bold; }
 .layer-Chars .keypos-27 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Chars .keypos-27 text { font-weight: bold; }
-.layer-Chars .keypos-29 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
-.layer-Chars .keypos-29 text { font-weight: bold; }
-.layer-Chars .keypos-30 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
-.layer-Chars .keypos-30 text { font-weight: bold; }
 .layer-Chars .keypos-34 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Chars .keypos-34 text { font-weight: bold; }
 .layer-Chars .keypos-35 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
@@ -393,13 +389,13 @@ path.combo {
 .layer-Chars .keypos-38 text { font-weight: bold; }
 .layer-Chars .keypos-39 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Chars .keypos-39 text { font-weight: bold; }
-.layer-Chars .keypos-40 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
+.layer-Chars .keypos-40 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Chars .keypos-40 text { font-weight: bold; }
-.layer-Chars .keypos-41 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
+.layer-Chars .keypos-41 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Chars .keypos-41 text { font-weight: bold; }
-.layer-Chars .keypos-42 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
+.layer-Chars .keypos-42 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Chars .keypos-42 text { font-weight: bold; }
-.layer-Chars .keypos-43 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
+.layer-Chars .keypos-43 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Chars .keypos-43 text { font-weight: bold; }
 .layer-Chars .keypos-46 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
 .layer-Chars .keypos-46 text { font-weight: bold; }
@@ -413,6 +409,12 @@ path.combo {
 .layer-Chars .keypos-50 text { font-weight: bold; }
 .layer-Chars .keypos-51 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Chars .keypos-51 text { font-weight: bold; }
+.layer-Chars .keypos-52 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
+.layer-Chars .keypos-52 text { font-weight: bold; }
+.layer-Chars .keypos-53 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
+.layer-Chars .keypos-53 text { font-weight: bold; }
+.layer-Chars .keypos-54 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
+.layer-Chars .keypos-54 text { font-weight: bold; }
 .layer-Chars .keypos-59 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
 .layer-Chars .keypos-59 text { font-weight: bold; }
 .layer-Chars .keypos-65 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
@@ -435,28 +437,50 @@ path.combo {
 .layer-Chars .keypos-76 text { font-weight: bold; }
 .layer-Chars .keypos-77 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
 .layer-Chars .keypos-77 text { font-weight: bold; }
-.layer-Special .keypos-25 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
-.layer-Special .keypos-25 text { font-weight: bold; }
-.layer-Special .keypos-29 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
-.layer-Special .keypos-29 text { font-weight: bold; }
-.layer-Special .keypos-31 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
-.layer-Special .keypos-31 text { font-weight: bold; }
+.layer-Special .keypos-0 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
+.layer-Special .keypos-0 text { font-weight: bold; }
+.layer-Special .keypos-1 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
+.layer-Special .keypos-1 text { font-weight: bold; }
+.layer-Special .keypos-2 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
+.layer-Special .keypos-2 text { font-weight: bold; }
+.layer-Special .keypos-3 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
+.layer-Special .keypos-3 text { font-weight: bold; }
+.layer-Special .keypos-4 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
+.layer-Special .keypos-4 text { font-weight: bold; }
+.layer-Special .keypos-5 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
+.layer-Special .keypos-5 text { font-weight: bold; }
+.layer-Special .keypos-6 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
+.layer-Special .keypos-6 text { font-weight: bold; }
+.layer-Special .keypos-7 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
+.layer-Special .keypos-7 text { font-weight: bold; }
+.layer-Special .keypos-8 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
+.layer-Special .keypos-8 text { font-weight: bold; }
+.layer-Special .keypos-9 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
+.layer-Special .keypos-9 text { font-weight: bold; }
 .layer-Special .keypos-35 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
 .layer-Special .keypos-35 text { font-weight: bold; }
 .layer-Special .keypos-36 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
 .layer-Special .keypos-36 text { font-weight: bold; }
-.layer-Special .keypos-40 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
-.layer-Special .keypos-40 text { font-weight: bold; }
-.layer-Special .keypos-41 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
+.layer-Special .keypos-37 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
+.layer-Special .keypos-37 text { font-weight: bold; }
+.layer-Special .keypos-38 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
+.layer-Special .keypos-38 text { font-weight: bold; }
+.layer-Special .keypos-41 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Special .keypos-41 text { font-weight: bold; }
-.layer-Special .keypos-42 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
+.layer-Special .keypos-42 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Special .keypos-42 text { font-weight: bold; }
-.layer-Special .keypos-43 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
+.layer-Special .keypos-43 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Special .keypos-43 text { font-weight: bold; }
-.layer-Special .keypos-57 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
-.layer-Special .keypos-57 text { font-weight: bold; }
+.layer-Special .keypos-44 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
+.layer-Special .keypos-44 text { font-weight: bold; }
+.layer-Special .keypos-69 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
+.layer-Special .keypos-69 text { font-weight: bold; }
 .layer-Special .keypos-70 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
 .layer-Special .keypos-70 text { font-weight: bold; }
+.layer-Special .keypos-73 rect.key { fill: #ff00ff; fill-opacity: 0.25; stroke: #ff00ff; stroke-width: 2; }
+.layer-Special .keypos-73 text { font-weight: bold; }
+.layer-Special .keypos-74 rect.key { fill: #ff00ff; fill-opacity: 0.25; stroke: #ff00ff; stroke-width: 2; }
+.layer-Special .keypos-74 text { font-weight: bold; }
 .layer-Media .keypos-0 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
 .layer-Media .keypos-0 text { font-weight: bold; }
 .layer-Media .keypos-1 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
@@ -467,10 +491,6 @@ path.combo {
 .layer-Media .keypos-3 text { font-weight: bold; }
 .layer-Media .keypos-4 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Media .keypos-4 text { font-weight: bold; }
-.layer-Media .keypos-8 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
-.layer-Media .keypos-8 text { font-weight: bold; }
-.layer-Media .keypos-9 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
-.layer-Media .keypos-9 text { font-weight: bold; }
 .layer-Media .keypos-12 rect.key { fill: #ff8000; fill-opacity: 0.25; stroke: #ff8000; stroke-width: 2; }
 .layer-Media .keypos-12 text { font-weight: bold; }
 .layer-Media .keypos-13 rect.key { fill: #ff8000; fill-opacity: 0.25; stroke: #ff8000; stroke-width: 2; }
@@ -491,8 +511,6 @@ path.combo {
 .layer-Media .keypos-26 text { font-weight: bold; }
 .layer-Media .keypos-27 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
 .layer-Media .keypos-27 text { font-weight: bold; }
-.layer-Media .keypos-28 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
-.layer-Media .keypos-28 text { font-weight: bold; }
 .layer-Media .keypos-36 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
 .layer-Media .keypos-36 text { font-weight: bold; }
 .layer-Media .keypos-37 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
@@ -501,13 +519,13 @@ path.combo {
 .layer-Media .keypos-38 text { font-weight: bold; }
 .layer-Media .keypos-39 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
 .layer-Media .keypos-39 text { font-weight: bold; }
-.layer-Media .keypos-40 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
+.layer-Media .keypos-40 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Media .keypos-40 text { font-weight: bold; }
-.layer-Media .keypos-41 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
+.layer-Media .keypos-41 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Media .keypos-41 text { font-weight: bold; }
-.layer-Media .keypos-42 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
+.layer-Media .keypos-42 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Media .keypos-42 text { font-weight: bold; }
-.layer-Media .keypos-43 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
+.layer-Media .keypos-43 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Media .keypos-43 text { font-weight: bold; }
 .layer-Media .keypos-48 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
 .layer-Media .keypos-48 text { font-weight: bold; }
@@ -535,48 +553,48 @@ path.combo {
 .layer-Media .keypos-74 text { font-weight: bold; }
 .layer-Magic .keypos-0 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
 .layer-Magic .keypos-0 text { font-weight: bold; }
-.layer-Magic .keypos-9 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
+.layer-Magic .keypos-1 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
+.layer-Magic .keypos-1 text { font-weight: bold; }
+.layer-Magic .keypos-2 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
+.layer-Magic .keypos-2 text { font-weight: bold; }
+.layer-Magic .keypos-3 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
+.layer-Magic .keypos-3 text { font-weight: bold; }
+.layer-Magic .keypos-4 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
+.layer-Magic .keypos-4 text { font-weight: bold; }
+.layer-Magic .keypos-5 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
+.layer-Magic .keypos-5 text { font-weight: bold; }
+.layer-Magic .keypos-6 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
+.layer-Magic .keypos-6 text { font-weight: bold; }
+.layer-Magic .keypos-7 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
+.layer-Magic .keypos-7 text { font-weight: bold; }
+.layer-Magic .keypos-8 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
+.layer-Magic .keypos-8 text { font-weight: bold; }
+.layer-Magic .keypos-9 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
 .layer-Magic .keypos-9 text { font-weight: bold; }
-.layer-Magic .keypos-23 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
-.layer-Magic .keypos-23 text { font-weight: bold; }
-.layer-Magic .keypos-24 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
-.layer-Magic .keypos-24 text { font-weight: bold; }
-.layer-Magic .keypos-25 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
-.layer-Magic .keypos-25 text { font-weight: bold; }
-.layer-Magic .keypos-26 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
-.layer-Magic .keypos-26 text { font-weight: bold; }
-.layer-Magic .keypos-27 rect.key { fill: #ffd900; fill-opacity: 0.25; stroke: #ffd900; stroke-width: 2; }
-.layer-Magic .keypos-27 text { font-weight: bold; }
-.layer-Magic .keypos-34 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
-.layer-Magic .keypos-34 text { font-weight: bold; }
-.layer-Magic .keypos-35 rect.key { fill: #ff7c4d; fill-opacity: 0.25; stroke: #ff7c4d; stroke-width: 2; }
+.layer-Magic .keypos-35 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
 .layer-Magic .keypos-35 text { font-weight: bold; }
-.layer-Magic .keypos-36 rect.key { fill: #ff7c4d; fill-opacity: 0.25; stroke: #ff7c4d; stroke-width: 2; }
+.layer-Magic .keypos-36 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
 .layer-Magic .keypos-36 text { font-weight: bold; }
-.layer-Magic .keypos-37 rect.key { fill: #ff7c4d; fill-opacity: 0.25; stroke: #ff7c4d; stroke-width: 2; }
+.layer-Magic .keypos-37 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
 .layer-Magic .keypos-37 text { font-weight: bold; }
-.layer-Magic .keypos-38 rect.key { fill: #ff7c4d; fill-opacity: 0.25; stroke: #ff7c4d; stroke-width: 2; }
+.layer-Magic .keypos-38 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
 .layer-Magic .keypos-38 text { font-weight: bold; }
-.layer-Magic .keypos-39 rect.key { fill: #7a00ff; fill-opacity: 0.25; stroke: #7a00ff; stroke-width: 2; }
-.layer-Magic .keypos-39 text { font-weight: bold; }
-.layer-Magic .keypos-45 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
-.layer-Magic .keypos-45 text { font-weight: bold; }
-.layer-Magic .keypos-46 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
-.layer-Magic .keypos-46 text { font-weight: bold; }
-.layer-Magic .keypos-52 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
-.layer-Magic .keypos-52 text { font-weight: bold; }
-.layer-Magic .keypos-53 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
-.layer-Magic .keypos-53 text { font-weight: bold; }
-.layer-Magic .keypos-57 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
-.layer-Magic .keypos-57 text { font-weight: bold; }
-.layer-Magic .keypos-63 rect.key { fill: #ff0000; fill-opacity: 0.25; stroke: #ff0000; stroke-width: 2; }
-.layer-Magic .keypos-63 text { font-weight: bold; }
-.layer-Magic .keypos-69 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
+.layer-Magic .keypos-41 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
+.layer-Magic .keypos-41 text { font-weight: bold; }
+.layer-Magic .keypos-42 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
+.layer-Magic .keypos-42 text { font-weight: bold; }
+.layer-Magic .keypos-43 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
+.layer-Magic .keypos-43 text { font-weight: bold; }
+.layer-Magic .keypos-44 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
+.layer-Magic .keypos-44 text { font-weight: bold; }
+.layer-Magic .keypos-69 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
 .layer-Magic .keypos-69 text { font-weight: bold; }
-.layer-Magic .keypos-70 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
+.layer-Magic .keypos-70 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
 .layer-Magic .keypos-70 text { font-weight: bold; }
-.layer-Magic .keypos-71 rect.key { fill: #ff8000; fill-opacity: 0.25; stroke: #ff8000; stroke-width: 2; }
-.layer-Magic .keypos-71 text { font-weight: bold; }
+.layer-Magic .keypos-73 rect.key { fill: #ff00ff; fill-opacity: 0.25; stroke: #ff00ff; stroke-width: 2; }
+.layer-Magic .keypos-73 text { font-weight: bold; }
+.layer-Magic .keypos-74 rect.key { fill: #ff00ff; fill-opacity: 0.25; stroke: #ff00ff; stroke-width: 2; }
+.layer-Magic .keypos-74 text { font-weight: bold; }
 </style>
 <g transform="translate(30, 0)" class="layer-Base">
 <text x="0" y="28" class="label" id="Base">Base:</text>
@@ -930,18 +948,6 @@ path.combo {
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
 <text x="0" y="0" class="key tap">PgDn</text>
 </g>
-<g class="combo combopos-0">
-<rect rx="6" ry="6" x="770" y="183" width="28" height="26" class="combo"/>
-<text x="784" y="196" class="combo tap">Esc</text>
-</g>
-<g class="combo combopos-1">
-<rect rx="6" ry="6" x="210" y="183" width="28" height="26" class="combo"/>
-<text x="224" y="196" class="combo tap">Tab</text>
-</g>
-<g class="combo combopos-2">
-<rect rx="6" ry="6" x="770" y="127" width="28" height="26" class="combo"/>
-<text x="784" y="140" class="combo tap">Bksp</text>
-</g>
 </g>
 </g>
 <g transform="translate(30, 521)" class="layer-Navigation">
@@ -1230,18 +1236,6 @@ path.combo {
 <tspan x="0" dy="-0.6em" style="font-size: 78%">&amp;msc</tspan><tspan x="0" dy="1.2em" style="font-size: 78%">SCRL_DOWN</tspan>
 </text>
 </g>
-<g class="combo combopos-0">
-<rect rx="6" ry="6" x="770" y="183" width="28" height="26" class="combo"/>
-<text x="784" y="196" class="combo tap">Esc</text>
-</g>
-<g class="combo combopos-1">
-<rect rx="6" ry="6" x="210" y="183" width="28" height="26" class="combo"/>
-<text x="224" y="196" class="combo tap">Tab</text>
-</g>
-<g class="combo combopos-2">
-<rect rx="6" ry="6" x="770" y="127" width="28" height="26" class="combo"/>
-<text x="784" y="140" class="combo tap">Bksp</text>
-</g>
 </g>
 </g>
 <g transform="translate(30, 1042)" class="layer-Chars">
@@ -1349,11 +1343,9 @@ path.combo {
 </g>
 <g transform="translate(756, 140)" class="key keypos-29">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">:</text>
 </g>
 <g transform="translate(812, 140)" class="key keypos-30">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">@</text>
 </g>
 <g transform="translate(868, 140)" class="key keypos-31">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -1444,12 +1436,15 @@ path.combo {
 </g>
 <g transform="translate(371, 312) rotate(30.0)" class="key keypos-52">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">:</text>
 </g>
 <g transform="translate(420, 350) rotate(45.0)" class="key keypos-53">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">.</text>
 </g>
 <g transform="translate(458, 399) rotate(60.0)" class="key keypos-54">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">@</text>
 </g>
 <g transform="translate(550, 399) rotate(-60.0)" class="key keypos-55">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -1538,18 +1533,6 @@ path.combo {
 </g>
 <g transform="translate(980, 336)" class="key keypos-79">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-</g>
-<g class="combo combopos-0">
-<rect rx="6" ry="6" x="770" y="183" width="28" height="26" class="combo"/>
-<text x="784" y="196" class="combo tap">Esc</text>
-</g>
-<g class="combo combopos-1">
-<rect rx="6" ry="6" x="210" y="183" width="28" height="26" class="combo"/>
-<text x="224" y="196" class="combo tap">Tab</text>
-</g>
-<g class="combo combopos-2">
-<rect rx="6" ry="6" x="770" y="127" width="28" height="26" class="combo"/>
-<text x="784" y="140" class="combo tap">Bksp</text>
 </g>
 </g>
 </g>
@@ -1683,19 +1666,15 @@ path.combo {
 </g>
 <g transform="translate(700, 196)" class="key keypos-40">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">←</text>
 </g>
 <g transform="translate(756, 196)" class="key keypos-41">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">↓</text>
 </g>
 <g transform="translate(812, 196)" class="key keypos-42">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">↑</text>
 </g>
 <g transform="translate(868, 196)" class="key keypos-43">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">→</text>
 </g>
 <g transform="translate(924, 224)" class="key keypos-44">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -1809,18 +1788,6 @@ path.combo {
 <g transform="translate(980, 336)" class="key keypos-79">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
 </g>
-<g class="combo combopos-0">
-<rect rx="6" ry="6" x="770" y="183" width="28" height="26" class="combo"/>
-<text x="784" y="196" class="combo tap">Esc</text>
-</g>
-<g class="combo combopos-1">
-<rect rx="6" ry="6" x="210" y="183" width="28" height="26" class="combo"/>
-<text x="224" y="196" class="combo tap">Tab</text>
-</g>
-<g class="combo combopos-2">
-<rect rx="6" ry="6" x="770" y="127" width="28" height="26" class="combo"/>
-<text x="784" y="140" class="combo tap">Bksp</text>
-</g>
 </g>
 </g>
 <g transform="translate(30, 2085)" class="layer-Media">
@@ -1857,11 +1824,9 @@ path.combo {
 </g>
 <g transform="translate(924, 56)" class="key keypos-8">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">F11</text>
 </g>
 <g transform="translate(980, 56)" class="key keypos-9">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">F12</text>
 </g>
 <g transform="translate(28, 112)" class="key keypos-10">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -1929,7 +1894,6 @@ path.combo {
 </g>
 <g transform="translate(700, 140)" class="key keypos-28">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">=</text>
 </g>
 <g transform="translate(756, 140)" class="key keypos-29">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -2105,18 +2069,6 @@ path.combo {
 </g>
 <g transform="translate(980, 336)" class="key keypos-79">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-</g>
-<g class="combo combopos-0">
-<rect rx="6" ry="6" x="770" y="183" width="28" height="26" class="combo"/>
-<text x="784" y="196" class="combo tap">Esc</text>
-</g>
-<g class="combo combopos-1">
-<rect rx="6" ry="6" x="210" y="183" width="28" height="26" class="combo"/>
-<text x="224" y="196" class="combo tap">Tab</text>
-</g>
-<g class="combo combopos-2">
-<rect rx="6" ry="6" x="770" y="127" width="28" height="26" class="combo"/>
-<text x="784" y="140" class="combo tap">Bksp</text>
 </g>
 </g>
 </g>
@@ -2410,18 +2362,6 @@ path.combo {
 </g>
 <g transform="translate(980, 336)" class="key keypos-79">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-</g>
-<g class="combo combopos-0">
-<rect rx="6" ry="6" x="770" y="183" width="28" height="26" class="combo"/>
-<text x="784" y="196" class="combo tap">Esc</text>
-</g>
-<g class="combo combopos-1">
-<rect rx="6" ry="6" x="210" y="183" width="28" height="26" class="combo"/>
-<text x="224" y="196" class="combo tap">Tab</text>
-</g>
-<g class="combo combopos-2">
-<rect rx="6" ry="6" x="770" y="127" width="28" height="26" class="combo"/>
-<text x="784" y="140" class="combo tap">Bksp</text>
 </g>
 </g>
 </g>

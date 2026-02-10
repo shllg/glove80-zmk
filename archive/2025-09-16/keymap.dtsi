@@ -64,20 +64,35 @@
 #define MAIN_RGB 0x00FF96
 #define MAIN_HRM_RGB 0x00FFFF
 #define MAIN_O_RGB 0x00FF78
+#define RED_RGB 0xFF0000
 #define COR_RGB 0xFF7C4D
 #define ORN_RGB 0xFF8000
 #define GDN_RGB 0xD9A521
 #define GOL_RGB 0xFFD900
+#define YLW_RGB 0xFFFF00
 #define CHU_RGB 0x80FF00
+#define GRN_RGB 0x00FF00
 #define SPG_RGB 0x00FF80
+#define CYN_RGB 0x00FFFF
 #define AZU_RGB 0x99F5FF
+#define TEA_RGB 0x008080
+#define TUR_RGB 0x476E6A
+#define BLU_RGB 0x0000FF
 #define PUR_RGB 0x7A00FF
+#define MAJ_RGB 0xFF00FF
+#define PNK_RGB 0xFF80BF
+#define WHT_RGB 0xFFFFFF
+#define BLK_RGB 0x000000
+#define MCYN 0x00FFF0
+#define HCYN 0x32FFF0
 #define RED 0xFF0000
 #define GRN 0x00FF00
 #define BLU 0x0000FF
 #define YEL 0xFFFF00
 #define CYN 0x00FFFF
 #define MAG 0xFF00FF
+#define WHT 0xFFFFFF
+#define BLK 0x000000
 #define ___ 0x000000
 
 /* #define for key positions */
@@ -208,6 +223,8 @@
   flavor = "balanced";      // Or "tap-preferred" or "hold-preferred"
 };
 
+
+/* PLACEHOLDER_LAYER_DEFINES */
 
 / {
     behaviors {
@@ -728,33 +745,9 @@
 #endif
   };
 
-    combos {
-        compatible = "zmk,combos";
+    
 
-        /* 1.1.2: J+K → Escape */
-        combo_esc {
-            timeout-ms = <40>;
-            key-positions = <41 42>;
-            bindings = <&kp ESC>;
-            require-prior-idle-ms = <100>;
-        };
-
-        /* 1.1.4: D+F → Tab */
-        combo_tab {
-            timeout-ms = <40>;
-            key-positions = <37 38>;
-            bindings = <&kp TAB>;
-            require-prior-idle-ms = <100>;
-        };
-
-        /* 1.1.1: U+I → Backspace */
-        combo_bspc {
-            timeout-ms = <40>;
-            key-positions = <29 30>;
-            bindings = <&kp BSPC>;
-            require-prior-idle-ms = <100>;
-        };
-    };
+    /* PLACEHOLDER_LED_CONFIG */
 
         underglow-layer {
         compatible = "zmk,underglow-layer";
@@ -776,7 +769,7 @@
                 &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB
                 &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug ___
                 &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug COR_RGB &ug COR_RGB
-                &ug ___ &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug ___ &ug AZU_RGB &ug AZU_RGB &ug AZU_RGB &ug AZU_RGB &ug COR_RGB &ug COR_RGB
+                &ug ___ &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug ___ &ug YEL &ug YEL &ug YEL &ug YEL &ug COR_RGB &ug COR_RGB
                 &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug GDN_RGB &ug GDN_RGB &ug GDN_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug CHU_RGB
                 &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug MAG &ug ___ &ug ___ &ug ___ &ug ___ &ug MAIN_RGB &ug GDN_RGB &ug GDN_RGB &ug CHU_RGB &ug CHU_RGB &ug CHU_RGB
             >;
@@ -787,9 +780,9 @@
             bindings = <
                 &ug ___ &ug ___ &ug ___ &ug ___ &ug SPG_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
                 &ug MAIN_RGB &ug MAIN_RGB &ug BLU &ug BLU &ug SPG_RGB &ug SPG_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
-                &ug YEL &ug BLU &ug ORN_RGB &ug ORN_RGB &ug BLU &ug YEL &ug ___ &ug YEL &ug YEL &ug ___ &ug ___ &ug ___
-                &ug YEL &ug YEL &ug MAIN_RGB &ug MAIN_RGB &ug YEL &ug YEL &ug AZU_RGB &ug AZU_RGB &ug AZU_RGB &ug AZU_RGB &ug ___ &ug ___
-                &ug MAIN_RGB &ug BLU &ug MAIN_RGB &ug MAIN_RGB &ug BLU &ug YEL &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug MAIN_RGB &ug ___ &ug ___ &ug ___ &ug ___
+                &ug YLW_RGB &ug BLU &ug ORN_RGB &ug ORN_RGB &ug BLU &ug YLW_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug YLW_RGB &ug YLW_RGB &ug MAIN_RGB &ug MAIN_RGB &ug YLW_RGB &ug YLW_RGB &ug YEL &ug YEL &ug YEL &ug YEL &ug ___ &ug ___
+                &ug MAIN_RGB &ug BLU &ug MAIN_RGB &ug MAIN_RGB &ug BLU &ug YLW_RGB &ug YLW_RGB &ug YLW_RGB &ug YLW_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug MAIN_RGB &ug ___ &ug ___ &ug ___ &ug ___
                 &ug ___ &ug MAIN_RGB &ug BLU &ug BLU &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug ___ &ug ___ &ug MAG &ug ___ &ug MAIN_RGB &ug MAIN_RGB &ug ___ &ug ___
             >;
             layer-id = <2>;
@@ -797,22 +790,22 @@
 
         layer_Special {
             bindings = <
-                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug RED &ug RED &ug RED &ug RED &ug RED &ug BLU &ug BLU &ug BLU &ug BLU &ug BLU
                 &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
-                &ug ___ &ug ___ &ug ___ &ug GRN &ug ___ &ug ___ &ug ___ &ug GRN &ug ___ &ug GRN &ug ___ &ug ___
-                &ug ___ &ug GRN &ug GRN &ug ___ &ug ___ &ug ___ &ug AZU_RGB &ug AZU_RGB &ug AZU_RGB &ug AZU_RGB &ug ___ &ug ___
-                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug MAIN_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
-                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug CYN &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug GRN &ug GRN &ug GRN &ug GRN &ug ___ &ug ___ &ug YEL &ug YEL &ug YEL &ug YEL &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug CYN &ug CYN &ug ___ &ug ___ &ug MAG &ug MAG &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
             >;
             layer-id = <3>;
         };
 
         layer_Media {
             bindings = <
-                &ug RED &ug RED &ug YEL &ug YEL &ug YEL &ug ___ &ug ___ &ug ___ &ug MAIN_RGB &ug MAIN_RGB
+                &ug RED &ug RED &ug YEL &ug YEL &ug YEL &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
                 &ug ___ &ug ___ &ug ORN_RGB &ug ORN_RGB &ug ORN_RGB &ug BLU &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
-                &ug BLU &ug BLU &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug BLU &ug BLU &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
-                &ug ___ &ug ___ &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug BLU &ug AZU_RGB &ug AZU_RGB &ug AZU_RGB &ug AZU_RGB &ug ___ &ug ___
+                &ug BLU &ug BLU &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug BLU &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug ___ &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug BLU &ug YEL &ug YEL &ug YEL &ug YEL &ug ___ &ug ___
                 &ug ___ &ug ___ &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug BLU &ug ___ &ug BLU &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
                 &ug ___ &ug ___ &ug ___ &ug MAIN_RGB &ug BLU &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug ___ &ug MAG &ug BLU &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
             >;
@@ -821,12 +814,12 @@
 
         layer_Magic {
             bindings = <
-                &ug RED &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug RED
+                &ug RED &ug RED &ug RED &ug RED &ug RED &ug BLU &ug BLU &ug BLU &ug BLU &ug BLU
                 &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
-                &ug ___ &ug GRN &ug GRN &ug GRN &ug GRN &ug GOL_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
-                &ug RED &ug COR_RGB &ug COR_RGB &ug COR_RGB &ug COR_RGB &ug PUR_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug RED
-                &ug RED &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug BLU &ug BLU &ug ___ &ug ___ &ug ___ &ug RED &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug RED
-                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug BLU &ug BLU &ug ORN_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug GRN &ug GRN &ug GRN &ug GRN &ug ___ &ug ___ &ug YEL &ug YEL &ug YEL &ug YEL &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
+                &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug CYN &ug CYN &ug ___ &ug ___ &ug MAG &ug MAG &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
             >;
             layer-id = <5>;
         };
@@ -861,9 +854,9 @@
             bindings = <
                 &none &none &none &none &kp BSLH &none &none &none &none &none
                 &kp GRAVE &kp EXCL &kp LPAR &kp RPAR &kp SEMI &kp COMMA &none &none &none &none &none &none
-                &kp PRCNT &kp LBRC &kp SQT &kp DQT &kp RBRC &kp QMARK &none &kp COLON &kp AT &none &none &none
+                &kp PRCNT &kp LBRC &kp SQT &kp DQT &kp RBRC &kp QMARK &none &none &none &none &none &none
                 &kp HASH &hml LGUI CARET &hml LALT EQUAL &hml_middle LSHFT MINUS &hml LCTRL DLLR &kp ASTRK &kp LEFT &kp DOWN &kp UP &kp RIGHT &none &none
-                &kp TILDE &kp LT &kp PIPE &kp UNDER &kp GT &kp FSLH &none &none &none &none &none &none &none &kp RCTRL &none &none &none &none
+                &kp TILDE &kp LT &kp PIPE &kp UNDER &kp GT &kp FSLH &kp COLON &kp DOT &kp AT &none &none &none &none &kp RCTRL &none &none &none &none
                 &none &kp AMPS &kp LBKT &kp RBKT &kp PLUS &kp SPACE &kp BSPC &kp DEL &none &none &mo 2 &none &kp RET &kp TAB &none &none
             >;
         };
@@ -873,7 +866,7 @@
                 &none &none &none &none &none &none &none &none &none &none
                 &none &none &none &none &none &none &none &none &none &none &none &none
                 &none &none &none &euro_sign &none &none &none &umlaut_u &none &umlaut_o &none &none
-                &none &umlaut_a &eszett &none &none &none &kp LEFT &kp DOWN &kp UP &kp RIGHT &none &none
+                &none &umlaut_a &eszett &none &none &none &none &none &none &none &none &none
                 &none &none &none &none &none &none &none &none &none &none &none &kp RSHFT &none &none &none &none &none &none
                 &none &none &none &none &none &none &mo 3 &none &none &none &none &none &none &none &none &none
             >;
@@ -881,9 +874,9 @@
 
         layer_Media {
             bindings = <
-                &kp C_BRI_DN &kp C_BRI_UP &kp C_PREV &kp C_PP &kp C_NEXT &none &none &none &kp F11 &kp F12
+                &kp C_BRI_DN &kp C_BRI_UP &kp C_PREV &kp C_PP &kp C_NEXT &none &none &none &none &none
                 &none &none &kp C_VOL_DN &kp C_MUTE &kp C_VOL_UP &kp COMMA &none &none &none &none &none &none
-                &kp LPAR &kp RPAR &kp N7 &kp N8 &kp N9 &kp MINUS &kp EQUAL &none &none &none &none &none
+                &kp LPAR &kp RPAR &kp N7 &kp N8 &kp N9 &kp MINUS &none &none &none &none &none &none
                 &none &none &kp N4 &kp N5 &kp N6 &kp ASTRK &kp LEFT &kp DOWN &kp UP &kp RIGHT &none &none
                 &none &none &kp N1 &kp N2 &kp N3 &kp FSLH &none &kp DOT &none &none &none &none &none &none &none &none &none &none
                 &none &none &none &kp N0 &kp PLUS &kp SPACE &kp BSPC &kp DEL &none &mo 4 &kp RET &none &none &none &none &none

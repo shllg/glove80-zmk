@@ -13,16 +13,16 @@ const RgbConfig = z.object({
 
 // Structured key layout for a layer
 const StructuredKeys = z.object({
-  left: z.array(z.array(z.string())), // 6 rows with varying lengths
-  right: z.array(z.array(z.string())), // 6 rows with varying lengths
+  left: z.array(z.array(z.string())).length(6), // 6 rows with varying lengths
+  right: z.array(z.array(z.string())).length(6), // 6 rows with varying lengths
   thumb_left: z.array(z.array(z.string()).length(3)).length(2), // 2 rows of 3 keys
   thumb_right: z.array(z.array(z.string()).length(3)).length(2) // 2 rows of 3 keys
 });
 
 // Structured LED layout for a layer (same structure as keys)
 const StructuredLED = z.object({
-  left: z.array(z.array(z.string())), // 6 rows with color names
-  right: z.array(z.array(z.string())), // 6 rows with color names
+  left: z.array(z.array(z.string())).length(6), // 6 rows with color names
+  right: z.array(z.array(z.string())).length(6), // 6 rows with color names
   thumb_left: z.array(z.array(z.string()).length(3)).length(2), // 2 rows of 3 colors
   thumb_right: z.array(z.array(z.string()).length(3)).length(2) // 2 rows of 3 colors
 }).optional();

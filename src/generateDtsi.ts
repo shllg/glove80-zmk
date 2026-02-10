@@ -1,4 +1,5 @@
 import type { Layout } from "./schema";
+import { toPhysicalRows } from "./layout";
 import fs from "fs";
 import path from "path";
 
@@ -81,30 +82,10 @@ export function generateKeymapDtsi(layout: Layout): string {
       underglowLayers += `            bindings = <\n`;
       
       // Build the LED array in the same physical order as keys
-    const ledRows = [
-      layer.led.left[0].concat(layer.led.right[0]),
-      layer.led.left[1].concat(layer.led.right[1]),
-      layer.led.left[2].concat(layer.led.right[2]),
-      layer.led.left[3].concat(layer.led.right[3]),
-      layer.led.left[4].concat(layer.led.thumb_left[0]).concat(layer.led.thumb_right[0]).concat(layer.led.right[4]),
-      layer.led.left[5].concat(layer.led.thumb_left[1]).concat(layer.led.thumb_right[1]).concat(layer.led.right[5])
-    ];
-    
-    // Flatten and ensure we have exactly 80 LEDs
-    const leds = ledRows.flat();
-    while (leds.length < 80) {
-      leds.push("___"); // Use blanc (white) as default
-    }
-    
+    const ledRows = toPhysicalRows(layer.led);
+
     // Format the LED array matching the keyboard physical layout
-    for (const row of [
-      ledRows[0],
-      ledRows[1], 
-      ledRows[2],
-      ledRows[3],
-      ledRows[4],
-      ledRows[5]
-    ]) {
+    for (const row of ledRows) {
       // Format colors as &ug COLOR references - use the exact names from layout
       const formattedRow = row.map(color => {
         return `&ug ${color}`;
@@ -131,15 +112,7 @@ export function generateKeymapDtsi(layout: Layout): string {
     keymap += "            bindings = <\n";
 
     // Format keys to match physical keyboard rows
-    // Each line represents a complete physical row across the keyboard
-    const rows = [
-      layer.keys.left[0].concat(layer.keys.right[0]),
-      layer.keys.left[1].concat(layer.keys.right[1]),
-      layer.keys.left[2].concat(layer.keys.right[2]),
-      layer.keys.left[3].concat(layer.keys.right[3]),
-      layer.keys.left[4].concat(layer.keys.thumb_left[0]).concat(layer.keys.thumb_right[0]).concat(layer.keys.right[4]),
-      layer.keys.left[5].concat(layer.keys.thumb_left[1]).concat(layer.keys.thumb_right[1]).concat(layer.keys.right[5])
-    ];
+    const rows = toPhysicalRows(layer.keys);
 
     for (const row of rows) {
       keymap += "                " + row.join(" ") + "\n";
@@ -151,14 +124,14 @@ export function generateKeymapDtsi(layout: Layout): string {
 
   keymap = keymap.trimEnd() + "\n    };";
 
-  // Replace all placeholders
-  dtsi = dtsi.replace("/* PLACEHOLDER_LAYER_DEFINES */", layerDefines.trimEnd());
-  dtsi = dtsi.replace("/* PLACEHOLDER_COLOR_DEFINES */", colorDefines.trimEnd());
-  dtsi = dtsi.replace("/* PLACEHOLDER_BEHAVIORS */", behaviors);
-  dtsi = dtsi.replace("/* PLACEHOLDER_MACROS */", macros);
-  dtsi = dtsi.replace("/* PLACEHOLDER_COMBOS */", combos);
-  dtsi = dtsi.replace("/* PLACEHOLDER_UNDERGLOW */", underglowLayers.trimEnd());
-  dtsi = dtsi.replace("/* PLACEHOLDER_KEYMAP */", keymap);
+  // Replace all placeholders (using replaceAll to catch any accidental duplicates)
+  dtsi = dtsi.replaceAll("/* PLACEHOLDER_LAYER_DEFINES */", layerDefines.trimEnd());
+  dtsi = dtsi.replaceAll("/* PLACEHOLDER_COLOR_DEFINES */", colorDefines.trimEnd());
+  dtsi = dtsi.replaceAll("/* PLACEHOLDER_BEHAVIORS */", behaviors);
+  dtsi = dtsi.replaceAll("/* PLACEHOLDER_MACROS */", macros);
+  dtsi = dtsi.replaceAll("/* PLACEHOLDER_COMBOS */", combos);
+  dtsi = dtsi.replaceAll("/* PLACEHOLDER_UNDERGLOW */", underglowLayers.trimEnd());
+  dtsi = dtsi.replaceAll("/* PLACEHOLDER_KEYMAP */", keymap);
 
   return dtsi;
 }

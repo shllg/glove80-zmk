@@ -1,14 +1,16 @@
 
 import type { Layout } from "./schema";
+import type { Combo } from "./combos";
+import { flattenToPositions } from "./layout";
 
-export function toDrawerYaml(layout: Layout) {
+export function toDrawerYaml(layout: Layout, combos: Combo[] = []) {
   // Map ZMK key codes to actual characters
   const keyCharMap: Record<string, string> = {
     // Numbers and their shifts
     "N1": "1", "LS(N1)": "!",
     "N2": "2", "LS(N2)": "@",
     "N3": "3", "LS(N3)": "#",
-    "N4": "4", "LS(N4)": "$", "LS(N4)": "$",
+    "N4": "4", "LS(N4)": "$",
     "N5": "5", "LS(N5)": "%",
     "N6": "6", "LS(N6)": "^",
     "N7": "7", "LS(N7)": "&",
@@ -217,49 +219,10 @@ export function toDrawerYaml(layout: Layout) {
   };
 
   // Convert layers to keymap-drawer format (dictionary with layer names as keys)
-  const layersObj: any = {};
+  const layersObj: Record<string, string[]> = {};
 
   for (const layer of layout.layers) {
-    let flatKeys: string[];
-
-    if (Array.isArray(layer.keys)) {
-      // Flat array format
-      flatKeys = layer.keys as string[];
-    } else {
-      // Structured format - convert to ZMK's 80-key order
-      const structured = layer.keys as any;
-      flatKeys = [];
-
-      // Same mapping as in generateDtsi.ts
-      // Row 0: F-keys (positions 0-9)
-      flatKeys.push(...structured.left[0]); // 0-4
-      flatKeys.push(...structured.right[0]); // 5-9
-
-      // Row 1: Numbers (positions 10-21)
-      flatKeys.push(...structured.left[1]); // 10-15
-      flatKeys.push(...structured.right[1]); // 16-21
-
-      // Row 2: QWERTY top (positions 22-33)
-      flatKeys.push(...structured.left[2]); // 22-27
-      flatKeys.push(...structured.right[2]); // 28-33
-
-      // Row 3: Home row (positions 34-45)
-      flatKeys.push(...structured.left[3]); // 34-39
-      flatKeys.push(...structured.right[3]); // 40-45
-
-      // Row 4: ZXCVB + upper thumb + NM... (positions 46-63)
-      flatKeys.push(...structured.left[4]); // 46-51
-      flatKeys.push(...structured.thumb_left[0]); // 52-54
-      flatKeys.push(...structured.thumb_right[0]); // 55-57
-      flatKeys.push(...structured.right[4]); // 58-63
-
-      // Row 5: left bottom + lower thumb + right bottom (positions 64-79)
-      flatKeys.push(...structured.left[5]); // 64-68 (only 5 keys)
-      flatKeys.push(...structured.thumb_left[1]); // 69-71
-      flatKeys.push(...structured.thumb_right[1]); // 72-74
-      flatKeys.push(...structured.right[5]); // 75-79 (only 5 keys)
-    }
-
+    const flatKeys = flattenToPositions(layer.keys);
     const paddedKeys = padTo80Keys(flatKeys);
     // Apply character mapping to each key
     layersObj[layer.name] = paddedKeys.map(k => {
@@ -295,21 +258,19 @@ export function toDrawerYaml(layout: Layout) {
       if (!layer.led) continue;
 
       // Flatten the LED configuration to match key order
-      let ledFlat: string[] = [];
-      if (!Array.isArray(layer.led)) {
-        const led = layer.led as any;
-        // Same order as keys
-        ledFlat.push(...led.left[0], ...led.right[0]); // F-keys
-        ledFlat.push(...led.left[1], ...led.right[1]); // Numbers
-        ledFlat.push(...led.left[2], ...led.right[2]); // QWERTY top
-        ledFlat.push(...led.left[3], ...led.right[3]); // Home row
-        ledFlat.push(...led.left[4]); // Left bottom row
-        ledFlat.push(...led.thumb_left[0], ...led.thumb_right[0]); // Upper thumb
-        ledFlat.push(...led.right[4]); // Right bottom row
-        ledFlat.push(...led.left[5]); // Left bottom corner
-        ledFlat.push(...led.thumb_left[1], ...led.thumb_right[1]); // Lower thumb
-        ledFlat.push(...led.right[5]); // Right bottom corner
-      }
+      const led = layer.led;
+      const ledFlat: string[] = [
+        ...led.left[0], ...led.right[0],             // F-keys
+        ...led.left[1], ...led.right[1],             // Numbers
+        ...led.left[2], ...led.right[2],             // QWERTY top
+        ...led.left[3], ...led.right[3],             // Home row
+        ...led.left[4],                              // Left bottom row
+        ...led.thumb_left[0], ...led.thumb_right[0], // Upper thumb
+        ...led.right[4],                             // Right bottom row
+        ...led.left[5],                              // Left bottom corner
+        ...led.thumb_left[1], ...led.thumb_right[1], // Lower thumb
+        ...led.right[5],                             // Right bottom corner
+      ];
 
       // Create CSS rules for each key position with an LED color
       for (let i = 0; i < ledFlat.length && i < 80; i++) {
@@ -331,6 +292,24 @@ export function toDrawerYaml(layout: Layout) {
     yaml += `\n`;
   }
 
+  // Add combos section for keymap-drawer
+  if (combos.length > 0) {
+    yaml += `combos:\n`;
+    for (const combo of combos) {
+      const label = mapKeyToChar(combo.binding);
+      yaml += `  - p: [${combo.keyPositions.join(", ")}]\n`;
+      yaml += `    k: ${yamlQuote(label)}\n`;
+      if (combo.layers) {
+        const layerNames = combo.layers
+          .map(i => layout.layers[i]?.name)
+          .filter(Boolean);
+        if (layerNames.length > 0) {
+          yaml += `    l: [${layerNames.map(n => `"${n}"`).join(", ")}]\n`;
+        }
+      }
+    }
+  }
+
   yaml += `layers:\n`;
 
   for (const [name, keys] of Object.entries(layersObj)) {
@@ -348,19 +327,17 @@ export function toDrawerYaml(layout: Layout) {
       yaml += `# Layer: ${layer.name}\n`;
 
       // Convert structured LED format to readable grid
-      if (!Array.isArray(layer.led)) {
-        const led = layer.led as any;
-        yaml += `#   Left side:\n`;
-        for (let row = 0; row < led.left.length; row++) {
-          yaml += `#     Row ${row}: ${led.left[row].join(' ')}\n`;
-        }
-        yaml += `#   Right side:\n`;
-        for (let row = 0; row < led.right.length; row++) {
-          yaml += `#     Row ${row}: ${led.right[row].join(' ')}\n`;
-        }
-        yaml += `#   Thumb left: ${led.thumb_left[0].join(' ')} | ${led.thumb_left[1].join(' ')}\n`;
-        yaml += `#   Thumb right: ${led.thumb_right[0].join(' ')} | ${led.thumb_right[1].join(' ')}\n`;
+      const led = layer.led;
+      yaml += `#   Left side:\n`;
+      for (let row = 0; row < led.left.length; row++) {
+        yaml += `#     Row ${row}: ${led.left[row].join(' ')}\n`;
       }
+      yaml += `#   Right side:\n`;
+      for (let row = 0; row < led.right.length; row++) {
+        yaml += `#     Row ${row}: ${led.right[row].join(' ')}\n`;
+      }
+      yaml += `#   Thumb left: ${led.thumb_left[0].join(' ')} | ${led.thumb_left[1].join(' ')}\n`;
+      yaml += `#   Thumb right: ${led.thumb_right[0].join(' ')} | ${led.thumb_right[1].join(' ')}\n`;
       yaml += `#\n`;
     }
   }
