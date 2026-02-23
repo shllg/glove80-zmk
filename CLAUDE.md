@@ -28,20 +28,11 @@ The system uses a template-based approach where `templates/keymap.template.dtsi`
 # Install dependencies
 pnpm install
 
-# Build the keymap (generates out/keymap.dtsi, out/keymap.yaml, out/keymap.svg, out/keymap.pdf)
+# Build everything: dtsi, yaml, svg, multi-page pdf (also copies pdf to ~/glove80-mapping.pdf)
 pnpm build
 
 # Compile firmware to UF2 files (requires Docker)
 pnpm compile
-
-# Generate SVG diagram (requires keymap-drawer)
-pnpm draw
-
-# Convert SVG to PDF (requires inkscape)
-pnpm pdf
-
-# Complete workflow
-pnpm build && pnpm compile
 ```
 
 ## Dependencies

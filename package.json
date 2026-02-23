@@ -7,8 +7,6 @@
   "scripts": {
     "build": "tsx src/index.ts",
     "compile": "./scripts/compile.sh",
-    "draw": "keymap draw out/keymap.yaml --output out/keymap.svg",
-    "pdf": "./scripts/generate-pdf.sh",
     "test": "./scripts/verify-build.sh"
   },
   "keywords": [],

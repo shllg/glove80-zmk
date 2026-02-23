@@ -76,7 +76,7 @@ export function toDrawerYaml(layout: Layout, combos: Combo[] = []) {
     // Function keys - keep as is
     "F1": "F1", "F2": "F2", "F3": "F3", "F4": "F4", "F5": "F5",
     "F6": "F6", "F7": "F7", "F8": "F8", "F9": "F9", "F10": "F10",
-    "F11": "F11", "F12": "F12",
+    "F11": "F11", "F12": "F12", "F13": "STT", "F14": "STT DE",
 
     // Modifiers - keep for visibility when alone
     "LSHFT": "Shift", "RSHFT": "Shift",
@@ -117,6 +117,11 @@ export function toDrawerYaml(layout: Layout, combos: Combo[] = []) {
     // Handle &none -> empty string
     if (binding === "&none") {
       return "";
+    }
+
+    // Handle caps_word
+    if (binding === "&caps_word") {
+      return "CapsWord";
     }
 
     // Handle home row mods (hml/hmr) - extract both modifier and key

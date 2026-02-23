@@ -23,6 +23,7 @@
     "YEL": [255, 255, 0],
     "CYN": [0, 255, 255],
     "MAG": [255, 0, 255],
+    "SAL_RGB": [255, 160, 130],  // #FFA082 SALMON (warm accent for del/bksp)
     "___": [0, 0, 0]
   },
   "layers": [
@@ -46,12 +47,12 @@
           ["&none", "&kp RALT", "&kp LBKT", "&kp RBKT", "&kp PG_DN"]
         ],
         "thumb_left": [
-          ["&kp ESC", "&macro_tmux_ctrl_b_n", "&macro_tmux_ctrl_b_o"],
-          ["&thumb_left 1 SPACE", "&thumb_left 3 BSPC", "&kp DEL"]
+          ["&kp ESC", "&magic LAYER_Magic 0", "&kp UP"],
+          ["&thumb_left 1 SPACE", "&mo 3", "&kp DOWN"]
         ],
         "thumb_right": [
-          ["&kp UP", "&magic LAYER_Magic 0", "&kp RSHFT"],
-          ["&kp DOWN", "&lt 4 TAB", "&thumb_right 2 RET"]
+          ["&kp F13", "&kp DEL", "&kp BSPC"],
+          ["&kp RSHFT", "&lt 4 TAB", "&thumb_right 2 RET"]
         ]
       },
       "led": {
@@ -76,7 +77,7 @@
           ["MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_O_RGB"]
         ],
         "thumb_right": [
-          ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"],
+          ["MAIN_O_RGB", "SAL_RGB", "SAL_RGB"],
           ["MAIN_O_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB"]
         ]
       }
@@ -93,8 +94,8 @@
           ["&none", "&none", "&none", "&none", "&none"]
         ],
         "right": [
-          ["&kp N1", "&kp N2", "&kp N3", "&kp N4", "&kp N5"],
-          ["&kp N6", "&kp N7", "&kp N8", "&kp N9", "&kp N0", "&none"],
+          ["&none", "&none", "&none", "&none", "&none"],
+          ["&none", "&none", "&none", "&none", "&none", "&none"],
           ["&none", "&none", "&none", "&none", "&kp LS(LG(EQUAL))", "&kp LG(EQUAL)"],
           ["&kp LEFT", "&kp DOWN", "&kp UP", "&kp RIGHT", "&kp LS(LG(MINUS))", "&kp LG(MINUS)"],
           ["&none", "&none", "&none", "&none", "&none", "&msc SCRL_UP"],
@@ -105,8 +106,8 @@
           ["&mo 1", "&none", "&none"]
         ],
         "thumb_right": [
-          ["&macro_super_space", "&macro_super_shift_space", "&macro_super_alt_b"],
-          ["&none", "&none", "&kp RET"]
+          ["&kp F14", "&kp DEL", "&kp BSPC"],
+          ["&kp RSHFT", "&kp TAB", "&kp RET"]
         ]
       },
       "led": {
@@ -119,8 +120,8 @@
           ["___", "___", "___", "___", "___"]
         ],
         "right": [
-          ["MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB"],
-          ["MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "___"],
+          ["___", "___", "___", "___", "___"],
+          ["___", "___", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "COR_RGB", "COR_RGB"],
           ["AZU_RGB", "AZU_RGB", "AZU_RGB", "AZU_RGB", "COR_RGB", "COR_RGB"],
           ["___", "___", "___", "___", "___", "CHU_RGB"],
@@ -131,8 +132,8 @@
           ["MAG", "___", "___"]
         ],
         "thumb_right": [
-          ["GDN_RGB", "GDN_RGB", "GDN_RGB"],
-          ["___", "___", "MAIN_RGB"]
+          ["GDN_RGB", "SAL_RGB", "SAL_RGB"],
+          ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_RGB"]
         ]
       }
     },
@@ -157,11 +158,11 @@
         ],
         "thumb_left": [
           ["&none", "&none", "&none"],
-          ["&kp SPACE", "&kp BSPC", "&kp DEL"]
+          ["&kp SPACE", "&none", "&kp ESC"]
         ],
         "thumb_right": [
-          ["&none", "&none", "&none"],
-          ["&none", "&none", "&mo 2"]
+          ["&none", "&kp DEL", "&kp BSPC"],
+          ["&kp RSHFT", "&kp TAB", "&mo 2"]
         ]
       },
       "led": {
@@ -183,11 +184,11 @@
         ],
         "thumb_left": [
           ["___", "___", "___"],
-          ["MAIN_RGB", "MAIN_RGB", "MAIN_RGB"]
+          ["MAIN_RGB", "___", "MAIN_RGB"]
         ],
         "thumb_right": [
-          ["___", "___", "___"],
-          ["___", "___", "MAG"]
+          ["___", "SAL_RGB", "SAL_RGB"],
+          ["MAIN_O_RGB", "MAIN_O_RGB", "MAG"]
         ]
       }
     },
@@ -215,8 +216,8 @@
           ["&none", "&mo 3", "&none"]
         ],
         "thumb_right": [
-          ["&none", "&none", "&kp RSHFT"],
-          ["&none", "&none", "&none"]
+          ["&none", "&kp DEL", "&kp BSPC"],
+          ["&kp RSHFT", "&kp TAB", "&none"]
         ]
       },
       "led": {
@@ -241,8 +242,8 @@
           ["___", "CYN", "___"]
         ],
         "thumb_right": [
-          ["___", "___", "MAIN_RGB"],
-          ["___", "___", "___"]
+          ["___", "SAL_RGB", "SAL_RGB"],
+          ["MAIN_O_RGB", "MAIN_O_RGB", "___"]
         ]
       }
     },
@@ -267,11 +268,11 @@
         ],
         "thumb_left": [
           ["&none", "&kp DOT", "&none"],
-          ["&kp SPACE", "&kp BSPC", "&kp DEL"]
+          ["&kp SPACE", "&none", "&kp ESC"]
         ],
         "thumb_right": [
-          ["&none", "&none", "&none"],
-          ["&none", "&mo 4", "&kp RET"]
+          ["&none", "&kp DEL", "&kp BSPC"],
+          ["&kp RSHFT", "&mo 4", "&kp RET"]
         ]
       },
       "led": {
@@ -293,11 +294,11 @@
         ],
         "thumb_left": [
           ["___", "BLU", "___"],
-          ["MAIN_RGB", "MAIN_RGB", "MAIN_RGB"]
+          ["MAIN_RGB", "___", "MAIN_RGB"]
         ],
         "thumb_right": [
-          ["___", "___", "___"],
-          ["___", "MAG", "BLU"]
+          ["___", "SAL_RGB", "SAL_RGB"],
+          ["MAIN_O_RGB", "MAG", "BLU"]
         ]
       }
     },
@@ -321,12 +322,12 @@
           ["&none", "&none", "&none", "&none", "&none"]
         ],
         "thumb_left": [
-          ["&bt_2", "&bt_3", "&none"],
-          ["&bt_0", "&bt_1", "&out OUT_USB"]
+          ["&none", "&none", "&none"],
+          ["&sys_reset", "&none", "&none"]
         ],
         "thumb_right": [
-          ["&none", "&none", "&sys_reset"],
-          ["&none", "&none", "&none"]
+          ["&bt_2", "&bt_3", "&out OUT_USB"],
+          ["&bt_0", "&bt_1", "&none"]
         ]
       },
       "led": {
@@ -347,12 +348,12 @@
           ["___", "___", "___", "___", "___"]
         ],
         "thumb_left": [
-          ["BLU", "BLU", "___"],
-          ["BLU", "BLU", "ORN_RGB"]
+          ["___", "___", "___"],
+          ["RED", "___", "___"]
         ],
         "thumb_right": [
-          ["___", "___", "RED"],
-          ["___", "___", "___"]
+          ["BLU", "BLU", "ORN_RGB"],
+          ["BLU", "BLU", "___"]
         ]
       }
     }
