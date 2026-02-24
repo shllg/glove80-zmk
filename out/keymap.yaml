@@ -549,15 +549,12 @@ Magic"
     - /
     - ","
     - .
-    - "Space
-L1"
-    - Layer 3
+    - "&thumb_left LAYER_Navigation SPACE"
+    - "&mo LAYER_Special"
     - ↓
     - Shift
-    - "Tab
-L4"
-    - "Enter
-L2"
+    - "&lt LAYER_Media TAB"
+    - "&thumb_right LAYER_Chars RET"
     - 
     - AltGr
     - "["
@@ -633,7 +630,7 @@ L2"
     - 
     - 
     - 
-    - Layer 1
+    - "&mo LAYER_Navigation"
     - 
     - 
     - Shift
@@ -723,7 +720,7 @@ Ctrl"
     - Esc
     - Shift
     - Tab
-    - Layer 2
+    - "&mo LAYER_Chars"
     - 
     - Enter
     - Tab
@@ -800,7 +797,7 @@ Ctrl"
     - 
     - 
     - 
-    - Layer 3
+    - "&mo LAYER_Special"
     - 
     - Shift
     - Tab
@@ -884,7 +881,7 @@ Ctrl"
     - 
     - Esc
     - Shift
-    - Layer 4
+    - "&mo LAYER_Media"
     - Enter
     - 
     - 
@@ -947,9 +944,9 @@ Ctrl"
     - 
     - 
     - 
-    - "&bt_2"
-    - "&bt_3"
-    - "&out OUT_USB"
+    - BT3
+    - BT4
+    - USB
     - 
     - 
     - 
@@ -964,8 +961,8 @@ Ctrl"
     - "&sys_reset"
     - 
     - 
-    - "&bt_0"
-    - "&bt_1"
+    - BT1
+    - BT2
     - 
     - 
     - 

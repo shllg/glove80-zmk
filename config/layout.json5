@@ -26,6 +26,13 @@
     "SAL_RGB": [255, 160, 130],  // #FFA082 SALMON (warm accent for del/bksp)
     "___": [0, 0, 0]
   },
+  "profileIndicators": {
+    "USB": "CYN",
+    "BT1": "GOL_RGB",
+    "BT2": "PUR_RGB",
+    "BT3": "RED",
+    "BT4": "ORN_RGB"
+  },
   "layers": [
     {
       "name": "Base",
@@ -48,11 +55,11 @@
         ],
         "thumb_left": [
           ["&kp ESC", "&magic LAYER_Magic 0", "&kp UP"],
-          ["&thumb_left 1 SPACE", "&mo 3", "&kp DOWN"]
+          ["&thumb_left LAYER_Navigation SPACE", "&mo LAYER_Special", "&kp DOWN"]
         ],
         "thumb_right": [
           ["&kp F13", "&kp DEL", "&kp BSPC"],
-          ["&kp RSHFT", "&lt 4 TAB", "&thumb_right 2 RET"]
+          ["&kp RSHFT", "&lt LAYER_Media TAB", "&thumb_right LAYER_Chars RET"]
         ]
       },
       "led": {
@@ -103,7 +110,7 @@
         ],
         "thumb_left": [
           ["&none", "&none", "&none"],
-          ["&mo 1", "&none", "&none"]
+          ["&mo LAYER_Navigation", "&none", "&none"]
         ],
         "thumb_right": [
           ["&kp F14", "&kp DEL", "&kp BSPC"],
@@ -162,7 +169,7 @@
         ],
         "thumb_right": [
           ["&none", "&kp DEL", "&kp BSPC"],
-          ["&kp RSHFT", "&kp TAB", "&mo 2"]
+          ["&kp RSHFT", "&kp TAB", "&mo LAYER_Chars"]
         ]
       },
       "led": {
@@ -213,7 +220,7 @@
         ],
         "thumb_left": [
           ["&none", "&none", "&none"],
-          ["&none", "&mo 3", "&none"]
+          ["&none", "&mo LAYER_Special", "&none"]
         ],
         "thumb_right": [
           ["&none", "&kp DEL", "&kp BSPC"],
@@ -272,7 +279,7 @@
         ],
         "thumb_right": [
           ["&none", "&kp DEL", "&kp BSPC"],
-          ["&kp RSHFT", "&mo 4", "&kp RET"]
+          ["&kp RSHFT", "&mo LAYER_Media", "&kp RET"]
         ]
       },
       "led": {
@@ -326,8 +333,8 @@
           ["&sys_reset", "&none", "&none"]
         ],
         "thumb_right": [
-          ["&bt_2", "&bt_3", "&out OUT_USB"],
-          ["&bt_0", "&bt_1", "&none"]
+          ["&profile_bt_2", "&profile_bt_3", "&profile_usb"],
+          ["&profile_bt_0", "&profile_bt_1", "&none"]
         ]
       },
       "led": {
@@ -359,4 +366,3 @@
     }
   ]
 }
-

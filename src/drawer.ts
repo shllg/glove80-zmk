@@ -173,6 +173,15 @@ export function toDrawerYaml(layout: Layout, combos: Combo[] = []) {
       return `Magic\n${magicMatch[1]}`;
     }
 
+    const profileBtMatch = binding.match(/^&profile_bt_([0-3])$/);
+    if (profileBtMatch) {
+      return `BT${Number(profileBtMatch[1]) + 1}`;
+    }
+
+    if (binding === "&profile_usb") {
+      return "USB";
+    }
+
     // Handle macros - show simplified names
     if (binding.includes("&macro_")) {
       // Special formatting for common macros
@@ -349,4 +358,3 @@ export function toDrawerYaml(layout: Layout, combos: Combo[] = []) {
 
   return yaml;
 }
-

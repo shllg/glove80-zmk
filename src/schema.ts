@@ -27,6 +27,14 @@ const StructuredLED = z.object({
   thumb_right: z.array(z.array(z.string()).length(3)).length(2) // 2 rows of 3 colors
 }).optional();
 
+const ProfileIndicators = z.object({
+  USB: z.string().optional(),
+  BT1: z.string().optional(),
+  BT2: z.string().optional(),
+  BT3: z.string().optional(),
+  BT4: z.string().optional()
+}).strict().optional();
+
 // Full layout with 80 keys per layer
 export const Layout = z.object({
   keyboard: z.literal("glove80"),
@@ -42,7 +50,30 @@ export const Layout = z.object({
     defaultBrightness: z.number().optional(),
     defaultEffect: z.string().optional()
   }).optional(),
-  legends: z.record(z.string()).optional()
+  legends: z.record(z.string()).optional(),
+  profileIndicators: ProfileIndicators
+}).superRefine((layout, ctx) => {
+  const indicators = layout.profileIndicators;
+  if (!indicators) return;
+
+  if (!layout.colorDefinitions) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["colorDefinitions"],
+      message: "colorDefinitions is required when profileIndicators is set"
+    });
+    return;
+  }
+
+  for (const [profile, colorName] of Object.entries(indicators)) {
+    if (!colorName) continue;
+    if (!layout.colorDefinitions[colorName]) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["profileIndicators", profile],
+        message: `Unknown color '${colorName}' in profileIndicators.${profile}`
+      });
+    }
+  }
 });
 export type Layout = z.infer<typeof Layout>;
-

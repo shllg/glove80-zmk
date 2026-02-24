@@ -49,11 +49,15 @@
 
 /* Layer defines */
 #define LAYER_Base 0
-#define LAYER_Navigation 1
-#define LAYER_Chars 2
-#define LAYER_Special 3
-#define LAYER_Media 4
-#define LAYER_Magic 5
+#define LAYER_Base_BT1 1
+#define LAYER_Base_BT2 2
+#define LAYER_Base_BT3 3
+#define LAYER_Base_BT4 4
+#define LAYER_Navigation 5
+#define LAYER_Chars 6
+#define LAYER_Special 7
+#define LAYER_Media 8
+#define LAYER_Magic 9
 
 /* To deal with the situation where there is no Lower layer, to keep &lower happy */
 #ifndef LAYER_Lower
@@ -361,7 +365,38 @@
         bindings = <&bt_select_3>, <&bt BT_DISC 3>;
     };
 #endif
-  };
+
+#ifdef BT_DISC_CMD
+    profile_bt_0: profile_bt_0 {
+        compatible = "zmk,behavior-tap-dance";
+        label = "PROFILE_BT_0";
+        #binding-cells = <0>;
+        tapping-term-ms = <200>;
+        bindings = <&profile_bt_select_0>, <&bt BT_DISC 0>;
+    };
+    profile_bt_1: profile_bt_1 {
+        compatible = "zmk,behavior-tap-dance";
+        label = "PROFILE_BT_1";
+        #binding-cells = <0>;
+        tapping-term-ms = <200>;
+        bindings = <&profile_bt_select_1>, <&bt BT_DISC 1>;
+    };
+    profile_bt_2: profile_bt_2 {
+        compatible = "zmk,behavior-tap-dance";
+        label = "PROFILE_BT_2";
+        #binding-cells = <0>;
+        tapping-term-ms = <200>;
+        bindings = <&profile_bt_select_2>, <&bt BT_DISC 2>;
+    };
+    profile_bt_3: profile_bt_3 {
+        compatible = "zmk,behavior-tap-dance";
+        label = "PROFILE_BT_3";
+        #binding-cells = <0>;
+        tapping-term-ms = <200>;
+        bindings = <&profile_bt_select_3>, <&bt BT_DISC 3>;
+    };
+#endif
+};
 
     macros {
     ////////////////////////////////////////////////////////////////////////
@@ -727,7 +762,92 @@
               <&bt BT_SEL 3>;
     };
 #endif
-  };
+
+#ifdef BT_DISC_CMD
+    profile_bt_select_0: profile_bt_select_0 {
+        label = "PROFILE_BT_SELECT_0";
+        compatible = "zmk,behavior-macro";
+        #binding-cells = <0>;
+        bindings
+            = <&to LAYER_Base_BT1>,
+              <&out OUT_BLE>,
+              <&bt BT_SEL 0>;
+    };
+    profile_bt_select_1: profile_bt_select_1 {
+        label = "PROFILE_BT_SELECT_1";
+        compatible = "zmk,behavior-macro";
+        #binding-cells = <0>;
+        bindings
+            = <&to LAYER_Base_BT2>,
+              <&out OUT_BLE>,
+              <&bt BT_SEL 1>;
+    };
+    profile_bt_select_2: profile_bt_select_2 {
+        label = "PROFILE_BT_SELECT_2";
+        compatible = "zmk,behavior-macro";
+        #binding-cells = <0>;
+        bindings
+            = <&to LAYER_Base_BT3>,
+              <&out OUT_BLE>,
+              <&bt BT_SEL 2>;
+    };
+    profile_bt_select_3: profile_bt_select_3 {
+        label = "PROFILE_BT_SELECT_3";
+        compatible = "zmk,behavior-macro";
+        #binding-cells = <0>;
+        bindings
+            = <&to LAYER_Base_BT4>,
+              <&out OUT_BLE>,
+              <&bt BT_SEL 3>;
+    };
+#else
+    profile_bt_0: profile_bt_0 {
+        label = "PROFILE_BT_0";
+        compatible = "zmk,behavior-macro";
+        #binding-cells = <0>;
+        bindings
+            = <&to LAYER_Base_BT1>,
+              <&out OUT_BLE>,
+              <&bt BT_SEL 0>;
+    };
+    profile_bt_1: profile_bt_1 {
+        label = "PROFILE_BT_1";
+        compatible = "zmk,behavior-macro";
+        #binding-cells = <0>;
+        bindings
+            = <&to LAYER_Base_BT2>,
+              <&out OUT_BLE>,
+              <&bt BT_SEL 1>;
+    };
+    profile_bt_2: profile_bt_2 {
+        label = "PROFILE_BT_2";
+        compatible = "zmk,behavior-macro";
+        #binding-cells = <0>;
+        bindings
+            = <&to LAYER_Base_BT3>,
+              <&out OUT_BLE>,
+              <&bt BT_SEL 2>;
+    };
+    profile_bt_3: profile_bt_3 {
+        label = "PROFILE_BT_3";
+        compatible = "zmk,behavior-macro";
+        #binding-cells = <0>;
+        bindings
+            = <&to LAYER_Base_BT4>,
+              <&out OUT_BLE>,
+              <&bt BT_SEL 3>;
+    };
+#endif
+
+    profile_usb: profile_usb {
+        label = "PROFILE_USB";
+        compatible = "zmk,behavior-macro";
+        #binding-cells = <0>;
+        bindings
+            = <&to LAYER_Base>,
+              <&out OUT_USB>;
+    };
+};
 
     combos {
         compatible = "zmk,combos";
@@ -778,7 +898,7 @@
 
         layer_Base {
             bindings = <
-                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+                &ug CYN &ug CYN &ug CYN &ug CYN &ug CYN &ug CYN &ug CYN &ug CYN &ug CYN &ug CYN
                 &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
                 &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
                 &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB
@@ -786,6 +906,54 @@
                 &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
             >;
             layer-id = <0>;
+        };
+
+        layer_Base_BT1 {
+            bindings = <
+                &ug GOL_RGB &ug GOL_RGB &ug GOL_RGB &ug GOL_RGB &ug GOL_RGB &ug GOL_RGB &ug GOL_RGB &ug GOL_RGB &ug GOL_RGB &ug GOL_RGB
+                &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug SAL_RGB &ug SAL_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+            >;
+            layer-id = <1>;
+        };
+
+        layer_Base_BT2 {
+            bindings = <
+                &ug PUR_RGB &ug PUR_RGB &ug PUR_RGB &ug PUR_RGB &ug PUR_RGB &ug PUR_RGB &ug PUR_RGB &ug PUR_RGB &ug PUR_RGB &ug PUR_RGB
+                &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug SAL_RGB &ug SAL_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+            >;
+            layer-id = <2>;
+        };
+
+        layer_Base_BT3 {
+            bindings = <
+                &ug RED &ug RED &ug RED &ug RED &ug RED &ug RED &ug RED &ug RED &ug RED &ug RED
+                &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug SAL_RGB &ug SAL_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+            >;
+            layer-id = <3>;
+        };
+
+        layer_Base_BT4 {
+            bindings = <
+                &ug ORN_RGB &ug ORN_RGB &ug ORN_RGB &ug ORN_RGB &ug ORN_RGB &ug ORN_RGB &ug ORN_RGB &ug ORN_RGB &ug ORN_RGB &ug ORN_RGB
+                &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug SAL_RGB &ug SAL_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+            >;
+            layer-id = <4>;
         };
 
         layer_Navigation {
@@ -797,7 +965,7 @@
                 &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug GDN_RGB &ug SAL_RGB &ug SAL_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug CHU_RGB
                 &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug MAG &ug ___ &ug ___ &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_RGB &ug GDN_RGB &ug GDN_RGB &ug CHU_RGB &ug CHU_RGB &ug CHU_RGB
             >;
-            layer-id = <1>;
+            layer-id = <5>;
         };
 
         layer_Chars {
@@ -809,7 +977,7 @@
                 &ug MAIN_RGB &ug BLU &ug MAIN_RGB &ug MAIN_RGB &ug BLU &ug YEL &ug ___ &ug ___ &ug ___ &ug ___ &ug SAL_RGB &ug SAL_RGB &ug ___ &ug MAIN_RGB &ug ___ &ug ___ &ug ___ &ug ___
                 &ug ___ &ug MAIN_RGB &ug BLU &ug BLU &ug MAIN_RGB &ug MAIN_RGB &ug ___ &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAG &ug ___ &ug MAIN_RGB &ug MAIN_RGB &ug ___ &ug ___
             >;
-            layer-id = <2>;
+            layer-id = <6>;
         };
 
         layer_Special {
@@ -821,7 +989,7 @@
                 &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug SAL_RGB &ug SAL_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
                 &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug CYN &ug ___ &ug MAIN_O_RGB &ug MAIN_O_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
             >;
-            layer-id = <3>;
+            layer-id = <7>;
         };
 
         layer_Media {
@@ -833,7 +1001,7 @@
                 &ug ___ &ug ___ &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug BLU &ug ___ &ug BLU &ug ___ &ug ___ &ug SAL_RGB &ug SAL_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
                 &ug ___ &ug ___ &ug ___ &ug MAIN_RGB &ug BLU &ug MAIN_RGB &ug ___ &ug MAIN_RGB &ug MAIN_O_RGB &ug MAG &ug BLU &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
             >;
-            layer-id = <4>;
+            layer-id = <8>;
         };
 
         layer_Magic {
@@ -845,7 +1013,7 @@
                 &ug RED &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug BLU &ug BLU &ug ORN_RGB &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug RED
                 &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug RED &ug ___ &ug ___ &ug BLU &ug BLU &ug ___ &ug ___ &ug ___ &ug ___ &ug ___ &ug ___
             >;
-            layer-id = <5>;
+            layer-id = <9>;
         };
     };
 
@@ -859,7 +1027,51 @@
                 &kp HOME &kp Q &kp W &kp E &kp R &kp T &kp Y &kp U &kp I &kp O &kp P &kp BSLH
                 &kp ESC &hml LGUI A &hml LALT S &hml_middle LSHFT D &hml LCTRL F &kp G &kp H &hmr RCTRL J &hmr_middle RSHFT K &hmr LALT L &hmr RGUI SEMI &kp SQT
                 &kp LSHFT &kp Z &kp X &kp C &kp V &kp B &kp ESC &magic LAYER_Magic 0 &kp UP &kp F13 &kp DEL &kp BSPC &kp N &kp M &kp COMMA &kp DOT &kp FSLH &kp PG_UP
-                &kp LEFT &kp RIGHT &kp FSLH &kp COMMA &kp DOT &thumb_left 1 SPACE &mo 3 &kp DOWN &kp RSHFT &lt 4 TAB &thumb_right 2 RET &none &kp RALT &kp LBKT &kp RBKT &kp PG_DN
+                &kp LEFT &kp RIGHT &kp FSLH &kp COMMA &kp DOT &thumb_left LAYER_Navigation SPACE &mo LAYER_Special &kp DOWN &kp RSHFT &lt LAYER_Media TAB &thumb_right LAYER_Chars RET &none &kp RALT &kp LBKT &kp RBKT &kp PG_DN
+            >;
+        };
+
+        layer_Base_BT1 {
+            bindings = <
+                &kp F1 &kp F2 &kp F3 &kp F4 &kp F5 &kp F6 &kp F7 &kp F8 &kp F9 &kp F10
+                &kp GRAVE &kp N1 &kp N2 &kp N3 &kp N4 &kp N5 &kp N6 &kp N7 &kp N8 &kp N9 &kp N0 &kp MINUS
+                &kp HOME &kp Q &kp W &kp E &kp R &kp T &kp Y &kp U &kp I &kp O &kp P &kp BSLH
+                &kp ESC &hml LGUI A &hml LALT S &hml_middle LSHFT D &hml LCTRL F &kp G &kp H &hmr RCTRL J &hmr_middle RSHFT K &hmr LALT L &hmr RGUI SEMI &kp SQT
+                &kp LSHFT &kp Z &kp X &kp C &kp V &kp B &kp ESC &magic LAYER_Magic 0 &kp UP &kp F13 &kp DEL &kp BSPC &kp N &kp M &kp COMMA &kp DOT &kp FSLH &kp PG_UP
+                &kp LEFT &kp RIGHT &kp FSLH &kp COMMA &kp DOT &thumb_left LAYER_Navigation SPACE &mo LAYER_Special &kp DOWN &kp RSHFT &lt LAYER_Media TAB &thumb_right LAYER_Chars RET &none &kp RALT &kp LBKT &kp RBKT &kp PG_DN
+            >;
+        };
+
+        layer_Base_BT2 {
+            bindings = <
+                &kp F1 &kp F2 &kp F3 &kp F4 &kp F5 &kp F6 &kp F7 &kp F8 &kp F9 &kp F10
+                &kp GRAVE &kp N1 &kp N2 &kp N3 &kp N4 &kp N5 &kp N6 &kp N7 &kp N8 &kp N9 &kp N0 &kp MINUS
+                &kp HOME &kp Q &kp W &kp E &kp R &kp T &kp Y &kp U &kp I &kp O &kp P &kp BSLH
+                &kp ESC &hml LGUI A &hml LALT S &hml_middle LSHFT D &hml LCTRL F &kp G &kp H &hmr RCTRL J &hmr_middle RSHFT K &hmr LALT L &hmr RGUI SEMI &kp SQT
+                &kp LSHFT &kp Z &kp X &kp C &kp V &kp B &kp ESC &magic LAYER_Magic 0 &kp UP &kp F13 &kp DEL &kp BSPC &kp N &kp M &kp COMMA &kp DOT &kp FSLH &kp PG_UP
+                &kp LEFT &kp RIGHT &kp FSLH &kp COMMA &kp DOT &thumb_left LAYER_Navigation SPACE &mo LAYER_Special &kp DOWN &kp RSHFT &lt LAYER_Media TAB &thumb_right LAYER_Chars RET &none &kp RALT &kp LBKT &kp RBKT &kp PG_DN
+            >;
+        };
+
+        layer_Base_BT3 {
+            bindings = <
+                &kp F1 &kp F2 &kp F3 &kp F4 &kp F5 &kp F6 &kp F7 &kp F8 &kp F9 &kp F10
+                &kp GRAVE &kp N1 &kp N2 &kp N3 &kp N4 &kp N5 &kp N6 &kp N7 &kp N8 &kp N9 &kp N0 &kp MINUS
+                &kp HOME &kp Q &kp W &kp E &kp R &kp T &kp Y &kp U &kp I &kp O &kp P &kp BSLH
+                &kp ESC &hml LGUI A &hml LALT S &hml_middle LSHFT D &hml LCTRL F &kp G &kp H &hmr RCTRL J &hmr_middle RSHFT K &hmr LALT L &hmr RGUI SEMI &kp SQT
+                &kp LSHFT &kp Z &kp X &kp C &kp V &kp B &kp ESC &magic LAYER_Magic 0 &kp UP &kp F13 &kp DEL &kp BSPC &kp N &kp M &kp COMMA &kp DOT &kp FSLH &kp PG_UP
+                &kp LEFT &kp RIGHT &kp FSLH &kp COMMA &kp DOT &thumb_left LAYER_Navigation SPACE &mo LAYER_Special &kp DOWN &kp RSHFT &lt LAYER_Media TAB &thumb_right LAYER_Chars RET &none &kp RALT &kp LBKT &kp RBKT &kp PG_DN
+            >;
+        };
+
+        layer_Base_BT4 {
+            bindings = <
+                &kp F1 &kp F2 &kp F3 &kp F4 &kp F5 &kp F6 &kp F7 &kp F8 &kp F9 &kp F10
+                &kp GRAVE &kp N1 &kp N2 &kp N3 &kp N4 &kp N5 &kp N6 &kp N7 &kp N8 &kp N9 &kp N0 &kp MINUS
+                &kp HOME &kp Q &kp W &kp E &kp R &kp T &kp Y &kp U &kp I &kp O &kp P &kp BSLH
+                &kp ESC &hml LGUI A &hml LALT S &hml_middle LSHFT D &hml LCTRL F &kp G &kp H &hmr RCTRL J &hmr_middle RSHFT K &hmr LALT L &hmr RGUI SEMI &kp SQT
+                &kp LSHFT &kp Z &kp X &kp C &kp V &kp B &kp ESC &magic LAYER_Magic 0 &kp UP &kp F13 &kp DEL &kp BSPC &kp N &kp M &kp COMMA &kp DOT &kp FSLH &kp PG_UP
+                &kp LEFT &kp RIGHT &kp FSLH &kp COMMA &kp DOT &thumb_left LAYER_Navigation SPACE &mo LAYER_Special &kp DOWN &kp RSHFT &lt LAYER_Media TAB &thumb_right LAYER_Chars RET &none &kp RALT &kp LBKT &kp RBKT &kp PG_DN
             >;
         };
 
@@ -870,7 +1082,7 @@
                 &none &none &none &none &none &none &none &none &none &none &kp LS(LG(EQUAL)) &kp LG(EQUAL)
                 &none &kp LGUI &kp LALT &kp LSHFT &kp LCTRL &none &kp LEFT &kp DOWN &kp UP &kp RIGHT &kp LS(LG(MINUS)) &kp LG(MINUS)
                 &none &none &none &none &none &none &none &none &none &kp F14 &kp DEL &kp BSPC &none &none &none &none &none &msc SCRL_UP
-                &none &none &none &none &none &mo 1 &none &none &kp RSHFT &kp TAB &kp RET &macro_super_print &kp PSCRN &msc SCRL_LEFT &msc SCRL_RIGHT &msc SCRL_DOWN
+                &none &none &none &none &none &mo LAYER_Navigation &none &none &kp RSHFT &kp TAB &kp RET &macro_super_print &kp PSCRN &msc SCRL_LEFT &msc SCRL_RIGHT &msc SCRL_DOWN
             >;
         };
 
@@ -881,7 +1093,7 @@
                 &kp PRCNT &kp LBRC &kp SQT &kp DQT &kp RBRC &kp QMARK &none &kp COLON &kp AT &none &none &none
                 &kp HASH &hml LGUI CARET &hml LALT EQUAL &hml_middle LSHFT MINUS &hml LCTRL DLLR &kp ASTRK &kp LEFT &kp DOWN &kp UP &kp RIGHT &none &none
                 &kp TILDE &kp LT &kp PIPE &kp UNDER &kp GT &kp FSLH &none &none &none &none &kp DEL &kp BSPC &none &kp RCTRL &none &none &none &none
-                &none &kp AMPS &kp LBKT &kp RBKT &kp PLUS &kp SPACE &none &kp ESC &kp RSHFT &kp TAB &mo 2 &none &kp RET &kp TAB &none &none
+                &none &kp AMPS &kp LBKT &kp RBKT &kp PLUS &kp SPACE &none &kp ESC &kp RSHFT &kp TAB &mo LAYER_Chars &none &kp RET &kp TAB &none &none
             >;
         };
 
@@ -892,7 +1104,7 @@
                 &none &none &none &euro_sign &none &none &none &umlaut_u &none &umlaut_o &none &none
                 &none &umlaut_a &eszett &none &none &none &kp LEFT &kp DOWN &kp UP &kp RIGHT &none &none
                 &none &none &none &none &none &none &none &none &none &none &kp DEL &kp BSPC &none &none &none &none &none &none
-                &none &none &none &none &none &none &mo 3 &none &kp RSHFT &kp TAB &none &none &none &none &none &none
+                &none &none &none &none &none &none &mo LAYER_Special &none &kp RSHFT &kp TAB &none &none &none &none &none &none
             >;
         };
 
@@ -903,7 +1115,7 @@
                 &kp LPAR &kp RPAR &kp N7 &kp N8 &kp N9 &kp MINUS &kp EQUAL &none &none &none &none &none
                 &none &none &kp N4 &kp N5 &kp N6 &kp ASTRK &kp LEFT &kp DOWN &kp UP &kp RIGHT &none &none
                 &none &none &kp N1 &kp N2 &kp N3 &kp FSLH &none &kp DOT &none &none &kp DEL &kp BSPC &none &none &none &none &none &none
-                &none &none &none &kp N0 &kp PLUS &kp SPACE &none &kp ESC &kp RSHFT &mo 4 &kp RET &none &none &none &none &none
+                &none &none &none &kp N0 &kp PLUS &kp SPACE &none &kp ESC &kp RSHFT &mo LAYER_Media &kp RET &none &none &none &none &none
             >;
         };
 
@@ -913,8 +1125,8 @@
                 &none &none &none &none &none &none &none &none &none &none &none &none
                 &none &rgb_ug RGB_SPI &rgb_ug RGB_SAI &rgb_ug RGB_HUI &rgb_ug RGB_BRI &rgb_ug RGB_TOG &none &none &none &none &none &none
                 &bootloader &rgb_ug RGB_SPD &rgb_ug RGB_SAD &rgb_ug RGB_HUD &rgb_ug RGB_BRD &rgb_ug RGB_EFF &none &none &none &none &none &bootloader
-                &sys_reset &none &none &none &none &none &none &none &none &bt_2 &bt_3 &out OUT_USB &none &none &none &none &none &sys_reset
-                &none &none &none &none &none &sys_reset &none &none &bt_0 &bt_1 &none &none &none &none &none &none
+                &sys_reset &none &none &none &none &none &none &none &none &profile_bt_2 &profile_bt_3 &profile_usb &none &none &none &none &none &sys_reset
+                &none &none &none &none &none &sys_reset &none &none &profile_bt_0 &profile_bt_1 &none &none &none &none &none &none
             >;
         };
     };
