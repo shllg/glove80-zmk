@@ -18,6 +18,7 @@ OUT_PATH="$(pwd)/out"
 FIRMWARE_PATH="$(pwd)/firmware"
 DOCKER_IMAGE="zmkfirmware/zmk-build-arm:stable"
 CONTAINER_NAME="glove80-zmk-compiler"
+PINNED_SHA="453d2d8536106c1b5ba2ae68d6a2267965c16935"
 
 # Check for Docker
 if ! command -v docker &>/dev/null; then
@@ -81,10 +82,13 @@ exec_in_container() {
 echo -e "${BLUE}Checking workspace...${NC}"
 WORKSPACE_EXISTS=$(exec_in_container "[ -d /tmp/zmk-workspace/zmk/.west ] && echo 'yes' || echo 'no'")
 FORK_CORRECT=$(exec_in_container "cd /tmp/zmk-workspace/zmk 2>/dev/null && git remote -v | grep -q 'darknao' && echo 'yes' || echo 'no'")
+HEAD_CORRECT=$(exec_in_container "cd /tmp/zmk-workspace/zmk 2>/dev/null && [ \"\$(git rev-parse HEAD 2>/dev/null)\" = \"$PINNED_SHA\" ] && echo 'yes' || echo 'no'")
 
-if [ "$WORKSPACE_EXISTS" = "no" ] || [ "$FORK_CORRECT" = "no" ]; then
+if [ "$WORKSPACE_EXISTS" = "no" ] || [ "$FORK_CORRECT" = "no" ] || [ "$HEAD_CORRECT" = "no" ]; then
   if [ "$FORK_CORRECT" = "no" ]; then
     echo -e "${YELLOW}Wrong ZMK fork detected, reinitializing...${NC}"
+  elif [ "$HEAD_CORRECT" = "no" ]; then
+    echo -e "${YELLOW}ZMK pin changed (workspace HEAD != $PINNED_SHA), reinitializing...${NC}"
   else
     echo -e "${YELLOW}Initializing ZMK workspace (5-15 minutes on first run)...${NC}"
   fi
@@ -92,7 +96,7 @@ if [ "$WORKSPACE_EXISTS" = "no" ] || [ "$FORK_CORRECT" = "no" ]; then
   # Initialize workspace with darknao fork that supports RGB_STATUS and mouse features
   exec_in_container "cd /tmp && rm -rf zmk-workspace && mkdir -p zmk-workspace"
   # Pin to specific commit for reproducible builds
-  exec_in_container "cd /tmp/zmk-workspace && git clone --depth 1 https://github.com/darknao/zmk.git zmk && cd zmk && git fetch --depth 1 origin 512f756b3be6a124424c1de295cfa68d86038139 && git checkout 512f756b3be6a124424c1de295cfa68d86038139"
+  exec_in_container "cd /tmp/zmk-workspace && git clone --depth 1 https://github.com/darknao/zmk.git zmk && cd zmk && git fetch --depth 1 origin $PINNED_SHA && git checkout $PINNED_SHA"
   exec_in_container "cd /tmp/zmk-workspace && west init -l zmk/app"
 
   echo "Downloading dependencies..."

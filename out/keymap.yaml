@@ -465,8 +465,6 @@ combos:
     k: Tab
   - p: [48, 49]
     k: Del
-  - p: [49, 50]
-    k: Bksp
   - p: [60, 61]
     k: CapsWord
 layers:

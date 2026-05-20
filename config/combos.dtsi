@@ -26,14 +26,6 @@
             require-prior-idle-ms = <100>;
         };
 
-        /* C+V → Backspace */
-        combo_bspc {
-            timeout-ms = <40>;
-            key-positions = <49 50>;
-            bindings = <&kp BSPC>;
-            require-prior-idle-ms = <100>;
-        };
-
         /* 1.3.3: Comma+Dot → Caps Word */
         combo_caps_word {
             timeout-ms = <40>;

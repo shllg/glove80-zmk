@@ -268,8 +268,8 @@
       #binding-cells = <2>;
       tapping-term-ms = <200>;
       bindings = <&kp>, <&kp>;
-      quick-tap-ms = <150>;
-      require-prior-idle-ms = <0>;
+      quick-tap-ms = <200>;
+      require-prior-idle-ms = <150>;
       hold-trigger-key-positions = <RIGHT_HAND_KEYS THUMB_KEYS>;
       hold-trigger-on-release;
     };
@@ -294,8 +294,8 @@
       #binding-cells = <2>;
       tapping-term-ms = <200>;
       bindings = <&kp>, <&kp>;
-      quick-tap-ms = <150>;
-      require-prior-idle-ms = <0>;
+      quick-tap-ms = <200>;
+      require-prior-idle-ms = <150>;
       hold-trigger-key-positions = <LEFT_HAND_KEYS THUMB_KEYS>;
       hold-trigger-on-release;
     };
@@ -873,14 +873,6 @@
             timeout-ms = <40>;
             key-positions = <48 49>;
             bindings = <&kp DEL>;
-            require-prior-idle-ms = <100>;
-        };
-
-        /* C+V → Backspace */
-        combo_bspc {
-            timeout-ms = <40>;
-            key-positions = <49 50>;
-            bindings = <&kp BSPC>;
             require-prior-idle-ms = <100>;
         };
 
