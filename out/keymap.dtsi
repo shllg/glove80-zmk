@@ -225,7 +225,7 @@
       #binding-cells = <2>;
       flavor = "tap-preferred";
       tapping-term-ms = <200>;
-      bindings = <&mo>, <&rgb_ug_status_macro>;
+      bindings = <&mo>, <&none>;
     };
 
     // Umlauts
@@ -687,14 +687,6 @@
         <&kp O>;
     };
 
-    // RGB status macro for magic layer
-    rgb_ug_status_macro: rgb_ug_status_macro {
-      label = "RGB_UG_STATUS";
-      compatible = "zmk,behavior-macro";
-      #binding-cells = <0>;
-      bindings = <&rgb_ug RGB_STATUS>;
-    };
-    
 #ifdef BT_DISC_CMD
     bt_select_0: bt_select_0 {
         label = "BT_SELECT_0";
@@ -883,6 +875,14 @@
             bindings = <&caps_word>;
             require-prior-idle-ms = <100>;
         };
+
+        /* K + R-thumb Enter → Shift+Enter (newline) */
+        combo_newline {
+            timeout-ms = <50>;
+            key-positions = <42 74>;
+            bindings = <&kp LS(RET)>;
+            require-prior-idle-ms = <0>;
+        };
     };
 
         underglow-layer {
@@ -895,7 +895,7 @@
                 &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
                 &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB
                 &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug SAL_RGB &ug SAL_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
-                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug GRN &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
             >;
             layer-id = <0>;
         };
@@ -907,7 +907,7 @@
                 &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
                 &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB
                 &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug SAL_RGB &ug SAL_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
-                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug GRN &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
             >;
             layer-id = <1>;
         };
@@ -919,7 +919,7 @@
                 &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
                 &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB
                 &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug SAL_RGB &ug SAL_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
-                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug GRN &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
             >;
             layer-id = <2>;
         };
@@ -931,7 +931,7 @@
                 &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
                 &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB
                 &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug SAL_RGB &ug SAL_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
-                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug GRN &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
             >;
             layer-id = <3>;
         };
@@ -943,7 +943,7 @@
                 &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB
                 &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB
                 &ug MAIN_O_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug SAL_RGB &ug SAL_RGB &ug MAIN_RGB &ug MAIN_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
-                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
+                &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug GRN &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_HRM_RGB &ug MAIN_HRM_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB &ug MAIN_O_RGB
             >;
             layer-id = <4>;
         };
@@ -1019,7 +1019,7 @@
                 &kp HOME &kp Q &kp W &kp E &kp R &kp T &kp Y &kp U &kp I &kp O &kp P &kp BSLH
                 &kp ESC &hml LGUI A &hml LALT S &hml_middle LSHFT D &hml LCTRL F &kp G &kp H &hmr RCTRL J &hmr_middle RSHFT K &hmr LALT L &hmr RGUI SEMI &kp SQT
                 &kp LSHFT &kp Z &kp X &kp C &kp V &kp B &kp ESC &magic LAYER_Magic 0 &kp UP &kp F13 &kp DEL &kp BSPC &kp N &kp M &kp COMMA &kp DOT &kp FSLH &kp PG_UP
-                &kp LEFT &kp RIGHT &kp FSLH &kp COMMA &kp DOT &thumb_left LAYER_Navigation SPACE &mo LAYER_Special &kp DOWN &kp RSHFT &lt LAYER_Media TAB &thumb_right LAYER_Chars RET &none &kp RALT &kp LBKT &kp RBKT &kp PG_DN
+                &kp LEFT &kp RIGHT &kp FSLH &kp COMMA &kp F23 &thumb_left LAYER_Navigation SPACE &mo LAYER_Special &kp DOWN &kp RSHFT &lt LAYER_Media TAB &thumb_right LAYER_Chars RET &none &kp RALT &kp LBKT &kp RBKT &kp PG_DN
             >;
         };
 
@@ -1030,7 +1030,7 @@
                 &kp HOME &kp Q &kp W &kp E &kp R &kp T &kp Y &kp U &kp I &kp O &kp P &kp BSLH
                 &kp ESC &hml LGUI A &hml LALT S &hml_middle LSHFT D &hml LCTRL F &kp G &kp H &hmr RCTRL J &hmr_middle RSHFT K &hmr LALT L &hmr RGUI SEMI &kp SQT
                 &kp LSHFT &kp Z &kp X &kp C &kp V &kp B &kp ESC &magic LAYER_Magic 0 &kp UP &kp F13 &kp DEL &kp BSPC &kp N &kp M &kp COMMA &kp DOT &kp FSLH &kp PG_UP
-                &kp LEFT &kp RIGHT &kp FSLH &kp COMMA &kp DOT &thumb_left LAYER_Navigation SPACE &mo LAYER_Special &kp DOWN &kp RSHFT &lt LAYER_Media TAB &thumb_right LAYER_Chars RET &none &kp RALT &kp LBKT &kp RBKT &kp PG_DN
+                &kp LEFT &kp RIGHT &kp FSLH &kp COMMA &kp F23 &thumb_left LAYER_Navigation SPACE &mo LAYER_Special &kp DOWN &kp RSHFT &lt LAYER_Media TAB &thumb_right LAYER_Chars RET &none &kp RALT &kp LBKT &kp RBKT &kp PG_DN
             >;
         };
 
@@ -1041,7 +1041,7 @@
                 &kp HOME &kp Q &kp W &kp E &kp R &kp T &kp Y &kp U &kp I &kp O &kp P &kp BSLH
                 &kp ESC &hml LGUI A &hml LALT S &hml_middle LSHFT D &hml LCTRL F &kp G &kp H &hmr RCTRL J &hmr_middle RSHFT K &hmr LALT L &hmr RGUI SEMI &kp SQT
                 &kp LSHFT &kp Z &kp X &kp C &kp V &kp B &kp ESC &magic LAYER_Magic 0 &kp UP &kp F13 &kp DEL &kp BSPC &kp N &kp M &kp COMMA &kp DOT &kp FSLH &kp PG_UP
-                &kp LEFT &kp RIGHT &kp FSLH &kp COMMA &kp DOT &thumb_left LAYER_Navigation SPACE &mo LAYER_Special &kp DOWN &kp RSHFT &lt LAYER_Media TAB &thumb_right LAYER_Chars RET &none &kp RALT &kp LBKT &kp RBKT &kp PG_DN
+                &kp LEFT &kp RIGHT &kp FSLH &kp COMMA &kp F23 &thumb_left LAYER_Navigation SPACE &mo LAYER_Special &kp DOWN &kp RSHFT &lt LAYER_Media TAB &thumb_right LAYER_Chars RET &none &kp RALT &kp LBKT &kp RBKT &kp PG_DN
             >;
         };
 
@@ -1052,7 +1052,7 @@
                 &kp HOME &kp Q &kp W &kp E &kp R &kp T &kp Y &kp U &kp I &kp O &kp P &kp BSLH
                 &kp ESC &hml LGUI A &hml LALT S &hml_middle LSHFT D &hml LCTRL F &kp G &kp H &hmr RCTRL J &hmr_middle RSHFT K &hmr LALT L &hmr RGUI SEMI &kp SQT
                 &kp LSHFT &kp Z &kp X &kp C &kp V &kp B &kp ESC &magic LAYER_Magic 0 &kp UP &kp F13 &kp DEL &kp BSPC &kp N &kp M &kp COMMA &kp DOT &kp FSLH &kp PG_UP
-                &kp LEFT &kp RIGHT &kp FSLH &kp COMMA &kp DOT &thumb_left LAYER_Navigation SPACE &mo LAYER_Special &kp DOWN &kp RSHFT &lt LAYER_Media TAB &thumb_right LAYER_Chars RET &none &kp RALT &kp LBKT &kp RBKT &kp PG_DN
+                &kp LEFT &kp RIGHT &kp FSLH &kp COMMA &kp F23 &thumb_left LAYER_Navigation SPACE &mo LAYER_Special &kp DOWN &kp RSHFT &lt LAYER_Media TAB &thumb_right LAYER_Chars RET &none &kp RALT &kp LBKT &kp RBKT &kp PG_DN
             >;
         };
 
@@ -1063,7 +1063,7 @@
                 &kp HOME &kp Q &kp W &kp E &kp R &kp T &kp Y &kp U &kp I &kp O &kp P &kp BSLH
                 &kp ESC &hml LGUI A &hml LALT S &hml_middle LSHFT D &hml LCTRL F &kp G &kp H &hmr RCTRL J &hmr_middle RSHFT K &hmr LALT L &hmr RGUI SEMI &kp SQT
                 &kp LSHFT &kp Z &kp X &kp C &kp V &kp B &kp ESC &magic LAYER_Magic 0 &kp UP &kp F13 &kp DEL &kp BSPC &kp N &kp M &kp COMMA &kp DOT &kp FSLH &kp PG_UP
-                &kp LEFT &kp RIGHT &kp FSLH &kp COMMA &kp DOT &thumb_left LAYER_Navigation SPACE &mo LAYER_Special &kp DOWN &kp RSHFT &lt LAYER_Media TAB &thumb_right LAYER_Chars RET &none &kp RALT &kp LBKT &kp RBKT &kp PG_DN
+                &kp LEFT &kp RIGHT &kp FSLH &kp COMMA &kp F23 &thumb_left LAYER_Navigation SPACE &mo LAYER_Special &kp DOWN &kp RSHFT &lt LAYER_Media TAB &thumb_right LAYER_Chars RET &none &kp RALT &kp LBKT &kp RBKT &kp PG_DN
             >;
         };
 

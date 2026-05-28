@@ -261,7 +261,7 @@ path.combo {
 .layer-Base .keypos-66 text { font-weight: bold; }
 .layer-Base .keypos-67 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
 .layer-Base .keypos-67 text { font-weight: bold; }
-.layer-Base .keypos-68 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-68 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
 .layer-Base .keypos-68 text { font-weight: bold; }
 .layer-Base .keypos-69 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
 .layer-Base .keypos-69 text { font-weight: bold; }
@@ -873,7 +873,7 @@ path.combo {
 </g>
 <g transform="translate(252, 308)" class="key keypos-68">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">.</text>
+<text x="0" y="0" class="key tap">F23</text>
 </g>
 <g transform="translate(314, 347) rotate(20.0)" class="key keypos-69">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -941,6 +941,12 @@ path.combo {
 <g class="combo combopos-3">
 <rect rx="6" ry="6" x="826" y="239" width="28" height="26" class="combo"/>
 <text x="840" y="252" class="combo tap"><tspan style="font-size: 88%">CapsWord</tspan></text>
+</g>
+<g class="combo combopos-4">
+<path d="M753,271 l48,-61" class="combo"/>
+<path d="M753,271 l-48,61" class="combo"/>
+<rect rx="6" ry="6" x="739" y="258" width="28" height="26" class="combo"/>
+<text x="753" y="271" class="combo tap">LS(RET)</text>
 </g>
 </g>
 </g>
@@ -1239,6 +1245,12 @@ path.combo {
 <g class="combo combopos-3">
 <rect rx="6" ry="6" x="826" y="239" width="28" height="26" class="combo"/>
 <text x="840" y="252" class="combo tap"><tspan style="font-size: 88%">CapsWord</tspan></text>
+</g>
+<g class="combo combopos-4">
+<path d="M753,271 l48,-61" class="combo"/>
+<path d="M753,271 l-48,61" class="combo"/>
+<rect rx="6" ry="6" x="739" y="258" width="28" height="26" class="combo"/>
+<text x="753" y="271" class="combo tap">LS(RET)</text>
 </g>
 </g>
 </g>
@@ -1556,6 +1568,12 @@ path.combo {
 <rect rx="6" ry="6" x="826" y="239" width="28" height="26" class="combo"/>
 <text x="840" y="252" class="combo tap"><tspan style="font-size: 88%">CapsWord</tspan></text>
 </g>
+<g class="combo combopos-4">
+<path d="M753,271 l48,-61" class="combo"/>
+<path d="M753,271 l-48,61" class="combo"/>
+<rect rx="6" ry="6" x="739" y="258" width="28" height="26" class="combo"/>
+<text x="753" y="271" class="combo tap">LS(RET)</text>
+</g>
 </g>
 </g>
 <g transform="translate(30, 1564)" class="layer-Special">
@@ -1832,6 +1850,12 @@ path.combo {
 <g class="combo combopos-3">
 <rect rx="6" ry="6" x="826" y="239" width="28" height="26" class="combo"/>
 <text x="840" y="252" class="combo tap"><tspan style="font-size: 88%">CapsWord</tspan></text>
+</g>
+<g class="combo combopos-4">
+<path d="M753,271 l48,-61" class="combo"/>
+<path d="M753,271 l-48,61" class="combo"/>
+<rect rx="6" ry="6" x="739" y="258" width="28" height="26" class="combo"/>
+<text x="753" y="271" class="combo tap">LS(RET)</text>
 </g>
 </g>
 </g>
@@ -2135,6 +2159,12 @@ path.combo {
 <g class="combo combopos-3">
 <rect rx="6" ry="6" x="826" y="239" width="28" height="26" class="combo"/>
 <text x="840" y="252" class="combo tap"><tspan style="font-size: 88%">CapsWord</tspan></text>
+</g>
+<g class="combo combopos-4">
+<path d="M753,271 l48,-61" class="combo"/>
+<path d="M753,271 l-48,61" class="combo"/>
+<rect rx="6" ry="6" x="739" y="258" width="28" height="26" class="combo"/>
+<text x="753" y="271" class="combo tap">LS(RET)</text>
 </g>
 </g>
 </g>
@@ -2442,6 +2472,12 @@ path.combo {
 <g class="combo combopos-3">
 <rect rx="6" ry="6" x="826" y="239" width="28" height="26" class="combo"/>
 <text x="840" y="252" class="combo tap"><tspan style="font-size: 88%">CapsWord</tspan></text>
+</g>
+<g class="combo combopos-4">
+<path d="M753,271 l48,-61" class="combo"/>
+<path d="M753,271 l-48,61" class="combo"/>
+<rect rx="6" ry="6" x="739" y="258" width="28" height="26" class="combo"/>
+<text x="753" y="271" class="combo tap">LS(RET)</text>
 </g>
 </g>
 </g>

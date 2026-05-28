@@ -141,7 +141,7 @@ draw_config:
     .layer-Base .keypos-66 text { font-weight: bold; }
     .layer-Base .keypos-67 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
     .layer-Base .keypos-67 text { font-weight: bold; }
-    .layer-Base .keypos-68 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-68 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
     .layer-Base .keypos-68 text { font-weight: bold; }
     .layer-Base .keypos-69 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
     .layer-Base .keypos-69 text { font-weight: bold; }
@@ -467,6 +467,8 @@ combos:
     k: Del
   - p: [60, 61]
     k: CapsWord
+  - p: [42, 74]
+    k: LS(RET)
 layers:
   Base:
     - F1
@@ -546,7 +548,7 @@ Magic"
     - →
     - /
     - ","
-    - .
+    - F23
     - "&thumb_left LAYER_Navigation SPACE"
     - "&mo LAYER_Special"
     - ↓
@@ -976,7 +978,7 @@ Ctrl"
 #     Row 2: MAIN_O_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB
 #     Row 3: MAIN_O_RGB MAIN_HRM_RGB MAIN_HRM_RGB MAIN_HRM_RGB MAIN_HRM_RGB MAIN_RGB
 #     Row 4: MAIN_O_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB
-#     Row 5: MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB
+#     Row 5: MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB GRN
 #   Right side:
 #     Row 0: MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB
 #     Row 1: MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_O_RGB

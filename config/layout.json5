@@ -43,7 +43,7 @@
           ["&kp HOME", "&kp Q", "&kp W", "&kp E", "&kp R", "&kp T"],
           ["&kp ESC", "&hml LGUI A", "&hml LALT S", "&hml_middle LSHFT D", "&hml LCTRL F", "&kp G"],
           ["&kp LSHFT", "&kp Z", "&kp X", "&kp C", "&kp V", "&kp B"],
-          ["&kp LEFT", "&kp RIGHT", "&kp FSLH", "&kp COMMA", "&kp DOT"]
+          ["&kp LEFT", "&kp RIGHT", "&kp FSLH", "&kp COMMA", "&kp F23"]
         ],
         "right": [
           ["&kp F6", "&kp F7", "&kp F8", "&kp F9", "&kp F10"],
@@ -69,7 +69,7 @@
           ["MAIN_O_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB"],
           ["MAIN_O_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_RGB"],
           ["MAIN_O_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB"],
-          ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"]
+          ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "GRN"]
         ],
         "right": [
           ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"],

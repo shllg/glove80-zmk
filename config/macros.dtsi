@@ -290,14 +290,6 @@
         <&kp O>;
     };
 
-    // RGB status macro for magic layer
-    rgb_ug_status_macro: rgb_ug_status_macro {
-      label = "RGB_UG_STATUS";
-      compatible = "zmk,behavior-macro";
-      #binding-cells = <0>;
-      bindings = <&rgb_ug RGB_STATUS>;
-    };
-    
 #ifdef BT_DISC_CMD
     bt_select_0: bt_select_0 {
         label = "BT_SELECT_0";
