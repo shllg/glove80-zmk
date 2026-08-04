@@ -5,25 +5,25 @@ draw_config:
   footer_text: "LED colors configured for underglow"
   svg_extra_style: |
     /* LED underglow color visualization */
-    .layer-Base .keypos-0 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-0 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
     .layer-Base .keypos-0 text { font-weight: bold; }
-    .layer-Base .keypos-1 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-1 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
     .layer-Base .keypos-1 text { font-weight: bold; }
-    .layer-Base .keypos-2 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-2 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
     .layer-Base .keypos-2 text { font-weight: bold; }
-    .layer-Base .keypos-3 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-3 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
     .layer-Base .keypos-3 text { font-weight: bold; }
-    .layer-Base .keypos-4 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-4 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
     .layer-Base .keypos-4 text { font-weight: bold; }
-    .layer-Base .keypos-5 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-5 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
     .layer-Base .keypos-5 text { font-weight: bold; }
-    .layer-Base .keypos-6 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-6 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
     .layer-Base .keypos-6 text { font-weight: bold; }
-    .layer-Base .keypos-7 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-7 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
     .layer-Base .keypos-7 text { font-weight: bold; }
-    .layer-Base .keypos-8 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-8 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
     .layer-Base .keypos-8 text { font-weight: bold; }
-    .layer-Base .keypos-9 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-9 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
     .layer-Base .keypos-9 text { font-weight: bold; }
     .layer-Base .keypos-10 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
     .layer-Base .keypos-10 text { font-weight: bold; }
@@ -49,7 +49,7 @@ draw_config:
     .layer-Base .keypos-20 text { font-weight: bold; }
     .layer-Base .keypos-21 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
     .layer-Base .keypos-21 text { font-weight: bold; }
-    .layer-Base .keypos-22 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-22 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
     .layer-Base .keypos-22 text { font-weight: bold; }
     .layer-Base .keypos-23 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
     .layer-Base .keypos-23 text { font-weight: bold; }
@@ -73,27 +73,27 @@ draw_config:
     .layer-Base .keypos-32 text { font-weight: bold; }
     .layer-Base .keypos-33 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
     .layer-Base .keypos-33 text { font-weight: bold; }
-    .layer-Base .keypos-34 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-34 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
     .layer-Base .keypos-34 text { font-weight: bold; }
-    .layer-Base .keypos-35 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
+    .layer-Base .keypos-35 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
     .layer-Base .keypos-35 text { font-weight: bold; }
-    .layer-Base .keypos-36 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
+    .layer-Base .keypos-36 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
     .layer-Base .keypos-36 text { font-weight: bold; }
-    .layer-Base .keypos-37 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
+    .layer-Base .keypos-37 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
     .layer-Base .keypos-37 text { font-weight: bold; }
-    .layer-Base .keypos-38 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
+    .layer-Base .keypos-38 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
     .layer-Base .keypos-38 text { font-weight: bold; }
     .layer-Base .keypos-39 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
     .layer-Base .keypos-39 text { font-weight: bold; }
     .layer-Base .keypos-40 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
     .layer-Base .keypos-40 text { font-weight: bold; }
-    .layer-Base .keypos-41 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
+    .layer-Base .keypos-41 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
     .layer-Base .keypos-41 text { font-weight: bold; }
-    .layer-Base .keypos-42 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
+    .layer-Base .keypos-42 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
     .layer-Base .keypos-42 text { font-weight: bold; }
-    .layer-Base .keypos-43 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
+    .layer-Base .keypos-43 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
     .layer-Base .keypos-43 text { font-weight: bold; }
-    .layer-Base .keypos-44 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
+    .layer-Base .keypos-44 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
     .layer-Base .keypos-44 text { font-weight: bold; }
     .layer-Base .keypos-45 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
     .layer-Base .keypos-45 text { font-weight: bold; }
@@ -109,17 +109,17 @@ draw_config:
     .layer-Base .keypos-50 text { font-weight: bold; }
     .layer-Base .keypos-51 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
     .layer-Base .keypos-51 text { font-weight: bold; }
-    .layer-Base .keypos-52 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-52 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
     .layer-Base .keypos-52 text { font-weight: bold; }
-    .layer-Base .keypos-53 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-53 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
     .layer-Base .keypos-53 text { font-weight: bold; }
-    .layer-Base .keypos-54 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-54 rect.key { fill: #7a00ff; fill-opacity: 0.25; stroke: #7a00ff; stroke-width: 2; }
     .layer-Base .keypos-54 text { font-weight: bold; }
-    .layer-Base .keypos-55 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-55 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
     .layer-Base .keypos-55 text { font-weight: bold; }
     .layer-Base .keypos-56 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
     .layer-Base .keypos-56 text { font-weight: bold; }
-    .layer-Base .keypos-57 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+    .layer-Base .keypos-57 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
     .layer-Base .keypos-57 text { font-weight: bold; }
     .layer-Base .keypos-58 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
     .layer-Base .keypos-58 text { font-weight: bold; }
@@ -133,13 +133,13 @@ draw_config:
     .layer-Base .keypos-62 text { font-weight: bold; }
     .layer-Base .keypos-63 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
     .layer-Base .keypos-63 text { font-weight: bold; }
-    .layer-Base .keypos-64 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-64 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
     .layer-Base .keypos-64 text { font-weight: bold; }
-    .layer-Base .keypos-65 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-65 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
     .layer-Base .keypos-65 text { font-weight: bold; }
-    .layer-Base .keypos-66 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-66 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
     .layer-Base .keypos-66 text { font-weight: bold; }
-    .layer-Base .keypos-67 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-67 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
     .layer-Base .keypos-67 text { font-weight: bold; }
     .layer-Base .keypos-68 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
     .layer-Base .keypos-68 text { font-weight: bold; }
@@ -155,9 +155,7 @@ draw_config:
     .layer-Base .keypos-73 text { font-weight: bold; }
     .layer-Base .keypos-74 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
     .layer-Base .keypos-74 text { font-weight: bold; }
-    .layer-Base .keypos-75 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
-    .layer-Base .keypos-75 text { font-weight: bold; }
-    .layer-Base .keypos-76 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+    .layer-Base .keypos-76 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
     .layer-Base .keypos-76 text { font-weight: bold; }
     .layer-Base .keypos-77 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
     .layer-Base .keypos-77 text { font-weight: bold; }
@@ -165,6 +163,10 @@ draw_config:
     .layer-Base .keypos-78 text { font-weight: bold; }
     .layer-Base .keypos-79 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
     .layer-Base .keypos-79 text { font-weight: bold; }
+    .layer-Navigation .keypos-25 rect.key { fill: #ff8000; fill-opacity: 0.25; stroke: #ff8000; stroke-width: 2; }
+    .layer-Navigation .keypos-25 text { font-weight: bold; }
+    .layer-Navigation .keypos-28 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
+    .layer-Navigation .keypos-28 text { font-weight: bold; }
     .layer-Navigation .keypos-32 rect.key { fill: #ff7c4d; fill-opacity: 0.25; stroke: #ff7c4d; stroke-width: 2; }
     .layer-Navigation .keypos-32 text { font-weight: bold; }
     .layer-Navigation .keypos-33 rect.key { fill: #ff7c4d; fill-opacity: 0.25; stroke: #ff7c4d; stroke-width: 2; }
@@ -189,11 +191,17 @@ draw_config:
     .layer-Navigation .keypos-44 text { font-weight: bold; }
     .layer-Navigation .keypos-45 rect.key { fill: #ff7c4d; fill-opacity: 0.25; stroke: #ff7c4d; stroke-width: 2; }
     .layer-Navigation .keypos-45 text { font-weight: bold; }
-    .layer-Navigation .keypos-55 rect.key { fill: #d9a521; fill-opacity: 0.25; stroke: #d9a521; stroke-width: 2; }
+    .layer-Navigation .keypos-52 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
+    .layer-Navigation .keypos-52 text { font-weight: bold; }
+    .layer-Navigation .keypos-53 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+    .layer-Navigation .keypos-53 text { font-weight: bold; }
+    .layer-Navigation .keypos-54 rect.key { fill: #7a00ff; fill-opacity: 0.25; stroke: #7a00ff; stroke-width: 2; }
+    .layer-Navigation .keypos-54 text { font-weight: bold; }
+    .layer-Navigation .keypos-55 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
     .layer-Navigation .keypos-55 text { font-weight: bold; }
     .layer-Navigation .keypos-56 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
     .layer-Navigation .keypos-56 text { font-weight: bold; }
-    .layer-Navigation .keypos-57 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+    .layer-Navigation .keypos-57 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
     .layer-Navigation .keypos-57 text { font-weight: bold; }
     .layer-Navigation .keypos-63 rect.key { fill: #80ff00; fill-opacity: 0.25; stroke: #80ff00; stroke-width: 2; }
     .layer-Navigation .keypos-63 text { font-weight: bold; }
@@ -215,8 +223,6 @@ draw_config:
     .layer-Navigation .keypos-78 text { font-weight: bold; }
     .layer-Navigation .keypos-79 rect.key { fill: #80ff00; fill-opacity: 0.25; stroke: #80ff00; stroke-width: 2; }
     .layer-Navigation .keypos-79 text { font-weight: bold; }
-    .layer-Chars .keypos-4 rect.key { fill: #00ff80; fill-opacity: 0.25; stroke: #00ff80; stroke-width: 2; }
-    .layer-Chars .keypos-4 text { font-weight: bold; }
     .layer-Chars .keypos-10 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
     .layer-Chars .keypos-10 text { font-weight: bold; }
     .layer-Chars .keypos-11 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
@@ -225,8 +231,6 @@ draw_config:
     .layer-Chars .keypos-12 text { font-weight: bold; }
     .layer-Chars .keypos-13 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
     .layer-Chars .keypos-13 text { font-weight: bold; }
-    .layer-Chars .keypos-14 rect.key { fill: #00ff80; fill-opacity: 0.25; stroke: #00ff80; stroke-width: 2; }
-    .layer-Chars .keypos-14 text { font-weight: bold; }
     .layer-Chars .keypos-15 rect.key { fill: #00ff80; fill-opacity: 0.25; stroke: #00ff80; stroke-width: 2; }
     .layer-Chars .keypos-15 text { font-weight: bold; }
     .layer-Chars .keypos-22 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
@@ -241,6 +245,8 @@ draw_config:
     .layer-Chars .keypos-26 text { font-weight: bold; }
     .layer-Chars .keypos-27 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
     .layer-Chars .keypos-27 text { font-weight: bold; }
+    .layer-Chars .keypos-28 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
+    .layer-Chars .keypos-28 text { font-weight: bold; }
     .layer-Chars .keypos-29 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
     .layer-Chars .keypos-29 text { font-weight: bold; }
     .layer-Chars .keypos-30 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
@@ -277,12 +283,24 @@ draw_config:
     .layer-Chars .keypos-50 text { font-weight: bold; }
     .layer-Chars .keypos-51 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
     .layer-Chars .keypos-51 text { font-weight: bold; }
+    .layer-Chars .keypos-52 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
+    .layer-Chars .keypos-52 text { font-weight: bold; }
+    .layer-Chars .keypos-53 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+    .layer-Chars .keypos-53 text { font-weight: bold; }
+    .layer-Chars .keypos-54 rect.key { fill: #7a00ff; fill-opacity: 0.25; stroke: #7a00ff; stroke-width: 2; }
+    .layer-Chars .keypos-54 text { font-weight: bold; }
+    .layer-Chars .keypos-55 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+    .layer-Chars .keypos-55 text { font-weight: bold; }
     .layer-Chars .keypos-56 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
     .layer-Chars .keypos-56 text { font-weight: bold; }
-    .layer-Chars .keypos-57 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+    .layer-Chars .keypos-57 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
     .layer-Chars .keypos-57 text { font-weight: bold; }
     .layer-Chars .keypos-59 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
     .layer-Chars .keypos-59 text { font-weight: bold; }
+    .layer-Chars .keypos-60 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
+    .layer-Chars .keypos-60 text { font-weight: bold; }
+    .layer-Chars .keypos-61 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
+    .layer-Chars .keypos-61 text { font-weight: bold; }
     .layer-Chars .keypos-65 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
     .layer-Chars .keypos-65 text { font-weight: bold; }
     .layer-Chars .keypos-66 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
@@ -323,9 +341,17 @@ draw_config:
     .layer-Special .keypos-42 text { font-weight: bold; }
     .layer-Special .keypos-43 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
     .layer-Special .keypos-43 text { font-weight: bold; }
+    .layer-Special .keypos-52 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
+    .layer-Special .keypos-52 text { font-weight: bold; }
+    .layer-Special .keypos-53 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+    .layer-Special .keypos-53 text { font-weight: bold; }
+    .layer-Special .keypos-54 rect.key { fill: #7a00ff; fill-opacity: 0.25; stroke: #7a00ff; stroke-width: 2; }
+    .layer-Special .keypos-54 text { font-weight: bold; }
+    .layer-Special .keypos-55 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+    .layer-Special .keypos-55 text { font-weight: bold; }
     .layer-Special .keypos-56 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
     .layer-Special .keypos-56 text { font-weight: bold; }
-    .layer-Special .keypos-57 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+    .layer-Special .keypos-57 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
     .layer-Special .keypos-57 text { font-weight: bold; }
     .layer-Special .keypos-70 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
     .layer-Special .keypos-70 text { font-weight: bold; }
@@ -458,17 +484,6 @@ draw_config:
     .layer-Magic .keypos-73 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
     .layer-Magic .keypos-73 text { font-weight: bold; }
 
-combos:
-  - p: [41, 42]
-    k: Esc
-  - p: [37, 38]
-    k: Tab
-  - p: [48, 49]
-    k: Del
-  - p: [60, 61]
-    k: CapsWord
-  - p: [42, 74]
-    k: LS(RET)
 layers:
   Base:
     - F1
@@ -493,7 +508,7 @@ layers:
     - 9
     - 0
     - "-"
-    - Home
+    - Bksp
     - Q
     - W
     - E
@@ -505,21 +520,19 @@ layers:
     - O
     - P
     - \
-    - Esc
+    - Del
     - "A
 Cmd"
     - "S
 Alt"
-    - "D
-Shift"
+    - D
     - "F
 Ctrl"
     - G
     - H
     - "J
 Ctrl"
-    - "K
-Shift"
+    - K
     - "L
 Alt"
     - ";
@@ -531,13 +544,12 @@ Cmd"
     - C
     - V
     - B
+    - Shift
     - Esc
-    - "Magic
-Magic"
-    - ↑
     - STT
     - Del
     - Bksp
+    - Shift
     - N
     - M
     - ","
@@ -546,13 +558,14 @@ Magic"
     - PgUp
     - ←
     - →
-    - /
-    - ","
+    - ↑
+    - ↓
     - F23
     - "&thumb_left LAYER_Navigation SPACE"
     - "&mo LAYER_Special"
-    - ↓
-    - Shift
+    - "Magic
+Magic"
+    - Caps
     - "&lt LAYER_Media TAB"
     - "&thumb_right LAYER_Chars RET"
     - 
@@ -586,10 +599,10 @@ Magic"
     - 
     - 
     - 
+    - LC(LA(E))
     - 
     - 
-    - 
-    - 
+    - Home
     - 
     - 
     - 
@@ -613,12 +626,12 @@ Magic"
     - 
     - 
     - 
-    - 
-    - 
-    - 
-    - STT DE
+    - Shift
+    - Esc
+    - STT
     - Del
     - Bksp
+    - Shift
     - 
     - 
     - 
@@ -633,7 +646,7 @@ Magic"
     - "&mo LAYER_Navigation"
     - 
     - 
-    - Shift
+    - Caps
     - Tab
     - Enter
     - ⌘Print
@@ -646,7 +659,7 @@ Magic"
     - 
     - 
     - 
-    - \
+    - 
     - 
     - 
     - 
@@ -656,8 +669,8 @@ Magic"
     - "!"
     - (
     - )
-    - ;
-    - ","
+    - 
+    - \
     - 
     - 
     - 
@@ -670,7 +683,7 @@ Magic"
     - "\""
     - "}"
     - "?"
-    - 
+    - ;
     - ":"
     - "@"
     - 
@@ -698,16 +711,16 @@ Ctrl"
     - _
     - ">"
     - /
-    - 
-    - 
-    - 
-    - 
+    - Shift
+    - Esc
+    - STT
     - Del
     - Bksp
+    - Shift
     - 
     - Ctrl
-    - 
-    - 
+    - ","
+    - .
     - 
     - 
     - 
@@ -718,7 +731,7 @@ Ctrl"
     - Space
     - 
     - Esc
-    - Shift
+    - Caps
     - Tab
     - "&mo LAYER_Chars"
     - 
@@ -779,12 +792,12 @@ Ctrl"
     - 
     - 
     - 
-    - 
-    - 
-    - 
-    - 
+    - Shift
+    - Esc
+    - STT
     - Del
     - Bksp
+    - Shift
     - 
     - 
     - 
@@ -799,7 +812,7 @@ Ctrl"
     - 
     - "&mo LAYER_Special"
     - 
-    - Shift
+    - Caps
     - Tab
     - 
     - 
@@ -973,44 +986,44 @@ Ctrl"
 # LED Underglow Configuration
 # Layer: Base
 #   Left side:
-#     Row 0: MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB
+#     Row 0: MAIN_HRM_RGB MAIN_HRM_RGB MAIN_HRM_RGB MAIN_HRM_RGB MAIN_HRM_RGB
 #     Row 1: MAIN_O_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB
-#     Row 2: MAIN_O_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB
-#     Row 3: MAIN_O_RGB MAIN_HRM_RGB MAIN_HRM_RGB MAIN_HRM_RGB MAIN_HRM_RGB MAIN_RGB
+#     Row 2: SAL_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB
+#     Row 3: SAL_RGB SHIFT_RGB SHIFT_RGB MAIN_RGB SHIFT_RGB MAIN_RGB
 #     Row 4: MAIN_O_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB
-#     Row 5: MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB GRN
+#     Row 5: GRN GRN GRN GRN GRN
 #   Right side:
-#     Row 0: MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB
+#     Row 0: MAIN_HRM_RGB MAIN_HRM_RGB MAIN_HRM_RGB MAIN_HRM_RGB MAIN_HRM_RGB
 #     Row 1: MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_O_RGB
 #     Row 2: MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_RGB MAIN_O_RGB
-#     Row 3: MAIN_RGB MAIN_HRM_RGB MAIN_HRM_RGB MAIN_HRM_RGB MAIN_HRM_RGB MAIN_O_RGB
+#     Row 3: MAIN_RGB SHIFT_RGB MAIN_RGB SHIFT_RGB SHIFT_RGB MAIN_O_RGB
 #     Row 4: MAIN_RGB MAIN_RGB MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB
-#     Row 5: MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB
-#   Thumb left: MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB | MAIN_HRM_RGB MAIN_HRM_RGB MAIN_O_RGB
-#   Thumb right: MAIN_O_RGB SAL_RGB SAL_RGB | MAIN_O_RGB MAIN_HRM_RGB MAIN_HRM_RGB
+#     Row 5: ___ SHIFT_RGB MAIN_O_RGB MAIN_O_RGB MAIN_O_RGB
+#   Thumb left: SHIFT_RGB SAL_RGB PUR_RGB | MAIN_HRM_RGB MAIN_HRM_RGB MAIN_O_RGB
+#   Thumb right: SAL_RGB SAL_RGB SHIFT_RGB | MAIN_O_RGB MAIN_HRM_RGB MAIN_HRM_RGB
 #
 # Layer: Navigation
 #   Left side:
 #     Row 0: ___ ___ ___ ___ ___
 #     Row 1: ___ ___ ___ ___ ___ ___
-#     Row 2: ___ ___ ___ ___ ___ ___
+#     Row 2: ___ ___ ___ ORN_RGB ___ ___
 #     Row 3: ___ MAIN_HRM_RGB MAIN_HRM_RGB MAIN_HRM_RGB MAIN_HRM_RGB ___
 #     Row 4: ___ ___ ___ ___ ___ ___
 #     Row 5: ___ ___ ___ ___ ___
 #   Right side:
 #     Row 0: ___ ___ ___ ___ ___
 #     Row 1: ___ ___ ___ ___ ___ ___
-#     Row 2: ___ ___ ___ ___ COR_RGB COR_RGB
+#     Row 2: AZU_RGB ___ ___ ___ COR_RGB COR_RGB
 #     Row 3: AZU_RGB AZU_RGB AZU_RGB AZU_RGB COR_RGB COR_RGB
 #     Row 4: ___ ___ ___ ___ ___ CHU_RGB
 #     Row 5: GDN_RGB GDN_RGB CHU_RGB CHU_RGB CHU_RGB
-#   Thumb left: ___ ___ ___ | MAG ___ ___
-#   Thumb right: GDN_RGB SAL_RGB SAL_RGB | MAIN_O_RGB MAIN_O_RGB MAIN_RGB
+#   Thumb left: SHIFT_RGB SAL_RGB PUR_RGB | MAG ___ ___
+#   Thumb right: SAL_RGB SAL_RGB SHIFT_RGB | MAIN_O_RGB MAIN_O_RGB MAIN_RGB
 #
 # Layer: Chars
 #   Left side:
-#     Row 0: ___ ___ ___ ___ SPG_RGB
-#     Row 1: MAIN_RGB MAIN_RGB BLU BLU SPG_RGB SPG_RGB
+#     Row 0: ___ ___ ___ ___ ___
+#     Row 1: MAIN_RGB MAIN_RGB BLU BLU ___ SPG_RGB
 #     Row 2: YEL BLU ORN_RGB ORN_RGB BLU YEL
 #     Row 3: YEL YEL MAIN_RGB MAIN_RGB YEL YEL
 #     Row 4: MAIN_RGB BLU MAIN_RGB MAIN_RGB BLU YEL
@@ -1018,12 +1031,12 @@ Ctrl"
 #   Right side:
 #     Row 0: ___ ___ ___ ___ ___
 #     Row 1: ___ ___ ___ ___ ___ ___
-#     Row 2: ___ YEL YEL ___ ___ ___
+#     Row 2: YEL YEL YEL ___ ___ ___
 #     Row 3: AZU_RGB AZU_RGB AZU_RGB AZU_RGB ___ ___
-#     Row 4: ___ MAIN_RGB ___ ___ ___ ___
+#     Row 4: ___ MAIN_RGB MAIN_RGB MAIN_RGB ___ ___
 #     Row 5: ___ MAIN_RGB MAIN_RGB ___ ___
-#   Thumb left: ___ ___ ___ | MAIN_RGB ___ MAIN_RGB
-#   Thumb right: ___ SAL_RGB SAL_RGB | MAIN_O_RGB MAIN_O_RGB MAG
+#   Thumb left: SHIFT_RGB SAL_RGB PUR_RGB | MAIN_RGB ___ MAIN_RGB
+#   Thumb right: SAL_RGB SAL_RGB SHIFT_RGB | MAIN_O_RGB MAIN_O_RGB MAG
 #
 # Layer: Special
 #   Left side:
@@ -1040,8 +1053,8 @@ Ctrl"
 #     Row 3: AZU_RGB AZU_RGB AZU_RGB AZU_RGB ___ ___
 #     Row 4: ___ ___ ___ ___ ___ ___
 #     Row 5: ___ ___ ___ ___ ___
-#   Thumb left: ___ ___ ___ | ___ CYN ___
-#   Thumb right: ___ SAL_RGB SAL_RGB | MAIN_O_RGB MAIN_O_RGB ___
+#   Thumb left: SHIFT_RGB SAL_RGB PUR_RGB | ___ CYN ___
+#   Thumb right: SAL_RGB SAL_RGB SHIFT_RGB | MAIN_O_RGB MAIN_O_RGB ___
 #
 # Layer: Media
 #   Left side:

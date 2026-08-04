@@ -5,6 +5,7 @@
     "MAIN_RGB": [0, 255, 150],
     "MAIN_HRM_RGB": [0, 255, 255],
     "MAIN_O_RGB": [0, 255, 120],
+    "SHIFT_RGB": [0, 128, 255],   // dedicated shift keys - bluer than HRM cyan
 
     // Extended palette
     "COR_RGB": [255, 124, 77],    // #FF7C4D CORAL
@@ -40,51 +41,51 @@
         "left": [
           ["&kp F1", "&kp F2", "&kp F3", "&kp F4", "&kp F5"],
           ["&kp GRAVE", "&kp N1", "&kp N2", "&kp N3", "&kp N4", "&kp N5"],
-          ["&kp HOME", "&kp Q", "&kp W", "&kp E", "&kp R", "&kp T"],
-          ["&kp ESC", "&hml LGUI A", "&hml LALT S", "&hml LSHFT D", "&hml LCTRL F", "&kp G"],
+          ["&kp BSPC", "&kp Q", "&kp W", "&kp E", "&kp R", "&kp T"],
+          ["&kp DEL", "&hml LGUI A", "&hml LALT S", "&kp D", "&hml LCTRL F", "&kp G"],
           ["&kp LSHFT", "&kp Z", "&kp X", "&kp C", "&kp V", "&kp B"],
-          ["&kp LEFT", "&kp RIGHT", "&kp FSLH", "&kp COMMA", "&kp F23"]
+          ["&kp LEFT", "&kp RIGHT", "&kp UP", "&kp DOWN", "&kp F23"]
         ],
         "right": [
           ["&kp F6", "&kp F7", "&kp F8", "&kp F9", "&kp F10"],
           ["&kp N6", "&kp N7", "&kp N8", "&kp N9", "&kp N0", "&kp MINUS"],
           ["&kp Y", "&kp U", "&kp I", "&kp O", "&kp P", "&kp BSLH"],
-          ["&kp H", "&hmr RCTRL J", "&hmr RSHFT K", "&hmr LALT L", "&hmr RGUI SEMI", "&kp SQT"],
+          ["&kp H", "&hmr RCTRL J", "&kp K", "&hmr LALT L", "&hmr RGUI SEMI", "&kp SQT"],
           ["&kp N", "&kp M", "&kp COMMA", "&kp DOT", "&kp FSLH", "&kp PG_UP"],
           ["&none", "&kp RALT", "&kp LBKT", "&kp RBKT", "&kp PG_DN"]
         ],
         "thumb_left": [
-          ["&kp ESC", "&magic LAYER_Magic 0", "&kp UP"],
-          ["&thumb_left LAYER_Navigation SPACE", "&mo LAYER_Special", "&kp DOWN"]
+          ["&kp LSHFT", "&kp ESC", "&kp F13"],
+          ["&thumb_left LAYER_Navigation SPACE", "&mo LAYER_Special", "&magic LAYER_Magic 0"]
         ],
         "thumb_right": [
-          ["&kp F13", "&kp DEL", "&kp BSPC"],
-          ["&kp RSHFT", "&lt LAYER_Media TAB", "&thumb_right LAYER_Chars RET"]
+          ["&kp DEL", "&kp BSPC", "&kp RSHFT"],
+          ["&kp CAPS", "&lt LAYER_Media TAB", "&thumb_right LAYER_Chars RET"]
         ]
       },
       "led": {
         "left": [
-          ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"],
+          ["MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB"],
           ["MAIN_O_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB"],
+          ["SAL_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB"],
+          ["SAL_RGB", "SHIFT_RGB", "SHIFT_RGB", "MAIN_RGB", "SHIFT_RGB", "MAIN_RGB"],
           ["MAIN_O_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB"],
-          ["MAIN_O_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_RGB"],
-          ["MAIN_O_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB"],
-          ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "GRN"]
+          ["GRN", "GRN", "GRN", "GRN", "GRN"]
         ],
         "right": [
-          ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"],
+          ["MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB"],
           ["MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_O_RGB"],
           ["MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "MAIN_O_RGB"],
-          ["MAIN_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_O_RGB"],
+          ["MAIN_RGB", "SHIFT_RGB", "MAIN_RGB", "SHIFT_RGB", "SHIFT_RGB", "MAIN_O_RGB"],
           ["MAIN_RGB", "MAIN_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"],
-          ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"]
+          ["___", "SHIFT_RGB", "MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"]
         ],
         "thumb_left": [
-          ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_O_RGB"],
+          ["SHIFT_RGB", "SAL_RGB", "PUR_RGB"],
           ["MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_O_RGB"]
         ],
         "thumb_right": [
-          ["MAIN_O_RGB", "SAL_RGB", "SAL_RGB"],
+          ["SAL_RGB", "SAL_RGB", "SHIFT_RGB"],
           ["MAIN_O_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB"]
         ]
       }
@@ -95,7 +96,7 @@
         "left": [
           ["&none", "&none", "&none", "&none", "&none"],
           ["&none", "&none", "&none", "&none", "&none", "&none"],
-          ["&none", "&none", "&none", "&none", "&none", "&none"],
+          ["&none", "&none", "&none", "&kp LC(LA(E))", "&none", "&none"],
           ["&none", "&kp LGUI", "&kp LALT", "&kp LSHFT", "&kp LCTRL", "&none"],
           ["&none", "&none", "&none", "&none", "&none", "&none"],
           ["&none", "&none", "&none", "&none", "&none"]
@@ -103,25 +104,25 @@
         "right": [
           ["&none", "&none", "&none", "&none", "&none"],
           ["&none", "&none", "&none", "&none", "&none", "&none"],
-          ["&none", "&none", "&none", "&none", "&kp LS(LG(EQUAL))", "&kp LG(EQUAL)"],
+          ["&kp HOME", "&none", "&none", "&none", "&kp LS(LG(EQUAL))", "&kp LG(EQUAL)"],
           ["&kp LEFT", "&kp DOWN", "&kp UP", "&kp RIGHT", "&kp LS(LG(MINUS))", "&kp LG(MINUS)"],
           ["&none", "&none", "&none", "&none", "&none", "&msc SCRL_UP"],
           ["&macro_super_print", "&kp PSCRN", "&msc SCRL_LEFT", "&msc SCRL_RIGHT", "&msc SCRL_DOWN"]
         ],
         "thumb_left": [
-          ["&none", "&none", "&none"],
+          ["&kp LSHFT", "&kp ESC", "&kp F13"],
           ["&mo LAYER_Navigation", "&none", "&none"]
         ],
         "thumb_right": [
-          ["&kp F14", "&kp DEL", "&kp BSPC"],
-          ["&kp RSHFT", "&kp TAB", "&kp RET"]
+          ["&kp DEL", "&kp BSPC", "&kp RSHFT"],
+          ["&kp CAPS", "&kp TAB", "&kp RET"]
         ]
       },
       "led": {
         "left": [
           ["___", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "___", "___"],
-          ["___", "___", "___", "___", "___", "___"],
+          ["___", "___", "___", "ORN_RGB", "___", "___"],
           ["___", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "MAIN_HRM_RGB", "___"],
           ["___", "___", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "___"]
@@ -129,17 +130,17 @@
         "right": [
           ["___", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "___", "___"],
-          ["___", "___", "___", "___", "COR_RGB", "COR_RGB"],
+          ["AZU_RGB", "___", "___", "___", "COR_RGB", "COR_RGB"],
           ["AZU_RGB", "AZU_RGB", "AZU_RGB", "AZU_RGB", "COR_RGB", "COR_RGB"],
           ["___", "___", "___", "___", "___", "CHU_RGB"],
           ["GDN_RGB", "GDN_RGB", "CHU_RGB", "CHU_RGB", "CHU_RGB"]
         ],
         "thumb_left": [
-          ["___", "___", "___"],
+          ["SHIFT_RGB", "SAL_RGB", "PUR_RGB"],
           ["MAG", "___", "___"]
         ],
         "thumb_right": [
-          ["GDN_RGB", "SAL_RGB", "SAL_RGB"],
+          ["SAL_RGB", "SAL_RGB", "SHIFT_RGB"],
           ["MAIN_O_RGB", "MAIN_O_RGB", "MAIN_RGB"]
         ]
       }
@@ -148,8 +149,8 @@
       "name": "Chars",
       "keys": {
         "left": [
-          ["&none", "&none", "&none", "&none", "&kp BSLH"],
-          ["&kp GRAVE", "&kp EXCL", "&kp LPAR", "&kp RPAR", "&kp SEMI", "&kp COMMA"],
+          ["&none", "&none", "&none", "&none", "&none"],
+          ["&kp GRAVE", "&kp EXCL", "&kp LPAR", "&kp RPAR", "&none", "&kp BSLH"],
           ["&kp PRCNT", "&kp LBRC", "&kp SQT", "&kp DQT", "&kp RBRC", "&kp QMARK"],
           ["&kp HASH", "&hml LGUI CARET", "&hml LALT EQUAL", "&hml LSHFT MINUS", "&hml LCTRL DLLR", "&kp ASTRK"],
           ["&kp TILDE", "&kp LT", "&kp PIPE", "&kp UNDER", "&kp GT", "&kp FSLH"],
@@ -158,24 +159,24 @@
         "right": [
           ["&none", "&none", "&none", "&none", "&none"],
           ["&none", "&none", "&none", "&none", "&none", "&none"],
-          ["&none", "&kp COLON", "&kp AT", "&none", "&none", "&none"],
+          ["&kp SEMI", "&kp COLON", "&kp AT", "&none", "&none", "&none"],
           ["&kp LEFT", "&kp DOWN", "&kp UP", "&kp RIGHT", "&none", "&none"],
-          ["&none", "&kp RCTRL", "&none", "&none", "&none", "&none"],
+          ["&none", "&kp RCTRL", "&kp COMMA", "&kp DOT", "&none", "&none"],
           ["&none", "&kp RET", "&kp TAB", "&none", "&none"]
         ],
         "thumb_left": [
-          ["&none", "&none", "&none"],
+          ["&kp LSHFT", "&kp ESC", "&kp F13"],
           ["&kp SPACE", "&none", "&kp ESC"]
         ],
         "thumb_right": [
-          ["&none", "&kp DEL", "&kp BSPC"],
-          ["&kp RSHFT", "&kp TAB", "&mo LAYER_Chars"]
+          ["&kp DEL", "&kp BSPC", "&kp RSHFT"],
+          ["&kp CAPS", "&kp TAB", "&mo LAYER_Chars"]
         ]
       },
       "led": {
         "left": [
-          ["___", "___", "___", "___", "SPG_RGB"],
-          ["MAIN_RGB", "MAIN_RGB", "BLU", "BLU", "SPG_RGB", "SPG_RGB"],
+          ["___", "___", "___", "___", "___"],
+          ["MAIN_RGB", "MAIN_RGB", "BLU", "BLU", "___", "SPG_RGB"],
           ["YEL", "BLU", "ORN_RGB", "ORN_RGB", "BLU", "YEL"],
           ["YEL", "YEL", "MAIN_RGB", "MAIN_RGB", "YEL", "YEL"],
           ["MAIN_RGB", "BLU", "MAIN_RGB", "MAIN_RGB", "BLU", "YEL"],
@@ -184,17 +185,17 @@
         "right": [
           ["___", "___", "___", "___", "___"],
           ["___", "___", "___", "___", "___", "___"],
-          ["___", "YEL", "YEL", "___", "___", "___"],
+          ["YEL", "YEL", "YEL", "___", "___", "___"],
           ["AZU_RGB", "AZU_RGB", "AZU_RGB", "AZU_RGB", "___", "___"],
-          ["___", "MAIN_RGB", "___", "___", "___", "___"],
+          ["___", "MAIN_RGB", "MAIN_RGB", "MAIN_RGB", "___", "___"],
           ["___", "MAIN_RGB", "MAIN_RGB", "___", "___"]
         ],
         "thumb_left": [
-          ["___", "___", "___"],
+          ["SHIFT_RGB", "SAL_RGB", "PUR_RGB"],
           ["MAIN_RGB", "___", "MAIN_RGB"]
         ],
         "thumb_right": [
-          ["___", "SAL_RGB", "SAL_RGB"],
+          ["SAL_RGB", "SAL_RGB", "SHIFT_RGB"],
           ["MAIN_O_RGB", "MAIN_O_RGB", "MAG"]
         ]
       }
@@ -219,12 +220,12 @@
           ["&none", "&none", "&none", "&none", "&none"]
         ],
         "thumb_left": [
-          ["&none", "&none", "&none"],
+          ["&kp LSHFT", "&kp ESC", "&kp F13"],
           ["&none", "&mo LAYER_Special", "&none"]
         ],
         "thumb_right": [
-          ["&none", "&kp DEL", "&kp BSPC"],
-          ["&kp RSHFT", "&kp TAB", "&none"]
+          ["&kp DEL", "&kp BSPC", "&kp RSHFT"],
+          ["&kp CAPS", "&kp TAB", "&none"]
         ]
       },
       "led": {
@@ -245,11 +246,11 @@
           ["___", "___", "___", "___", "___"]
         ],
         "thumb_left": [
-          ["___", "___", "___"],
+          ["SHIFT_RGB", "SAL_RGB", "PUR_RGB"],
           ["___", "CYN", "___"]
         ],
         "thumb_right": [
-          ["___", "SAL_RGB", "SAL_RGB"],
+          ["SAL_RGB", "SAL_RGB", "SHIFT_RGB"],
           ["MAIN_O_RGB", "MAIN_O_RGB", "___"]
         ]
       }

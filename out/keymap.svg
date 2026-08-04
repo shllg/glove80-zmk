@@ -125,25 +125,25 @@ path.combo {
 /* End Tabler Icons Cleanup */
 
 /* LED underglow color visualization */
-.layer-Base .keypos-0 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-0 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
 .layer-Base .keypos-0 text { font-weight: bold; }
-.layer-Base .keypos-1 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-1 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
 .layer-Base .keypos-1 text { font-weight: bold; }
-.layer-Base .keypos-2 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-2 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
 .layer-Base .keypos-2 text { font-weight: bold; }
-.layer-Base .keypos-3 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-3 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
 .layer-Base .keypos-3 text { font-weight: bold; }
-.layer-Base .keypos-4 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-4 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
 .layer-Base .keypos-4 text { font-weight: bold; }
-.layer-Base .keypos-5 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-5 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
 .layer-Base .keypos-5 text { font-weight: bold; }
-.layer-Base .keypos-6 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-6 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
 .layer-Base .keypos-6 text { font-weight: bold; }
-.layer-Base .keypos-7 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-7 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
 .layer-Base .keypos-7 text { font-weight: bold; }
-.layer-Base .keypos-8 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-8 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
 .layer-Base .keypos-8 text { font-weight: bold; }
-.layer-Base .keypos-9 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-9 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
 .layer-Base .keypos-9 text { font-weight: bold; }
 .layer-Base .keypos-10 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
 .layer-Base .keypos-10 text { font-weight: bold; }
@@ -169,7 +169,7 @@ path.combo {
 .layer-Base .keypos-20 text { font-weight: bold; }
 .layer-Base .keypos-21 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
 .layer-Base .keypos-21 text { font-weight: bold; }
-.layer-Base .keypos-22 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-22 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
 .layer-Base .keypos-22 text { font-weight: bold; }
 .layer-Base .keypos-23 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
 .layer-Base .keypos-23 text { font-weight: bold; }
@@ -193,27 +193,27 @@ path.combo {
 .layer-Base .keypos-32 text { font-weight: bold; }
 .layer-Base .keypos-33 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
 .layer-Base .keypos-33 text { font-weight: bold; }
-.layer-Base .keypos-34 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-34 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
 .layer-Base .keypos-34 text { font-weight: bold; }
-.layer-Base .keypos-35 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
+.layer-Base .keypos-35 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
 .layer-Base .keypos-35 text { font-weight: bold; }
-.layer-Base .keypos-36 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
+.layer-Base .keypos-36 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
 .layer-Base .keypos-36 text { font-weight: bold; }
-.layer-Base .keypos-37 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
+.layer-Base .keypos-37 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
 .layer-Base .keypos-37 text { font-weight: bold; }
-.layer-Base .keypos-38 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
+.layer-Base .keypos-38 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
 .layer-Base .keypos-38 text { font-weight: bold; }
 .layer-Base .keypos-39 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
 .layer-Base .keypos-39 text { font-weight: bold; }
 .layer-Base .keypos-40 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
 .layer-Base .keypos-40 text { font-weight: bold; }
-.layer-Base .keypos-41 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
+.layer-Base .keypos-41 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
 .layer-Base .keypos-41 text { font-weight: bold; }
-.layer-Base .keypos-42 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
+.layer-Base .keypos-42 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
 .layer-Base .keypos-42 text { font-weight: bold; }
-.layer-Base .keypos-43 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
+.layer-Base .keypos-43 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
 .layer-Base .keypos-43 text { font-weight: bold; }
-.layer-Base .keypos-44 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
+.layer-Base .keypos-44 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
 .layer-Base .keypos-44 text { font-weight: bold; }
 .layer-Base .keypos-45 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
 .layer-Base .keypos-45 text { font-weight: bold; }
@@ -229,17 +229,17 @@ path.combo {
 .layer-Base .keypos-50 text { font-weight: bold; }
 .layer-Base .keypos-51 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
 .layer-Base .keypos-51 text { font-weight: bold; }
-.layer-Base .keypos-52 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-52 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
 .layer-Base .keypos-52 text { font-weight: bold; }
-.layer-Base .keypos-53 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-53 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
 .layer-Base .keypos-53 text { font-weight: bold; }
-.layer-Base .keypos-54 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-54 rect.key { fill: #7a00ff; fill-opacity: 0.25; stroke: #7a00ff; stroke-width: 2; }
 .layer-Base .keypos-54 text { font-weight: bold; }
-.layer-Base .keypos-55 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-55 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
 .layer-Base .keypos-55 text { font-weight: bold; }
 .layer-Base .keypos-56 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
 .layer-Base .keypos-56 text { font-weight: bold; }
-.layer-Base .keypos-57 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+.layer-Base .keypos-57 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
 .layer-Base .keypos-57 text { font-weight: bold; }
 .layer-Base .keypos-58 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
 .layer-Base .keypos-58 text { font-weight: bold; }
@@ -253,13 +253,13 @@ path.combo {
 .layer-Base .keypos-62 text { font-weight: bold; }
 .layer-Base .keypos-63 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
 .layer-Base .keypos-63 text { font-weight: bold; }
-.layer-Base .keypos-64 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-64 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
 .layer-Base .keypos-64 text { font-weight: bold; }
-.layer-Base .keypos-65 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-65 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
 .layer-Base .keypos-65 text { font-weight: bold; }
-.layer-Base .keypos-66 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-66 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
 .layer-Base .keypos-66 text { font-weight: bold; }
-.layer-Base .keypos-67 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-67 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
 .layer-Base .keypos-67 text { font-weight: bold; }
 .layer-Base .keypos-68 rect.key { fill: #00ff00; fill-opacity: 0.25; stroke: #00ff00; stroke-width: 2; }
 .layer-Base .keypos-68 text { font-weight: bold; }
@@ -275,9 +275,7 @@ path.combo {
 .layer-Base .keypos-73 text { font-weight: bold; }
 .layer-Base .keypos-74 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
 .layer-Base .keypos-74 text { font-weight: bold; }
-.layer-Base .keypos-75 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
-.layer-Base .keypos-75 text { font-weight: bold; }
-.layer-Base .keypos-76 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
+.layer-Base .keypos-76 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
 .layer-Base .keypos-76 text { font-weight: bold; }
 .layer-Base .keypos-77 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
 .layer-Base .keypos-77 text { font-weight: bold; }
@@ -285,6 +283,10 @@ path.combo {
 .layer-Base .keypos-78 text { font-weight: bold; }
 .layer-Base .keypos-79 rect.key { fill: #00ff78; fill-opacity: 0.25; stroke: #00ff78; stroke-width: 2; }
 .layer-Base .keypos-79 text { font-weight: bold; }
+.layer-Navigation .keypos-25 rect.key { fill: #ff8000; fill-opacity: 0.25; stroke: #ff8000; stroke-width: 2; }
+.layer-Navigation .keypos-25 text { font-weight: bold; }
+.layer-Navigation .keypos-28 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
+.layer-Navigation .keypos-28 text { font-weight: bold; }
 .layer-Navigation .keypos-32 rect.key { fill: #ff7c4d; fill-opacity: 0.25; stroke: #ff7c4d; stroke-width: 2; }
 .layer-Navigation .keypos-32 text { font-weight: bold; }
 .layer-Navigation .keypos-33 rect.key { fill: #ff7c4d; fill-opacity: 0.25; stroke: #ff7c4d; stroke-width: 2; }
@@ -309,11 +311,17 @@ path.combo {
 .layer-Navigation .keypos-44 text { font-weight: bold; }
 .layer-Navigation .keypos-45 rect.key { fill: #ff7c4d; fill-opacity: 0.25; stroke: #ff7c4d; stroke-width: 2; }
 .layer-Navigation .keypos-45 text { font-weight: bold; }
-.layer-Navigation .keypos-55 rect.key { fill: #d9a521; fill-opacity: 0.25; stroke: #d9a521; stroke-width: 2; }
+.layer-Navigation .keypos-52 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
+.layer-Navigation .keypos-52 text { font-weight: bold; }
+.layer-Navigation .keypos-53 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+.layer-Navigation .keypos-53 text { font-weight: bold; }
+.layer-Navigation .keypos-54 rect.key { fill: #7a00ff; fill-opacity: 0.25; stroke: #7a00ff; stroke-width: 2; }
+.layer-Navigation .keypos-54 text { font-weight: bold; }
+.layer-Navigation .keypos-55 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
 .layer-Navigation .keypos-55 text { font-weight: bold; }
 .layer-Navigation .keypos-56 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
 .layer-Navigation .keypos-56 text { font-weight: bold; }
-.layer-Navigation .keypos-57 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+.layer-Navigation .keypos-57 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
 .layer-Navigation .keypos-57 text { font-weight: bold; }
 .layer-Navigation .keypos-63 rect.key { fill: #80ff00; fill-opacity: 0.25; stroke: #80ff00; stroke-width: 2; }
 .layer-Navigation .keypos-63 text { font-weight: bold; }
@@ -335,8 +343,6 @@ path.combo {
 .layer-Navigation .keypos-78 text { font-weight: bold; }
 .layer-Navigation .keypos-79 rect.key { fill: #80ff00; fill-opacity: 0.25; stroke: #80ff00; stroke-width: 2; }
 .layer-Navigation .keypos-79 text { font-weight: bold; }
-.layer-Chars .keypos-4 rect.key { fill: #00ff80; fill-opacity: 0.25; stroke: #00ff80; stroke-width: 2; }
-.layer-Chars .keypos-4 text { font-weight: bold; }
 .layer-Chars .keypos-10 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
 .layer-Chars .keypos-10 text { font-weight: bold; }
 .layer-Chars .keypos-11 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
@@ -345,8 +351,6 @@ path.combo {
 .layer-Chars .keypos-12 text { font-weight: bold; }
 .layer-Chars .keypos-13 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
 .layer-Chars .keypos-13 text { font-weight: bold; }
-.layer-Chars .keypos-14 rect.key { fill: #00ff80; fill-opacity: 0.25; stroke: #00ff80; stroke-width: 2; }
-.layer-Chars .keypos-14 text { font-weight: bold; }
 .layer-Chars .keypos-15 rect.key { fill: #00ff80; fill-opacity: 0.25; stroke: #00ff80; stroke-width: 2; }
 .layer-Chars .keypos-15 text { font-weight: bold; }
 .layer-Chars .keypos-22 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
@@ -361,6 +365,8 @@ path.combo {
 .layer-Chars .keypos-26 text { font-weight: bold; }
 .layer-Chars .keypos-27 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Chars .keypos-27 text { font-weight: bold; }
+.layer-Chars .keypos-28 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
+.layer-Chars .keypos-28 text { font-weight: bold; }
 .layer-Chars .keypos-29 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Chars .keypos-29 text { font-weight: bold; }
 .layer-Chars .keypos-30 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
@@ -397,12 +403,24 @@ path.combo {
 .layer-Chars .keypos-50 text { font-weight: bold; }
 .layer-Chars .keypos-51 rect.key { fill: #ffff00; fill-opacity: 0.25; stroke: #ffff00; stroke-width: 2; }
 .layer-Chars .keypos-51 text { font-weight: bold; }
+.layer-Chars .keypos-52 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
+.layer-Chars .keypos-52 text { font-weight: bold; }
+.layer-Chars .keypos-53 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+.layer-Chars .keypos-53 text { font-weight: bold; }
+.layer-Chars .keypos-54 rect.key { fill: #7a00ff; fill-opacity: 0.25; stroke: #7a00ff; stroke-width: 2; }
+.layer-Chars .keypos-54 text { font-weight: bold; }
+.layer-Chars .keypos-55 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+.layer-Chars .keypos-55 text { font-weight: bold; }
 .layer-Chars .keypos-56 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
 .layer-Chars .keypos-56 text { font-weight: bold; }
-.layer-Chars .keypos-57 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+.layer-Chars .keypos-57 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
 .layer-Chars .keypos-57 text { font-weight: bold; }
 .layer-Chars .keypos-59 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
 .layer-Chars .keypos-59 text { font-weight: bold; }
+.layer-Chars .keypos-60 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
+.layer-Chars .keypos-60 text { font-weight: bold; }
+.layer-Chars .keypos-61 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
+.layer-Chars .keypos-61 text { font-weight: bold; }
 .layer-Chars .keypos-65 rect.key { fill: #00ff96; fill-opacity: 0.25; stroke: #00ff96; stroke-width: 2; }
 .layer-Chars .keypos-65 text { font-weight: bold; }
 .layer-Chars .keypos-66 rect.key { fill: #0000ff; fill-opacity: 0.25; stroke: #0000ff; stroke-width: 2; }
@@ -443,9 +461,17 @@ path.combo {
 .layer-Special .keypos-42 text { font-weight: bold; }
 .layer-Special .keypos-43 rect.key { fill: #99f5ff; fill-opacity: 0.25; stroke: #99f5ff; stroke-width: 2; }
 .layer-Special .keypos-43 text { font-weight: bold; }
+.layer-Special .keypos-52 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
+.layer-Special .keypos-52 text { font-weight: bold; }
+.layer-Special .keypos-53 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+.layer-Special .keypos-53 text { font-weight: bold; }
+.layer-Special .keypos-54 rect.key { fill: #7a00ff; fill-opacity: 0.25; stroke: #7a00ff; stroke-width: 2; }
+.layer-Special .keypos-54 text { font-weight: bold; }
+.layer-Special .keypos-55 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+.layer-Special .keypos-55 text { font-weight: bold; }
 .layer-Special .keypos-56 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
 .layer-Special .keypos-56 text { font-weight: bold; }
-.layer-Special .keypos-57 rect.key { fill: #ffa082; fill-opacity: 0.25; stroke: #ffa082; stroke-width: 2; }
+.layer-Special .keypos-57 rect.key { fill: #0080ff; fill-opacity: 0.25; stroke: #0080ff; stroke-width: 2; }
 .layer-Special .keypos-57 text { font-weight: bold; }
 .layer-Special .keypos-70 rect.key { fill: #00ffff; fill-opacity: 0.25; stroke: #00ffff; stroke-width: 2; }
 .layer-Special .keypos-70 text { font-weight: bold; }
@@ -671,7 +697,7 @@ path.combo {
 </g>
 <g transform="translate(28, 168)" class="key keypos-22">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">Home</text>
+<text x="0" y="0" class="key tap">Bksp</text>
 </g>
 <g transform="translate(84, 168)" class="key keypos-23">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -719,7 +745,7 @@ path.combo {
 </g>
 <g transform="translate(28, 224)" class="key keypos-34">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">Esc</text>
+<text x="0" y="0" class="key tap">Del</text>
 </g>
 <g transform="translate(84, 224)" class="key keypos-35">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -735,9 +761,7 @@ path.combo {
 </g>
 <g transform="translate(196, 196)" class="key keypos-37">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">
-<tspan x="0" dy="-0.6em">D</tspan><tspan x="0" dy="1.2em">Shift</tspan>
-</text>
+<text x="0" y="0" class="key tap">D</text>
 </g>
 <g transform="translate(252, 196)" class="key keypos-38">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -761,9 +785,7 @@ path.combo {
 </g>
 <g transform="translate(812, 196)" class="key keypos-42">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">
-<tspan x="0" dy="-0.6em">K</tspan><tspan x="0" dy="1.2em">Shift</tspan>
-</text>
+<text x="0" y="0" class="key tap">K</text>
 </g>
 <g transform="translate(868, 196)" class="key keypos-43">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -807,29 +829,27 @@ path.combo {
 </g>
 <g transform="translate(371, 312) rotate(30.0)" class="key keypos-52">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">Esc</text>
+<text x="0" y="0" class="key tap">Shift</text>
 </g>
 <g transform="translate(420, 350) rotate(45.0)" class="key keypos-53">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">
-<tspan x="0" dy="-0.6em">Magic</tspan><tspan x="0" dy="1.2em">Magic</tspan>
-</text>
+<text x="0" y="0" class="key tap">Esc</text>
 </g>
 <g transform="translate(458, 399) rotate(60.0)" class="key keypos-54">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">↑</text>
+<text x="0" y="0" class="key tap">STT</text>
 </g>
 <g transform="translate(550, 399) rotate(-60.0)" class="key keypos-55">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">STT</text>
+<text x="0" y="0" class="key tap">Del</text>
 </g>
 <g transform="translate(588, 350) rotate(-45.0)" class="key keypos-56">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">Del</text>
+<text x="0" y="0" class="key tap">Bksp</text>
 </g>
 <g transform="translate(637, 312) rotate(-30.0)" class="key keypos-57">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">Bksp</text>
+<text x="0" y="0" class="key tap">Shift</text>
 </g>
 <g transform="translate(700, 252)" class="key keypos-58">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -865,11 +885,11 @@ path.combo {
 </g>
 <g transform="translate(140, 308)" class="key keypos-66">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">/</text>
+<text x="0" y="0" class="key tap">↑</text>
 </g>
 <g transform="translate(196, 308)" class="key keypos-67">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">,</text>
+<text x="0" y="0" class="key tap">↓</text>
 </g>
 <g transform="translate(252, 308)" class="key keypos-68">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -889,11 +909,13 @@ path.combo {
 </g>
 <g transform="translate(410, 427) rotate(60.0)" class="key keypos-71">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">↓</text>
+<text x="0" y="0" class="key tap">
+<tspan x="0" dy="-0.6em">Magic</tspan><tspan x="0" dy="1.2em">Magic</tspan>
+</text>
 </g>
 <g transform="translate(598, 427) rotate(-60.0)" class="key keypos-72">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">Shift</text>
+<text x="0" y="0" class="key tap">Caps</text>
 </g>
 <g transform="translate(639, 379) rotate(-40.0)" class="key keypos-73">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -925,28 +947,6 @@ path.combo {
 <g transform="translate(980, 336)" class="key keypos-79">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
 <text x="0" y="0" class="key tap">PgDn</text>
-</g>
-<g class="combo combopos-0">
-<rect rx="6" ry="6" x="770" y="183" width="28" height="26" class="combo"/>
-<text x="784" y="196" class="combo tap">Esc</text>
-</g>
-<g class="combo combopos-1">
-<rect rx="6" ry="6" x="210" y="183" width="28" height="26" class="combo"/>
-<text x="224" y="196" class="combo tap">Tab</text>
-</g>
-<g class="combo combopos-2">
-<rect rx="6" ry="6" x="154" y="239" width="28" height="26" class="combo"/>
-<text x="168" y="252" class="combo tap">Del</text>
-</g>
-<g class="combo combopos-3">
-<rect rx="6" ry="6" x="826" y="239" width="28" height="26" class="combo"/>
-<text x="840" y="252" class="combo tap"><tspan style="font-size: 88%">CapsWord</tspan></text>
-</g>
-<g class="combo combopos-4">
-<path d="M753,271 l48,-61" class="combo"/>
-<path d="M753,271 l-48,61" class="combo"/>
-<rect rx="6" ry="6" x="739" y="258" width="28" height="26" class="combo"/>
-<text x="753" y="271" class="combo tap">LS(RET)</text>
 </g>
 </g>
 </g>
@@ -1030,6 +1030,9 @@ path.combo {
 </g>
 <g transform="translate(196, 140)" class="key keypos-25">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">
+<tspan x="0" dy="-0.6em">LC(LA(E</tspan><tspan x="0" dy="1.2em">))</tspan>
+</text>
 </g>
 <g transform="translate(252, 140)" class="key keypos-26">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -1039,6 +1042,7 @@ path.combo {
 </g>
 <g transform="translate(700, 140)" class="key keypos-28">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">Home</text>
 </g>
 <g transform="translate(756, 140)" class="key keypos-29">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -1123,26 +1127,27 @@ path.combo {
 </g>
 <g transform="translate(371, 312) rotate(30.0)" class="key keypos-52">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">Shift</text>
 </g>
 <g transform="translate(420, 350) rotate(45.0)" class="key keypos-53">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">Esc</text>
 </g>
 <g transform="translate(458, 399) rotate(60.0)" class="key keypos-54">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">STT</text>
 </g>
 <g transform="translate(550, 399) rotate(-60.0)" class="key keypos-55">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">
-<tspan x="0" dy="-0.6em">STT</tspan><tspan x="0" dy="1.2em">DE</tspan>
-</text>
+<text x="0" y="0" class="key tap">Del</text>
 </g>
 <g transform="translate(588, 350) rotate(-45.0)" class="key keypos-56">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">Del</text>
+<text x="0" y="0" class="key tap">Bksp</text>
 </g>
 <g transform="translate(637, 312) rotate(-30.0)" class="key keypos-57">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">Bksp</text>
+<text x="0" y="0" class="key tap">Shift</text>
 </g>
 <g transform="translate(700, 252)" class="key keypos-58">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -1194,7 +1199,7 @@ path.combo {
 </g>
 <g transform="translate(598, 427) rotate(-60.0)" class="key keypos-72">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">Shift</text>
+<text x="0" y="0" class="key tap">Caps</text>
 </g>
 <g transform="translate(639, 379) rotate(-40.0)" class="key keypos-73">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -1230,28 +1235,6 @@ path.combo {
 <tspan x="0" dy="-0.6em" style="font-size: 78%">&amp;msc</tspan><tspan x="0" dy="1.2em" style="font-size: 78%">SCRL_DOWN</tspan>
 </text>
 </g>
-<g class="combo combopos-0">
-<rect rx="6" ry="6" x="770" y="183" width="28" height="26" class="combo"/>
-<text x="784" y="196" class="combo tap">Esc</text>
-</g>
-<g class="combo combopos-1">
-<rect rx="6" ry="6" x="210" y="183" width="28" height="26" class="combo"/>
-<text x="224" y="196" class="combo tap">Tab</text>
-</g>
-<g class="combo combopos-2">
-<rect rx="6" ry="6" x="154" y="239" width="28" height="26" class="combo"/>
-<text x="168" y="252" class="combo tap">Del</text>
-</g>
-<g class="combo combopos-3">
-<rect rx="6" ry="6" x="826" y="239" width="28" height="26" class="combo"/>
-<text x="840" y="252" class="combo tap"><tspan style="font-size: 88%">CapsWord</tspan></text>
-</g>
-<g class="combo combopos-4">
-<path d="M753,271 l48,-61" class="combo"/>
-<path d="M753,271 l-48,61" class="combo"/>
-<rect rx="6" ry="6" x="739" y="258" width="28" height="26" class="combo"/>
-<text x="753" y="271" class="combo tap">LS(RET)</text>
-</g>
 </g>
 </g>
 <g transform="translate(30, 1042)" class="layer-Chars">
@@ -1271,7 +1254,6 @@ path.combo {
 </g>
 <g transform="translate(252, 28)" class="key keypos-4">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">\</text>
 </g>
 <g transform="translate(756, 28)" class="key keypos-5">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -1306,11 +1288,10 @@ path.combo {
 </g>
 <g transform="translate(252, 84)" class="key keypos-14">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">;</text>
 </g>
 <g transform="translate(308, 84)" class="key keypos-15">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">,</text>
+<text x="0" y="0" class="key tap">\</text>
 </g>
 <g transform="translate(700, 84)" class="key keypos-16">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -1356,6 +1337,7 @@ path.combo {
 </g>
 <g transform="translate(700, 140)" class="key keypos-28">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">;</text>
 </g>
 <g transform="translate(756, 140)" class="key keypos-29">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -1454,23 +1436,27 @@ path.combo {
 </g>
 <g transform="translate(371, 312) rotate(30.0)" class="key keypos-52">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">Shift</text>
 </g>
 <g transform="translate(420, 350) rotate(45.0)" class="key keypos-53">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">Esc</text>
 </g>
 <g transform="translate(458, 399) rotate(60.0)" class="key keypos-54">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">STT</text>
 </g>
 <g transform="translate(550, 399) rotate(-60.0)" class="key keypos-55">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">Del</text>
 </g>
 <g transform="translate(588, 350) rotate(-45.0)" class="key keypos-56">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">Del</text>
+<text x="0" y="0" class="key tap">Bksp</text>
 </g>
 <g transform="translate(637, 312) rotate(-30.0)" class="key keypos-57">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">Bksp</text>
+<text x="0" y="0" class="key tap">Shift</text>
 </g>
 <g transform="translate(700, 252)" class="key keypos-58">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -1481,9 +1467,11 @@ path.combo {
 </g>
 <g transform="translate(812, 252)" class="key keypos-60">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">,</text>
 </g>
 <g transform="translate(868, 252)" class="key keypos-61">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">.</text>
 </g>
 <g transform="translate(924, 280)" class="key keypos-62">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -1523,7 +1511,7 @@ path.combo {
 </g>
 <g transform="translate(598, 427) rotate(-60.0)" class="key keypos-72">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">Shift</text>
+<text x="0" y="0" class="key tap">Caps</text>
 </g>
 <g transform="translate(639, 379) rotate(-40.0)" class="key keypos-73">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -1551,28 +1539,6 @@ path.combo {
 </g>
 <g transform="translate(980, 336)" class="key keypos-79">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-</g>
-<g class="combo combopos-0">
-<rect rx="6" ry="6" x="770" y="183" width="28" height="26" class="combo"/>
-<text x="784" y="196" class="combo tap">Esc</text>
-</g>
-<g class="combo combopos-1">
-<rect rx="6" ry="6" x="210" y="183" width="28" height="26" class="combo"/>
-<text x="224" y="196" class="combo tap">Tab</text>
-</g>
-<g class="combo combopos-2">
-<rect rx="6" ry="6" x="154" y="239" width="28" height="26" class="combo"/>
-<text x="168" y="252" class="combo tap">Del</text>
-</g>
-<g class="combo combopos-3">
-<rect rx="6" ry="6" x="826" y="239" width="28" height="26" class="combo"/>
-<text x="840" y="252" class="combo tap"><tspan style="font-size: 88%">CapsWord</tspan></text>
-</g>
-<g class="combo combopos-4">
-<path d="M753,271 l48,-61" class="combo"/>
-<path d="M753,271 l-48,61" class="combo"/>
-<rect rx="6" ry="6" x="739" y="258" width="28" height="26" class="combo"/>
-<text x="753" y="271" class="combo tap">LS(RET)</text>
 </g>
 </g>
 </g>
@@ -1746,23 +1712,27 @@ path.combo {
 </g>
 <g transform="translate(371, 312) rotate(30.0)" class="key keypos-52">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">Shift</text>
 </g>
 <g transform="translate(420, 350) rotate(45.0)" class="key keypos-53">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">Esc</text>
 </g>
 <g transform="translate(458, 399) rotate(60.0)" class="key keypos-54">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">STT</text>
 </g>
 <g transform="translate(550, 399) rotate(-60.0)" class="key keypos-55">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
+<text x="0" y="0" class="key tap">Del</text>
 </g>
 <g transform="translate(588, 350) rotate(-45.0)" class="key keypos-56">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">Del</text>
+<text x="0" y="0" class="key tap">Bksp</text>
 </g>
 <g transform="translate(637, 312) rotate(-30.0)" class="key keypos-57">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">Bksp</text>
+<text x="0" y="0" class="key tap">Shift</text>
 </g>
 <g transform="translate(700, 252)" class="key keypos-58">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -1811,7 +1781,7 @@ path.combo {
 </g>
 <g transform="translate(598, 427) rotate(-60.0)" class="key keypos-72">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-<text x="0" y="0" class="key tap">Shift</text>
+<text x="0" y="0" class="key tap">Caps</text>
 </g>
 <g transform="translate(639, 379) rotate(-40.0)" class="key keypos-73">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
@@ -1834,28 +1804,6 @@ path.combo {
 </g>
 <g transform="translate(980, 336)" class="key keypos-79">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-</g>
-<g class="combo combopos-0">
-<rect rx="6" ry="6" x="770" y="183" width="28" height="26" class="combo"/>
-<text x="784" y="196" class="combo tap">Esc</text>
-</g>
-<g class="combo combopos-1">
-<rect rx="6" ry="6" x="210" y="183" width="28" height="26" class="combo"/>
-<text x="224" y="196" class="combo tap">Tab</text>
-</g>
-<g class="combo combopos-2">
-<rect rx="6" ry="6" x="154" y="239" width="28" height="26" class="combo"/>
-<text x="168" y="252" class="combo tap">Del</text>
-</g>
-<g class="combo combopos-3">
-<rect rx="6" ry="6" x="826" y="239" width="28" height="26" class="combo"/>
-<text x="840" y="252" class="combo tap"><tspan style="font-size: 88%">CapsWord</tspan></text>
-</g>
-<g class="combo combopos-4">
-<path d="M753,271 l48,-61" class="combo"/>
-<path d="M753,271 l-48,61" class="combo"/>
-<rect rx="6" ry="6" x="739" y="258" width="28" height="26" class="combo"/>
-<text x="753" y="271" class="combo tap">LS(RET)</text>
 </g>
 </g>
 </g>
@@ -2143,28 +2091,6 @@ path.combo {
 </g>
 <g transform="translate(980, 336)" class="key keypos-79">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-</g>
-<g class="combo combopos-0">
-<rect rx="6" ry="6" x="770" y="183" width="28" height="26" class="combo"/>
-<text x="784" y="196" class="combo tap">Esc</text>
-</g>
-<g class="combo combopos-1">
-<rect rx="6" ry="6" x="210" y="183" width="28" height="26" class="combo"/>
-<text x="224" y="196" class="combo tap">Tab</text>
-</g>
-<g class="combo combopos-2">
-<rect rx="6" ry="6" x="154" y="239" width="28" height="26" class="combo"/>
-<text x="168" y="252" class="combo tap">Del</text>
-</g>
-<g class="combo combopos-3">
-<rect rx="6" ry="6" x="826" y="239" width="28" height="26" class="combo"/>
-<text x="840" y="252" class="combo tap"><tspan style="font-size: 88%">CapsWord</tspan></text>
-</g>
-<g class="combo combopos-4">
-<path d="M753,271 l48,-61" class="combo"/>
-<path d="M753,271 l-48,61" class="combo"/>
-<rect rx="6" ry="6" x="739" y="258" width="28" height="26" class="combo"/>
-<text x="753" y="271" class="combo tap">LS(RET)</text>
 </g>
 </g>
 </g>
@@ -2456,28 +2382,6 @@ path.combo {
 </g>
 <g transform="translate(980, 336)" class="key keypos-79">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key"/>
-</g>
-<g class="combo combopos-0">
-<rect rx="6" ry="6" x="770" y="183" width="28" height="26" class="combo"/>
-<text x="784" y="196" class="combo tap">Esc</text>
-</g>
-<g class="combo combopos-1">
-<rect rx="6" ry="6" x="210" y="183" width="28" height="26" class="combo"/>
-<text x="224" y="196" class="combo tap">Tab</text>
-</g>
-<g class="combo combopos-2">
-<rect rx="6" ry="6" x="154" y="239" width="28" height="26" class="combo"/>
-<text x="168" y="252" class="combo tap">Del</text>
-</g>
-<g class="combo combopos-3">
-<rect rx="6" ry="6" x="826" y="239" width="28" height="26" class="combo"/>
-<text x="840" y="252" class="combo tap"><tspan style="font-size: 88%">CapsWord</tspan></text>
-</g>
-<g class="combo combopos-4">
-<path d="M753,271 l48,-61" class="combo"/>
-<path d="M753,271 l-48,61" class="combo"/>
-<rect rx="6" ry="6" x="739" y="258" width="28" height="26" class="combo"/>
-<text x="753" y="271" class="combo tap">LS(RET)</text>
 </g>
 </g>
 </g>
