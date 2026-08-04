@@ -380,6 +380,13 @@ fn discover_devices(
     Ok(())
 }
 
+/// Only a genuine device removal ends a capture session. Every other read failure is transient and
+/// must not discard the device's partial aggregates.
+fn is_device_gone(error: &io::Error) -> bool {
+    error.kind() == io::ErrorKind::UnexpectedEof
+        || matches!(error.raw_os_error(), Some(libc::ENODEV) | Some(libc::EIO))
+}
+
 fn process_device_events(
     config: &Config,
     keymap: &Keymap,
@@ -393,14 +400,21 @@ fn process_device_events(
             let event = match runtime.input.next_event() {
                 Ok(Some(event)) => event,
                 Ok(None) => break,
-                Err(_) => {
-                    runtime.disconnected = true;
+                Err(error) => {
+                    if is_device_gone(&error) {
+                        runtime.disconnected = true;
+                    } else {
+                        warn!(error = %error, "input device read failed; keeping the device");
+                    }
                     break;
                 }
             };
             if event.is_sequence_loss() {
-                runtime.disconnected = true;
-                break;
+                // SYN_DROPPED means the kernel overflowed this client's buffer, not that the
+                // device went away. Re-sync and keep accumulating.
+                warn!("kernel dropped input events; re-syncing device state");
+                runtime.aggregate.resync_after_sequence_loss();
+                continue;
             }
             if !event.is_key() {
                 continue;

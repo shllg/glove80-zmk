@@ -405,6 +405,24 @@ impl Aggregator {
         self.tier_a_bucket_id = next_bucket_id;
     }
 
+    /// Recover from a `SYN_DROPPED`. The kernel overflowed this client's evdev buffer, so held-key
+    /// state and every timing relationship spanning the gap are unreliable and are cleared.
+    /// Already-counted Tier A and Tier B totals remain valid and are deliberately kept: a buffer
+    /// overflow is not a session boundary, and resetting `tier_b_accum` here would keep the Tier B
+    /// privacy floor permanently out of reach.
+    pub fn resync_after_sequence_loss(&mut self) {
+        self.held.zeroize();
+        self.keys_since_mod_down.clear();
+        self.last_event_ts.zeroize();
+        self.last_event_ts = NO_EVENT_TS;
+        self.last_alpha_ts.zeroize();
+        self.last_keydown_ts.zeroize();
+        self.bsp_run.zeroize();
+        self.last_mod_release_ts.zeroize();
+        self.last_mod_release_class.zeroize();
+        self.bsp_run_after_mod_class.zeroize();
+    }
+
     pub fn bounded_footprint(&self) -> usize {
         TIER_A_FIXED_ENTRIES
             + self.tier_b_accum.len()
@@ -662,6 +680,31 @@ mod tests {
         assert_eq!(aggregate.tier_a.keystrokes, 0);
         assert_eq!(aggregate.held.len(), 0);
         assert_eq!(aggregate.keys_since_mod_down.len(), 0);
+    }
+
+    #[test]
+    fn sequence_loss_resync_keeps_both_tiers_and_clears_context() {
+        let mut aggregate = Aggregator::new(0);
+        for index in 0..1_500 {
+            let seal = aggregate.handle_event(index, 30, 1, &keymap(), 2_000);
+            assert!(seal.is_none());
+        }
+        aggregate.resync_after_sequence_loss();
+        assert_eq!(aggregate.tier_b_total(), 1_500);
+        assert_eq!(aggregate.tier_a.keystrokes, 1_500);
+        assert_eq!(aggregate.held.len(), 0);
+        assert_eq!(aggregate.keys_since_mod_down.len(), 0);
+        for index in 1_500..1_999 {
+            let seal = aggregate.handle_event(index, 30, 1, &keymap(), 2_000);
+            assert!(seal.is_none());
+        }
+        let seal = aggregate.handle_event(2_000, 30, 1, &keymap(), 2_000);
+        assert!(seal.is_some());
+        assert_eq!(
+            seal.unwrap_or_else(|| unreachable!()).keystrokes,
+            2_000,
+            "a dropped-event re-sync must not reset the Tier B privacy floor"
+        );
     }
 
     #[test]

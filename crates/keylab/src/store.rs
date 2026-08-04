@@ -139,6 +139,20 @@ impl Store {
         uniq: Option<&str>,
         first_ts: i64,
     ) -> Result<i64> {
+        // Reconnects must reuse the existing identity, otherwise every reconnect mints a new
+        // device_id and fragments the history of one physical keyboard across many rows.
+        let existing: Option<i64> = self
+            .connection
+            .query_row(
+                "SELECT id FROM device WHERE name = ?1 AND uniq IS ?2 ORDER BY id LIMIT 1",
+                params![name, uniq],
+                |row| row.get(0),
+            )
+            .optional()
+            .context("failed to look up a previously registered input device")?;
+        if let Some(device_id) = existing {
+            return Ok(device_id);
+        }
         self.connection
             .execute(
                 "INSERT INTO device(name, uniq, first_ts) VALUES (?1, ?2, ?3)",
@@ -603,6 +617,24 @@ mod tests {
             .register_device("fixture", None, 1_000)
             .unwrap_or_else(|error| panic!("{error:#}"));
         (temp, db_path, store, device_id)
+    }
+
+    #[test]
+    fn reconnecting_reuses_the_existing_device_row() {
+        let (_temp, _path, mut store, device_id) = open_store();
+        let reconnected = store
+            .register_device("fixture", None, 2_000)
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        assert_eq!(reconnected, device_id);
+        let other = store
+            .register_device("other", None, 2_000)
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        assert_ne!(other, device_id);
+        let rows: i64 = store
+            .connection()
+            .query_row("SELECT COUNT(*) FROM device", [], |row| row.get(0))
+            .unwrap_or_else(|error| panic!("{error}"));
+        assert_eq!(rows, 2);
     }
 
     #[test]
