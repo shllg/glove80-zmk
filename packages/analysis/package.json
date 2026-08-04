@@ -1,0 +1,14 @@
+{
+  "name": "@glove80/analysis",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test"
+  },
+  "exports": {
+    "./db": "./src/db.ts",
+    "./meta": "./src/meta.ts",
+    "./metrics": "./src/metrics.ts",
+    "./report": "./src/report.ts"
+  }
+}

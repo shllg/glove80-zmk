@@ -1,0 +1,11 @@
+# keylab refuses privacy floors below 25 and 2000, respectively.
+# When an input remapper (evsieve, interception-tools, kanata, or keyd) grabs the physical
+# keyboard, that device delivers no events here; capture the remapper's virtual output instead.
+# "Glove80" is correct only when no remapper is in the input path.
+device_name_contains = "Evsieve Virtual Device"
+db_path = "~/.local/share/glove80-lab/keylab.db"
+keymap_meta_path = "/home/sascha/src/glove80-zmk/out/keymap-meta.json"
+bucket_seconds = 10
+tier_a_seal_floor = 25
+tier_b_seal_count = 2000
+live_snapshot_seconds = 1

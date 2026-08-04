@@ -1,0 +1,82 @@
+[Unit]
+Description=keylab keystroke telemetry
+After=multi-user.target
+# WantedBy=multi-user.target would otherwise make that target order itself after this service.
+DefaultDependencies=no
+# Restore the normal clean shutdown relationship removed with DefaultDependencies=no.
+Conflicts=shutdown.target
+Before=shutdown.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/keylab
+User=sascha
+SupplementaryGroups=input
+NoNewPrivileges=yes
+PrivateNetwork=yes
+ProtectSystem=strict
+ProtectHome=read-only
+# systemd 261 resolves %h to /root in system units regardless of User=, so use the real home.
+ReadWritePaths=/home/sascha/.local/share/glove80-lab
+ProtectProc=invisible
+# Expose only process-related procfs entries; the daemon does not need kernel procfs interfaces.
+ProcSubset=pid
+PrivateTmp=yes
+RestrictAddressFamilies=AF_UNIX
+# Deny IP traffic at the cgroup layer as defense in depth behind the private network namespace.
+IPAddressDeny=any
+# The daemon never listens on a local or network socket.
+SocketBindDeny=any
+MemoryDenyWriteExecute=yes
+LockPersonality=yes
+LimitCORE=0
+# mlockall is fail-closed in the daemon and must be allowed to cover its bounded process memory.
+LimitMEMLOCK=infinity
+SystemCallFilter=@system-service
+# Permit only the ABI used by this native build.
+SystemCallArchitectures=native
+
+# A private /dev would hide evdev; retain host /dev and constrain it with DevicePolicy below.
+PrivateDevices=no
+# The daemon has no reason to alter kernel runtime settings.
+ProtectKernelTunables=yes
+# Prevent loading or unloading kernel modules from a compromised daemon.
+ProtectKernelModules=yes
+# Prevent access to kernel log interfaces.
+ProtectKernelLogs=yes
+# Prevent modification of the host cgroup hierarchy.
+ProtectControlGroups=yes
+# Prevent the daemon from creating any namespace of its own.
+RestrictNamespaces=yes
+# The capture loop does not need real-time scheduling privileges.
+RestrictRealtime=yes
+# Prevent creation of set-user-ID or set-group-ID files.
+RestrictSUIDSGID=yes
+# Remove any System V or POSIX IPC objects left when the service exits.
+RemoveIPC=yes
+# Drop every Linux capability; evdev access comes only from SupplementaryGroups=input.
+CapabilityBoundingSet=
+# Ensure no ambient capability can be inherited across exec.
+AmbientCapabilities=
+# Keep service credentials in a private kernel keyring.
+KeyringMode=private
+# Make every file private by default in addition to the daemon's explicit modes.
+UMask=0077
+# Give the service a private UTS namespace and deny host-name changes.
+ProtectHostname=yes
+# Deny writes to the system and hardware clocks.
+ProtectClock=yes
+# Close the device cgroup by default while retaining standard pseudo-devices.
+DevicePolicy=closed
+# Allow read-only evdev access via the input character-device group (major 13 on this system).
+DeviceAllow=char-input r
+# Bound process/thread creation; keylab is single-threaded apart from library internals.
+TasksMax=32
+# Bound damage from unexpected allocation growth while leaving ample room for SQLite.
+MemoryMax=256M
+
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

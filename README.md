@@ -30,6 +30,8 @@ This TypeScript-based build system takes a JSON configuration and generates:
 - Visual keyboard diagrams (SVG/PDF)
 - YAML for keymap-drawer visualization
 
+The repository also contains [keylab](docs/keylab.md), a local, privacy-reduced keystroke telemetry daemon for measuring ergonomic load on this keymap.
+
 ## Quick Start
 
 ```bash

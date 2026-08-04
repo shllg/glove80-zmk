@@ -5,9 +5,13 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "build": "tsx src/index.ts",
+    "analysis": "bun packages/analysis/bin/analysis.ts",
+    "build": "tsx packages/keymap/src/index.ts",
     "compile": "./scripts/compile.sh",
-    "test": "./scripts/verify-build.sh"
+    "test": "pnpm test:keymap && bun test packages/analysis && bun test packages/viewer && ./scripts/verify-build.sh",
+    "test:keymap": "node --import tsx --test packages/keymap/test/**/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "viewer": "bun packages/viewer/src/server.ts"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +23,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/bun": "^1.3.14",
     "@types/json5": "^2.2.0",
     "@types/node": "^24.3.1",
     "ts-node": "^10.9.2",

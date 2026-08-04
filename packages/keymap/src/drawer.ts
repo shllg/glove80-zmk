@@ -127,8 +127,8 @@ export function toDrawerYaml(layout: Layout, combos: Combo[] = []) {
     // Handle home row mods (hml/hmr) - extract both modifier and key
     const hmlMatch = binding.match(/^&hml\w*\s+(\w+)\s+(.+)$/);
     if (hmlMatch) {
-      const mod = hmlMatch[1];
-      const key = hmlMatch[2];
+      const mod = hmlMatch[1]!;
+      const key = hmlMatch[2]!;
       const modLabel = keyCharMap[mod] || mod;
       const keyLabel = keyCharMap[key] || key;
       return `${keyLabel}\n${modLabel}`;  // Two-line format for keymap-drawer
@@ -136,8 +136,8 @@ export function toDrawerYaml(layout: Layout, combos: Combo[] = []) {
 
     const hmrMatch = binding.match(/^&hmr\w*\s+(\w+)\s+(.+)$/);
     if (hmrMatch) {
-      const mod = hmrMatch[1];
-      const key = hmrMatch[2];
+      const mod = hmrMatch[1]!;
+      const key = hmrMatch[2]!;
       const modLabel = keyCharMap[mod] || mod;
       const keyLabel = keyCharMap[key] || key;
       return `${keyLabel}\n${modLabel}`;  // Two-line format for keymap-drawer
@@ -146,8 +146,8 @@ export function toDrawerYaml(layout: Layout, combos: Combo[] = []) {
     // Handle thumb keys with layer info
     const thumbMatch = binding.match(/^&thumb_(left|right)\s+(\d+)\s+(.+)$/);
     if (thumbMatch) {
-      const layer = thumbMatch[2];
-      const key = thumbMatch[3];
+      const layer = thumbMatch[2]!;
+      const key = thumbMatch[3]!;
       const keyLabel = keyCharMap[key] || key;
       return `${keyLabel}\nL${layer}`;  // Show key with layer number
     }
@@ -155,8 +155,8 @@ export function toDrawerYaml(layout: Layout, combos: Combo[] = []) {
     // Handle layer tap (lt)
     const ltMatch = binding.match(/^&lt\s+(\d+)\s+(.+)$/);
     if (ltMatch) {
-      const layer = ltMatch[1];
-      const key = ltMatch[2];
+      const layer = ltMatch[1]!;
+      const key = ltMatch[2]!;
       const keyLabel = keyCharMap[key] || key;
       return `${keyLabel}\nL${layer}`;
     }
@@ -206,7 +206,7 @@ export function toDrawerYaml(layout: Layout, combos: Combo[] = []) {
     // Remove the &kp prefix if present
     const keyMatch = binding.match(/^&kp\s+(.+)$/);
     if (keyMatch) {
-      const key = keyMatch[1];
+      const key = keyMatch[1]!;
       return keyCharMap[key] || key;
     }
 
@@ -273,27 +273,17 @@ export function toDrawerYaml(layout: Layout, combos: Combo[] = []) {
 
       // Flatten the LED configuration to match key order
       const led = layer.led;
-      const ledFlat: string[] = [
-        ...led.left[0], ...led.right[0],             // F-keys
-        ...led.left[1], ...led.right[1],             // Numbers
-        ...led.left[2], ...led.right[2],             // QWERTY top
-        ...led.left[3], ...led.right[3],             // Home row
-        ...led.left[4],                              // Left bottom row
-        ...led.thumb_left[0], ...led.thumb_right[0], // Upper thumb
-        ...led.right[4],                             // Right bottom row
-        ...led.left[5],                              // Left bottom corner
-        ...led.thumb_left[1], ...led.thumb_right[1], // Lower thumb
-        ...led.right[5],                             // Right bottom corner
-      ];
+      const ledFlat = flattenToPositions(led);
 
       // Create CSS rules for each key position with an LED color
       for (let i = 0; i < ledFlat.length && i < 80; i++) {
         const ledColor = ledFlat[i];
         if (ledColor && ledColor !== "___" && layout.colorDefinitions?.[ledColor]) {
-          const rgb = layout.colorDefinitions[ledColor] as number[];
-          const r = rgb[0];
-          const g = rgb[1];
-          const b = rgb[2];
+          const rgb = layout.colorDefinitions[ledColor];
+          const [r, g, b] = rgb;
+          if (r === undefined || g === undefined || b === undefined) {
+            throw new Error(`Color '${ledColor}' must contain exactly three channels`);
+          }
           const hex = `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 
           // Target the specific key in the specific layer
@@ -316,7 +306,7 @@ export function toDrawerYaml(layout: Layout, combos: Combo[] = []) {
       if (combo.layers) {
         const layerNames = combo.layers
           .map(i => layout.layers[i]?.name)
-          .filter(Boolean);
+          .filter((name): name is string => Boolean(name));
         if (layerNames.length > 0) {
           yaml += `    l: [${layerNames.map(n => `"${n}"`).join(", ")}]\n`;
         }
@@ -343,15 +333,20 @@ export function toDrawerYaml(layout: Layout, combos: Combo[] = []) {
       // Convert structured LED format to readable grid
       const led = layer.led;
       yaml += `#   Left side:\n`;
-      for (let row = 0; row < led.left.length; row++) {
-        yaml += `#     Row ${row}: ${led.left[row].join(' ')}\n`;
+      for (const [row, colors] of led.left.entries()) {
+        yaml += `#     Row ${row}: ${colors.join(' ')}\n`;
       }
       yaml += `#   Right side:\n`;
-      for (let row = 0; row < led.right.length; row++) {
-        yaml += `#     Row ${row}: ${led.right[row].join(' ')}\n`;
+      for (const [row, colors] of led.right.entries()) {
+        yaml += `#     Row ${row}: ${colors.join(' ')}\n`;
       }
-      yaml += `#   Thumb left: ${led.thumb_left[0].join(' ')} | ${led.thumb_left[1].join(' ')}\n`;
-      yaml += `#   Thumb right: ${led.thumb_right[0].join(' ')} | ${led.thumb_right[1].join(' ')}\n`;
+      const [leftThumbUpper, leftThumbLower] = led.thumb_left;
+      const [rightThumbUpper, rightThumbLower] = led.thumb_right;
+      if (!leftThumbUpper || !leftThumbLower || !rightThumbUpper || !rightThumbLower) {
+        throw new Error(`Layer '${layer.name}' must contain two thumb LED rows per hand`);
+      }
+      yaml += `#   Thumb left: ${leftThumbUpper.join(' ')} | ${leftThumbLower.join(' ')}\n`;
+      yaml += `#   Thumb right: ${rightThumbUpper.join(' ')} | ${rightThumbLower.join(' ')}\n`;
       yaml += `#\n`;
     }
   }

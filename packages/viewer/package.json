@@ -1,0 +1,11 @@
+{
+  "name": "@glove80/viewer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@glove80/analysis": "workspace:*"
+  }
+}

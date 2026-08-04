@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>keylab viewer</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" type="module"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div>
+        <p class="eyebrow">Glove80 telemetry</p>
+        <h1>keylab</h1>
+      </div>
+      <label class="range-control">
+        <span>Time range</span>
+        <select id="range">
+          <option value="live">Live · 30m</option>
+          <option value="today">Today</option>
+          <option value="7d">7 days</option>
+          <option value="all">All</option>
+        </select>
+      </label>
+    </header>
+
+    <main>
+      <section class="totals" aria-label="Summary totals">
+        <article><span>Keystrokes</span><strong id="total-keys">0</strong></article>
+        <article><span>Autorepeats</span><strong id="autorepeats">0</strong></article>
+        <article><span>Tier B windows</span><strong id="tier-b-windows">0</strong></article>
+        <article id="unattributed-card"><span>Unattributed</span><strong id="unattributed">0.00%</strong></article>
+      </section>
+      <p id="reliability-warning" class="warning" hidden>Positional metrics are unreliable: unattributed share exceeds 25%.</p>
+      <p id="status" class="status" role="status">Connecting…</p>
+
+      <section class="panel heatmap-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Tier B · unordered counts</p>
+            <h2>Physical key load</h2>
+          </div>
+          <span>low <i class="legend"></i> high</span>
+        </div>
+        <div id="heatmap" class="heatmap" aria-label="Glove80 per-key heatmap"></div>
+      </section>
+
+      <div class="columns">
+        <section class="panel">
+          <div class="panel-heading">
+            <div><p class="eyebrow">Tier A</p><h2>Finger load</h2></div>
+          </div>
+          <div id="finger-chart" class="bar-chart"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <div><p class="eyebrow">Bucket-resolution estimates</p><h2>Modifier holds</h2></div>
+          </div>
+          <div id="modifier-chart" class="histograms"></div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

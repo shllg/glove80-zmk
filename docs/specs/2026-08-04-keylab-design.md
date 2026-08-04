@@ -338,6 +338,12 @@ Faster flush intervals make the tool feel alive; they do not accelerate inferenc
 
 The live view is for verification and motivation. Its real value is catching a mis-mapped keycode on day one instead of discovering on day five that a week of data is garbage.
 
+### Hibernation and locked memory
+
+`mlockall` prevents keylab's pages from being written to normal swap while the daemon is running,
+but it cannot protect them from suspend-to-disk: hibernation writes all RAM, including locked pages,
+to the resume image. The only effective mitigation is an encrypted swap/resume device.
+
 ---
 
 # Implementation plan

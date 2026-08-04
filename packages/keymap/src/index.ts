@@ -9,6 +9,7 @@ import { generateKeymapDtsi } from "./generateDtsi";
 import { toDrawerYaml } from "./drawer";
 import { parseCombos } from "./combos";
 import type { Combo } from "./combos";
+import { createKeymapMeta, serializeKeymapMeta } from "./keymapMeta";
 
 const root = (...p: string[]) => path.join(process.cwd(), ...p);
 
@@ -71,11 +72,15 @@ async function main() {
   fs.mkdirSync(root("out"), { recursive: true });
   fs.writeFileSync(root("out/keymap.dtsi"), dtsi);
 
+  const positionDefineSource = fs.readFileSync(root("config/glove80.keymap"), "utf8");
+  const keymapMeta = createKeymapMeta(layout, positionDefineSource);
+  fs.writeFileSync(root("out/keymap-meta.json"), serializeKeymapMeta(keymapMeta));
+
   // Generate YAML + SVG
   const yaml = toDrawerYaml(layout, combos);
   fs.writeFileSync(root("out/keymap.yaml"), yaml);
   await execa("keymap", ["draw", "out/keymap.yaml", "--output", "out/keymap.svg"], { stdio: "inherit" });
-  console.log("✅ Built: out/keymap.dtsi, out/keymap.yaml, out/keymap.svg");
+  console.log("✅ Built: out/keymap.dtsi, out/keymap.yaml, out/keymap.svg, out/keymap-meta.json");
 
   // Generate multi-page PDF
   await generatePdf(layout, combos);

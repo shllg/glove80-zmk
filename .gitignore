@@ -4,6 +4,13 @@
 # tmp
 out/temp_pdf
 
+# Rust
+target/
+
+# Captured keystroke data
+*.db
+*.db-wal
+*.db-shm
+
 # system 
 node_modules
-

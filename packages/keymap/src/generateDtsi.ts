@@ -6,6 +6,7 @@ import path from "path";
 type ProfileSlot = 0 | 1 | 2 | 3;
 
 const PROFILE_SLOTS: ProfileSlot[] = [0, 1, 2, 3];
+const BT_PROFILES = ["BT1", "BT2", "BT3", "BT4"] as const;
 const DEFAULT_PROFILE_LAYER_MAP: Record<ProfileSlot, string> = {
   0: "Base",
   1: "Base",
@@ -92,7 +93,7 @@ function applyProfileIndicators(workingLayout: Layout): Record<ProfileSlot, stri
   const existingLayerNames = new Set(workingLayout.layers.map((layer) => layer.name));
   const btLayersToInsert: typeof workingLayout.layers = [];
   for (const slot of PROFILE_SLOTS) {
-    const btProfile = `BT${slot + 1}` as const;
+    const btProfile = BT_PROFILES[slot];
     const btColor = resolveColor(btProfile);
     if (!btColor) continue;
 
@@ -216,9 +217,10 @@ export function generateKeymapDtsi(layout: Layout): string {
     colorDefines = "/* Custom color defines */\n";
     for (const [name, rgb] of Object.entries(workingLayout.colorDefinitions)) {
       // Convert RGB array [r,g,b] to hex value 0xRRGGBB
-      const r = (rgb as number[])[0];
-      const g = (rgb as number[])[1]; 
-      const b = (rgb as number[])[2];
+      const [r, g, b] = rgb;
+      if (r === undefined || g === undefined || b === undefined) {
+        throw new Error(`Color '${name}' must contain exactly three channels`);
+      }
       const hex = ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0').toUpperCase();
       colorDefines += `#define ${name} 0x${hex}\n`;
     }
@@ -232,8 +234,9 @@ export function generateKeymapDtsi(layout: Layout): string {
     const content = fs.readFileSync(behaviorsPath, "utf8");
     // Extract just the content inside the / { ... } block
     const match = content.match(/\/\s*\{([\s\S]*)\}/);
-    if (match) {
-      behaviors = match[1].trim();
+    const body = match?.[1];
+    if (body) {
+      behaviors = body.trim();
     }
   }
   if (!behaviors) {
@@ -247,8 +250,9 @@ export function generateKeymapDtsi(layout: Layout): string {
   if (fs.existsSync(macrosPath)) {
     const content = fs.readFileSync(macrosPath, "utf8");
     const match = content.match(/\/\s*\{([\s\S]*)\}/);
-    if (match) {
-      macros = match[1].trim();
+    const body = match?.[1];
+    if (body) {
+      macros = body.trim();
     }
   }
   if (!macros) {
@@ -262,8 +266,9 @@ export function generateKeymapDtsi(layout: Layout): string {
   if (fs.existsSync(combosPath)) {
     const content = fs.readFileSync(combosPath, "utf8");
     const match = content.match(/\/\s*\{([\s\S]*)\}/);
-    if (match) {
-      combos = match[1].trim();
+    const body = match?.[1];
+    if (body) {
+      combos = body.trim();
     }
   }
 

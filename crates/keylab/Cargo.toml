@@ -1,0 +1,21 @@
+[package]
+name = "keylab"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+evdev = "0.13"
+libc = "0.2"
+nix = { version = "0.29", features = ["ioctl"] }
+rusqlite = { version = "0.37", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+signal-hook = "0.3"
+toml = "0.9"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+zeroize = "1"
+
+[dev-dependencies]
+tempfile = "3"
