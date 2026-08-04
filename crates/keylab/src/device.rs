@@ -10,7 +10,9 @@ use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
 use zeroize::{Zeroize, Zeroizing};
 
-nix::ioctl_write_int!(eviocsclockid, b'E', 0xa0);
+// EVIOCSCLOCKID takes a pointer to the clock id, not the id by value: the kernel
+// reads it with copy_from_user, so passing it by value fails with EFAULT.
+nix::ioctl_write_ptr!(eviocsclockid, b'E', 0xa0, libc::c_int);
 
 const INPUT_EVENT_SIZE: usize = std::mem::size_of::<libc::input_event>();
 const TIME_COMPONENT_SIZE: usize = std::mem::size_of::<libc::time_t>();
@@ -209,9 +211,10 @@ fn read_i32(bytes: &[u8]) -> i32 {
 }
 
 fn set_monotonic_clock(device: &RawDevice) -> Result<()> {
-    let clock_id = libc::CLOCK_MONOTONIC as nix::sys::ioctl::ioctl_param_type;
-    // SAFETY: EVIOCSCLOCKID receives a valid evdev file descriptor and an integer clock id.
-    unsafe { eviocsclockid(device.as_raw_fd(), clock_id) }
+    let clock_id: libc::c_int = libc::CLOCK_MONOTONIC;
+    // SAFETY: EVIOCSCLOCKID receives a valid evdev file descriptor and a pointer to an
+    // integer clock id that outlives the call.
+    unsafe { eviocsclockid(device.as_raw_fd(), &clock_id) }
         .context("failed to set monotonic input clock")?;
     Ok(())
 }
