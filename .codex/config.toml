@@ -1,0 +1,11 @@
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[project]
+name = "glove80-zmk"
+
+[env]
+DISABLE_TELEMETRY = "1"
+
+[sandbox_workspace_write]
+network_access = true
