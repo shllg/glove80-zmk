@@ -230,6 +230,106 @@ If the keyboard has trouble pairing with your computer via Bluetooth:
 - Remove/forget the keyboard from your OS Bluetooth settings, then re-pair
 - WiFi devices between the halves can disrupt the 2.4 GHz BLE signal
 
+## keylab -- Keystroke Telemetry
+
+[keylab](docs/keylab.md) is a local-only daemon that measures ergonomic load on this keymap: per-finger and per-row distribution, modifier hold times, home row mod misfires, and typing dose. It records aggregates only -- no characters, no keycodes, no event order, no timestamps per key. See [docs/keylab.md](docs/keylab.md) for the full privacy model, the hardening details, and how to delete the data.
+
+### Install and start
+
+`pnpm build` must run first: the daemon reads `out/keymap-meta.json` to map Linux keycodes to physical positions, and refuses to start without it.
+
+```bash
+pnpm build
+bash crates/keylab/verify-hardening.sh   # offline systemd hardening checks
+sudo crates/keylab/install.sh            # builds the release binary, installs unit + config
+```
+
+The installer never enables or starts the service. Review `~/.config/glove80-lab/keylab.toml`, then:
+
+```bash
+sudo systemctl enable keylab.service
+sudo systemctl start keylab.service
+```
+
+After changing the keymap, rebuild and restart so the daemon picks up the new position mapping:
+
+```bash
+pnpm build && sudo systemctl restart keylab.service
+```
+
+### Check that it runs
+
+```bash
+systemctl status keylab.service
+journalctl -u keylab.service -n 30
+```
+
+A healthy start logs `matched input device` with the device name and event path, followed by `startup input-device scan complete matched_count=1`.
+
+### Check that it actually captures
+
+Running is not the same as capturing. The daemon reads the device named in `device_name_contains`, which must be whatever the remapper actually emits -- on this machine `Evsieve Virtual Device`, not the physical Glove80, which evsieve holds under an exclusive grab.
+
+```bash
+# Should print a rising number while you type
+sqlite3 -readonly "$HOME/.local/share/glove80-lab/keylab.db" \
+  "SELECT COUNT(*), SUM(keystrokes) FROM bucket;"
+
+# Capture health for the current session only
+journalctl -u keylab.service \
+  --since "$(systemctl show keylab.service -p ActiveEnterTimestamp --value | cut -d' ' -f2-3)" \
+  | grep -E "disconnect|dropped|read failed|no EV_KEY"
+```
+
+Read the results by severity:
+
+- `disconnected` / `read failed` -- a capture session ended and its partial aggregates were discarded. Frequent occurrences keep Tier B from ever reaching its floor.
+- `kernel dropped input events` -- the kernel overflowed the evdev buffer. A few keystrokes are missing and hold timings across the gap are dropped, but the session and both accumulators survive. Harmless in small numbers.
+- `no EV_KEY events for 5 minutes` -- benign when simply not typing. If it fires while you *are* typing on the Glove80, another process holds an `EVIOCGRAB` and `device_name_contains` points at the wrong device.
+
+### Wait for the heatmap
+
+Per-key positional data (Tier B) only exists once **2000 keystrokes** accumulate in one uninterrupted session. Below that floor nothing is written, so the heatmap stays blank -- by design, not a fault. A restart, a device disconnect, or toggling pause resets the counter to zero.
+
+```bash
+start=$(date -d "$(systemctl show keylab.service -p ActiveEnterTimestamp --value | cut -d' ' -f2-3)" +%s)
+sqlite3 -readonly "$HOME/.local/share/glove80-lab/keylab.db" \
+  "SELECT 'tier B: '||COALESCE(SUM(keystrokes),0)||' / 2000' FROM bucket WHERE id >= $start;"
+```
+
+Per-finger, per-row, and modifier metrics (Tier A) appear far sooner -- that floor is 25 keystrokes per 10-second bucket.
+
+### Read the data
+
+```bash
+pnpm analysis report --since all           # or 7d / 24h / 30m
+pnpm analysis report --since 7d --json     # machine-readable
+pnpm viewer                                # live dashboard on http://127.0.0.1:4123
+```
+
+The viewer's time range defaults to `Live - 30m`. A 2000-keystroke Tier B window usually spans longer than that, so switch to `today` or `all` or the heatmap will look empty when it is not.
+
+### Pause
+
+```bash
+touch "$HOME/.local/share/glove80-lab/PAUSED"   # stop recording
+rm -- "$HOME/.local/share/glove80-lab/PAUSED"   # resume
+```
+
+Both discard all partial aggregates; they are never flushed below their privacy floors.
+
+### What persists
+
+Sealed buckets and windows survive a daemon crash, a restart, a disconnect, and a database error -- the daemon fails closed rather than buffering. Partial aggregates never persist and are zeroized on every interruption.
+
+Two caveats. The database uses `PRAGMA synchronous = NORMAL`, so a power loss or kernel panic can lose sealed rows written since the last WAL checkpoint. And keylab writes a `CACHEDIR.TAG`, so backup tools configured to honour it skip the data entirely -- deliberate for keystroke data, but it means there is no copy if the disk fails.
+
+### Uninstall
+
+```bash
+sudo crates/keylab/uninstall.sh   # removes binary and unit; leaves config and data
+```
+
 ## Credits
 
 This project wouldn't exist without the amazing work of others:
