@@ -1,0 +1,18 @@
+{
+  "name": "@glove80/trainer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test"
+  },
+  "exports": {
+    "./store": "./src/store.ts",
+    "./corpus": "./src/corpus.ts",
+    "./drills": "./src/drills.ts",
+    "./weakness": "./src/weakness.ts",
+    "./server": "./src/server.ts"
+  },
+  "dependencies": {
+    "@glove80/analysis": "workspace:*"
+  }
+}

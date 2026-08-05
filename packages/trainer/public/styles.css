@@ -1,0 +1,103 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f2f0eb;
+  --surface: #fffdf8;
+  --text: #1c2423;
+  --muted: #64706d;
+  --line: #d8d5cc;
+  --accent: #007d68;
+  --accent-soft: #c7e8df;
+  --danger: #b82e3a;
+  --shadow: 0 16px 40px rgb(26 39 35 / 8%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111615;
+    --surface: #19201f;
+    --text: #eef4f1;
+    --muted: #9eaaa7;
+    --line: #303a38;
+    --accent: #50d8b9;
+    --accent-soft: #1e4d43;
+    --danger: #ff7f8b;
+    --shadow: 0 18px 42px rgb(0 0 0 / 24%);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.site-header, main { width: min(1100px, calc(100% - 32px)); margin-inline: auto; }
+.site-header { display: flex; align-items: end; justify-content: space-between; padding: 28px 0 20px; gap: 16px; flex-wrap: wrap; }
+h1, h2, p { margin: 0; }
+h1 { font-size: clamp(2rem, 4vw, 3.4rem); letter-spacing: -.055em; line-height: .9; }
+h2 { font-size: 1.05rem; letter-spacing: -.02em; }
+.eyebrow { color: var(--muted); font-size: .68rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+
+.header-controls { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; }
+.control { display: grid; gap: 6px; color: var(--muted); font-size: .72rem; font-weight: 700; }
+select, .primary {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 9px 14px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: .85rem;
+}
+.primary { background: var(--accent); color: var(--surface); font-weight: 750; cursor: pointer; border-color: transparent; }
+.primary:hover { filter: brightness(1.08); }
+select:disabled { opacity: .45; }
+
+.panel { border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow); border-radius: 14px; padding: 18px 20px; margin-block: 14px; }
+.panel-heading { margin-bottom: 8px; }
+.status { color: var(--muted); font-size: .82rem; margin-block: 6px; }
+.rationale { color: var(--text); font-size: .85rem; background: var(--accent-soft); border-radius: 10px; padding: 10px 14px; margin-block: 8px; }
+.hint { color: var(--muted); font-size: .76rem; margin-bottom: 8px; }
+
+.prompt {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 1.15rem;
+  line-height: 1.9;
+  letter-spacing: .01em;
+  word-break: break-word;
+  margin-bottom: 14px;
+}
+.prompt .pending { color: var(--muted); }
+.prompt .done { color: var(--accent); }
+.prompt .wrong { color: var(--surface); background: var(--danger); border-radius: 3px; }
+.prompt .cursor { color: var(--text); border-bottom: 2px solid var(--accent); }
+
+.entry {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
+.entry:disabled { opacity: .5; }
+
+.totals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.totals article { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
+.totals span { display: block; color: var(--muted); font-size: .7rem; font-weight: 700; }
+.totals strong { font-size: 1.5rem; letter-spacing: -.03em; }
+.totals .unreliable { border-color: var(--danger); }
+
+.warning { color: var(--danger); font-size: .82rem; margin-block: 10px; }
+.columns { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 860px) { .columns, .totals { grid-template-columns: 1fr 1fr; } }
+
+.trend-row, .weak-row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: .82rem; }
+.trend-row:last-child, .weak-row:last-child { border-bottom: none; }
+.weak-row span, .trend-row span { color: var(--muted); text-align: right; }

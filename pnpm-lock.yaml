@@ -41,6 +41,12 @@ importers:
 
   packages/keymap: {}
 
+  packages/trainer:
+    dependencies:
+      '@glove80/analysis':
+        specifier: workspace:*
+        version: link:../analysis
+
   packages/viewer:
     dependencies:
       '@glove80/analysis':
