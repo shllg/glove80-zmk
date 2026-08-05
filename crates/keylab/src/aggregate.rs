@@ -381,6 +381,34 @@ impl Aggregator {
         Some(seal)
     }
 
+    /// Soft pause: stop counting without losing Tier B progress. The Tier A bucket is sealed when
+    /// it clears the floor and discarded otherwise, and all cross-event timing context is dropped
+    /// because the gap across a pause is wall-clock, not typing behaviour.
+    pub fn seal_or_discard_tier_a(
+        &mut self,
+        next_bucket_id: i64,
+        elapsed_ms: u64,
+        floor: u32,
+    ) -> Option<TierASeal> {
+        let seal = self.tick(next_bucket_id, elapsed_ms, floor);
+        if seal.is_none() {
+            self.tier_a.zeroize();
+            self.tier_a_span_ms.zeroize();
+            self.tier_a_bucket_id = next_bucket_id;
+        }
+        self.held.zeroize();
+        self.keys_since_mod_down.clear();
+        self.last_event_ts.zeroize();
+        self.last_event_ts = NO_EVENT_TS;
+        self.last_alpha_ts.zeroize();
+        self.last_keydown_ts.zeroize();
+        self.bsp_run.zeroize();
+        self.last_mod_release_ts.zeroize();
+        self.last_mod_release_class.zeroize();
+        self.bsp_run_after_mod_class.zeroize();
+        seal
+    }
+
     pub fn live_finger_counts(&self) -> &[u32; 10] {
         &self.tier_a.finger_count
     }
@@ -736,6 +764,75 @@ mod tests {
             2_000,
             "a dropped-event re-sync must not reset the Tier B privacy floor"
         );
+    }
+
+    #[test]
+    fn soft_pause_preserves_tier_b_and_seals_a_qualifying_tier_a_bucket() {
+        let mut aggregate = Aggregator::new(0, 1);
+        for index in 0..40 {
+            aggregate.handle_event(index, 30, 1, &keymap(), 2_000);
+        }
+        let seal = aggregate.seal_or_discard_tier_a(1, 10_000, 25);
+        assert!(seal.is_some(), "40 keystrokes clears the floor of 25");
+        assert_eq!(aggregate.tier_b_total(), 40, "soft pause must keep Tier B");
+        assert_eq!(aggregate.tier_a.keystrokes, 0, "Tier A must restart empty");
+    }
+
+    #[test]
+    fn soft_pause_discards_a_tier_a_bucket_below_the_count_floor() {
+        let mut aggregate = Aggregator::new(0, 1);
+        for index in 0..10 {
+            aggregate.handle_event(index, 30, 1, &keymap(), 2_000);
+        }
+        assert!(aggregate.seal_or_discard_tier_a(1, 10_000, 25).is_none());
+        assert_eq!(aggregate.tier_a.keystrokes, 0);
+        assert_eq!(
+            aggregate.tier_b_total(),
+            10,
+            "Tier B survives even a discarded Tier A"
+        );
+    }
+
+    #[test]
+    fn soft_pause_discards_a_tier_a_bucket_below_the_time_floor() {
+        let mut aggregate = Aggregator::new(0, 1);
+        for index in 0..40 {
+            aggregate.handle_event(index, 30, 1, &keymap(), 2_000);
+        }
+        assert!(
+            aggregate.seal_or_discard_tier_a(1, 5_000, 25).is_none(),
+            "the 10-second bucket floor is a privacy minimum a pause cannot bypass"
+        );
+        assert_eq!(aggregate.tier_a.keystrokes, 0);
+        assert_eq!(aggregate.tier_b_total(), 40);
+    }
+
+    #[test]
+    fn soft_pause_clears_held_key_and_timing_context() {
+        let mut aggregate = Aggregator::new(0, 1);
+        aggregate.handle_event(0, 30, 1, &keymap(), 2_000);
+        aggregate.seal_or_discard_tier_a(1, 5_000, 25);
+        assert_eq!(
+            aggregate.held.len(),
+            0,
+            "a key held across a pause must not be timed"
+        );
+    }
+
+    #[test]
+    fn soft_pause_preserves_every_profile_not_only_the_active_one() {
+        let mut aggregate = Aggregator::new(0, 2);
+        for index in 0..30 {
+            aggregate.handle_event(index, 30, 1, &keymap(), 2_000);
+        }
+        aggregate.set_profile(1);
+        for index in 30..70 {
+            aggregate.handle_event(index, 30, 1, &keymap(), 2_000);
+        }
+        assert!(aggregate.seal_or_discard_tier_a(1, 10_000, 25).is_some());
+        assert_eq!(aggregate.tier_b_total(), 40);
+        aggregate.set_profile(0);
+        assert_eq!(aggregate.tier_b_total(), 30);
     }
 
     #[test]
