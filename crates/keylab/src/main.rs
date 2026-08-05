@@ -2,6 +2,7 @@
 
 mod aggregate;
 mod config;
+mod control;
 mod device;
 mod encode;
 mod keymap;
