@@ -9,3 +9,9 @@ bucket_seconds = 10
 tier_a_seal_floor = 25
 tier_b_seal_count = 2000
 live_snapshot_seconds = 1
+# The first entry must be "default". At most 8, names limited to [a-z0-9-].
+# The cap keeps the per-profile Tier B accumulators bounded.
+profiles = ["default", "training-de", "training-en", "gaming"]
+# Revert to "default" after this many seconds with no keystrokes on any device.
+# Set to 0 to disable the idle auto-revert entirely.
+auto_revert_idle_seconds = 900

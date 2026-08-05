@@ -7,6 +7,11 @@ pub const MIN_TIER_A_SEAL_FLOOR: u32 = 25;
 pub const MIN_TIER_B_SEAL_COUNT: u32 = 2_000;
 pub const MIN_BUCKET_SECONDS: u64 = 10;
 
+/// Bounds the per-profile Tier B accumulators. This is a privacy invariant, not a preference:
+/// each profile holds its own 81-slot histogram and the total footprint must stay bounded.
+pub const MAX_PROFILES: usize = 8;
+pub const DEFAULT_PROFILE: &str = "default";
+
 #[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
@@ -17,6 +22,8 @@ pub struct Config {
     pub tier_a_seal_floor: u32,
     pub tier_b_seal_count: u32,
     pub live_snapshot_seconds: u64,
+    pub profiles: Vec<String>,
+    pub auto_revert_idle_seconds: u64,
 }
 
 impl Default for Config {
@@ -29,6 +36,13 @@ impl Default for Config {
             tier_a_seal_floor: MIN_TIER_A_SEAL_FLOOR,
             tier_b_seal_count: MIN_TIER_B_SEAL_COUNT,
             live_snapshot_seconds: 1,
+            profiles: vec![
+                DEFAULT_PROFILE.to_owned(),
+                "training-de".to_owned(),
+                "training-en".to_owned(),
+                "gaming".to_owned(),
+            ],
+            auto_revert_idle_seconds: 900,
         }
     }
 }
@@ -68,6 +82,28 @@ impl Config {
                 "tier_b_seal_count cannot be below privacy floor {}",
                 MIN_TIER_B_SEAL_COUNT
             );
+        }
+        if self.profiles.len() > MAX_PROFILES {
+            bail!("at most {MAX_PROFILES} profiles are supported");
+        }
+        if self.profiles.first().map(String::as_str) != Some(DEFAULT_PROFILE) {
+            bail!("the first profile must be \"{DEFAULT_PROFILE}\"");
+        }
+        for name in &self.profiles {
+            if name.is_empty()
+                || name.len() > 32
+                || !name
+                    .bytes()
+                    .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
+            {
+                bail!("profile names must be 1-32 chars of [a-z0-9-]");
+            }
+        }
+        let mut seen = self.profiles.clone();
+        seen.sort();
+        seen.dedup();
+        if seen.len() != self.profiles.len() {
+            bail!("profile names must be unique");
         }
         Ok(())
     }
@@ -131,5 +167,52 @@ mod tests {
             ..Config::default()
         };
         assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn rejects_more_profiles_than_the_cap() {
+        let mut config = Config::default();
+        config.profiles = (0..MAX_PROFILES + 1).map(|index| format!("p{index}")).collect();
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn rejects_a_profile_list_without_the_default_profile() {
+        let mut config = Config::default();
+        config.profiles = vec!["gaming".to_owned()];
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn rejects_duplicate_and_malformed_profile_names() {
+        let mut config = Config::default();
+        config.profiles = vec![
+            DEFAULT_PROFILE.to_owned(),
+            "gaming".to_owned(),
+            "gaming".to_owned(),
+        ];
+        assert!(config.validate().is_err());
+
+        config.profiles = vec![DEFAULT_PROFILE.to_owned(), "Training DE".to_owned()];
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn default_profiles_are_valid_and_start_with_default() {
+        let config = Config::default();
+        assert_eq!(
+            config.profiles.first().map(String::as_str),
+            Some(DEFAULT_PROFILE)
+        );
+        config.validate().unwrap_or_else(|error| panic!("{error:#}"));
+    }
+
+    #[test]
+    fn accepts_a_disabled_idle_auto_revert() {
+        let config = Config {
+            auto_revert_idle_seconds: 0,
+            ..Config::default()
+        };
+        config.validate().unwrap_or_else(|error| panic!("{error:#}"));
     }
 }
