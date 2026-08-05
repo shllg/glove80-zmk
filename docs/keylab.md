@@ -107,6 +107,49 @@ sqlite3 -readonly "$HOME/.local/share/glove80-lab/keylab.db" \
 
 `pnpm analysis report` reads the `default` profile unless told otherwise; `--profile gaming` selects one and `--profile '*'` pools them all. The report header always names the profile, so a filtered report is never mistaken for a full one.
 
+## Multiple keyboards
+
+`devices` in `keylab.toml` pairs an evdev name fragment with the *position space* that keyboard's Tier B counts belong to:
+
+```toml
+[[devices]]
+name = "glove80"
+name_contains = "Evsieve Virtual Device"
+keymap_meta_path = "/home/sascha/src/glove80-zmk/out/keymap-meta.json"
+
+[[devices]]
+name = "qwerty-ansi"
+name_contains = "AT Translated Set 2 keyboard"
+keymap_meta_path = "/home/sascha/src/glove80-zmk/config/qwerty-ansi-meta.json"
+```
+
+Omit the table entirely and the single-keyboard `device_name_contains` above keeps working — an installed configuration does not break on upgrade.
+
+Rules:
+
+- **Fragments must be unambiguous.** No fragment may contain another. An ambiguous set would silently attribute one keyboard's keystrokes to another board's geometry, so it is rejected at load rather than at capture.
+- **`name` is the position space, not the device.** The laptop keyboard and an external QWERTY are two devices that legitimately share one `qwerty-ansi` space. `config/qwerty-ansi-meta.json` is hand-written for exactly that: standard touch-typing finger assignment, and `KEY_102ND` included so a DE ISO laptop is covered.
+- **Separation is free at the kernel layer.** evsieve grabs only the Glove80 and the Kensington; every other keyboard stays an independent evdev device.
+
+The invariant that matters, and the one easiest to get silently wrong:
+
+| | crosses keyboards? | why |
+|---|---|---|
+| **Tier A** | yes | `finger_id`, `hand`, `row_idx`, hold and gap histograms mean the same thing on any board. "Am I slower and more pinky-loaded on the laptop?" is answerable. |
+| **Tier B** | **never** | `pos` only means something inside one keyboard's geometry. Position 35 is `A` on the Glove80 and something else entirely on a row-staggered board. |
+
+The analysis enforces this: a positional read spanning two position spaces **throws** rather than returning a pooled heatmap of nothing. Pick one keyboard with `--device <id>`; `--device '*'` is only legal when everything in range shares a space.
+
+```bash
+sqlite3 -readonly "$HOME/.local/share/glove80-lab/keylab.db" \
+  "SELECT id, name, keymap_kind FROM device;"
+pnpm analysis report --since all --device 1
+```
+
+### Trackball buttons
+
+evsieve merges the Kensington trackball into the same virtual device as the Glove80, and its buttons arrive as `EV_KEY` codes in the `BTN_*` range. They are **not** keystrokes: the daemon now drops them before counting. Previously they inflated the keystroke total and landed in the unattributed Tier B slot, because no keyboard keymap contains a `BTN_*` code — part of the historical 3.2% unattributed share was mouse clicks. Windows sealed before this change keep the old behaviour; the share should fall for new ones.
+
 ## Pause
 
 There are three separate mechanisms with three different guarantees. Do not conflate them.
@@ -171,7 +214,14 @@ SELECT updated_at, json FROM live_snapshot;
 SELECT p.name, SUM(b.keystrokes) FROM bucket b JOIN profile p ON p.id = b.profile_id GROUP BY 1;
 ```
 
-The schema is at version 2. A version 1 database is migrated in place the first time the new daemon opens it: the `profile_id` columns are added and every existing row is backfilled to `default`. That backfill is accurate rather than a guess — every v1 row was captured on the Glove80 during ordinary use, before profiles existed. The analysis and viewer packages require version 2 and say so plainly if they meet an unmigrated database.
+The schema is at version 3 and is migrated in place the first time the new daemon opens an older database:
+
+| from | adds | backfill |
+|---|---|---|
+| v1 → v2 | `bucket.profile_id`, `key_window.profile_id` | every existing row to `default` |
+| v2 → v3 | `device.keymap_kind`, `device.keymap_hash` | every existing device to `glove80` |
+
+Both backfills are accurate rather than guesses: every pre-v3 row was captured on the Glove80 through evsieve during ordinary use, before profiles or multi-device support existed. The analysis and viewer packages require version 3 and say so plainly, with the fix, if they meet an unmigrated database.
 
 Tier B's `pos_count` table contains diluted physical-position histograms. Treat the entire database, including `keylab.db-wal` and `keylab.db-shm`, as privacy-sensitive.
 

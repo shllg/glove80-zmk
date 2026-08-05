@@ -30,7 +30,7 @@ This TypeScript-based build system takes a JSON configuration and generates:
 - Visual keyboard diagrams (SVG/PDF)
 - YAML for keymap-drawer visualization
 
-The repository also contains [keylab](docs/keylab.md), a local, privacy-reduced keystroke telemetry daemon for measuring ergonomic load on this keymap.
+The repository also contains [keylab](docs/keylab.md), a local, privacy-reduced keystroke telemetry daemon for measuring ergonomic load on this keymap, and a [trainer](docs/trainer.md) that drills the weaknesses keylab measures.
 
 ## Quick Start
 
@@ -306,6 +306,7 @@ pnpm analysis report --since all           # or 7d / 24h / 30m
 pnpm analysis report --since 7d --json     # machine-readable
 pnpm analysis report --since all --profile gaming   # one activity profile
 pnpm analysis report --since all --profile '*'      # pool every profile
+pnpm analysis report --since all --device 1         # one keyboard
 pnpm viewer                                # live dashboard on http://127.0.0.1:4123
 ```
 
@@ -334,6 +335,24 @@ Check the split:
 sqlite3 -readonly "$HOME/.local/share/glove80-lab/keylab.db" \
   "SELECT p.name, SUM(b.keystrokes) FROM bucket b JOIN profile p ON p.id = b.profile_id GROUP BY 1 ORDER BY 2 DESC;"
 ```
+
+### Several keyboards
+
+`devices` in `~/.config/glove80-lab/keylab.toml` pairs an evdev name fragment with the *position space* that keyboard belongs to, so the Glove80, the laptop built-in, and an external QWERTY are captured separately. Omit it and the single-keyboard setting keeps working unchanged.
+
+Tier A crosses keyboards — `finger_id`, `hand`, `row_idx`, and the hold histograms mean the same thing on any board, so "am I more pinky-loaded on the laptop?" is answerable. **Tier B never does**: position 35 is `A` on the Glove80 and something else entirely on a row-staggered board, so a positional read spanning two spaces throws instead of returning a heatmap of nothing. See [docs/keylab.md](docs/keylab.md#multiple-keyboards).
+
+### Practice and drills
+
+```bash
+pnpm trainer serve                       # http://127.0.0.1:4124
+pnpm trainer weakness                    # ranked positions, bigrams, firmware mechanics
+pnpm trainer drill --family mechanic     # the family nothing else can do
+```
+
+The [trainer](docs/trainer.md) is a separate instrument with its own store: keylab measures physical effort, the trainer measures correctness against text it generated. A German `ä` is one character to the trainer and **eight keystrokes** to keylab — that gap is the German-versus-English finding, and it is why both run at once.
+
+Benchmark corpora are frozen and versioned and are **never** fed by the weakness model; drills draw from a disjoint pool. Only benchmark runs are plotted, as a rolling median per language.
 
 ### Pause
 
