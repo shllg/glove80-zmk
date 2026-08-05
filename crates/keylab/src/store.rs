@@ -14,10 +14,12 @@ const SCHEMA: &str = r#"
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
 
 CREATE TABLE IF NOT EXISTS device (
-  id        INTEGER PRIMARY KEY,
-  name      TEXT NOT NULL,
-  uniq      TEXT,
-  first_ts  INTEGER NOT NULL
+  id           INTEGER PRIMARY KEY,
+  name         TEXT NOT NULL,
+  uniq         TEXT,
+  first_ts     INTEGER NOT NULL,
+  keymap_kind  TEXT,
+  keymap_hash  TEXT
 );
 
 CREATE TABLE IF NOT EXISTS profile (
@@ -114,6 +116,13 @@ const DATA_README: &str = concat!(
     "Exclude the entire directory from backups, sync tools, and cloud storage.\n"
 );
 
+/// Identifies the position space a device's Tier B counts belong to.
+#[derive(Clone, Copy)]
+pub struct DeviceKeymap<'a> {
+    pub kind: &'a str,
+    pub hash: &'a str,
+}
+
 /// The control state echoed into the live snapshot. The viewer reads it from there rather than
 /// from its own last write, so the daemon stays the single authority on what is actually in force.
 #[derive(Clone, Copy)]
@@ -150,11 +159,14 @@ impl Store {
         Ok(Self { connection })
     }
 
+    /// `keymap_kind` is the device's *position space*. Tier B may only be pooled inside one space,
+    /// so the space has to be recorded next to the device rather than inferred later.
     pub fn register_device(
         &mut self,
         name: &str,
         uniq: Option<&str>,
         first_ts: i64,
+        keymap: &DeviceKeymap<'_>,
     ) -> Result<i64> {
         // Reconnects must reuse the existing identity, otherwise every reconnect mints a new
         // device_id and fragments the history of one physical keyboard across many rows.
@@ -168,12 +180,21 @@ impl Store {
             .optional()
             .context("failed to look up a previously registered input device")?;
         if let Some(device_id) = existing {
+            // A keymap rebuild changes the hash for a device that already exists; the row must
+            // follow the configuration rather than keep pointing at a superseded keymap.
+            self.connection
+                .execute(
+                    "UPDATE device SET keymap_kind = ?2, keymap_hash = ?3 WHERE id = ?1",
+                    params![device_id, keymap.kind, keymap.hash],
+                )
+                .context("failed to update a device keymap identity")?;
             return Ok(device_id);
         }
         self.connection
             .execute(
-                "INSERT INTO device(name, uniq, first_ts) VALUES (?1, ?2, ?3)",
-                params![name, uniq, first_ts],
+                "INSERT INTO device(name, uniq, first_ts, keymap_kind, keymap_hash)
+                 VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![name, uniq, first_ts, keymap.kind, keymap.hash],
             )
             .context("failed to register input device")?;
         Ok(self.connection.last_insert_rowid())
@@ -436,13 +457,17 @@ fn initialize_meta(connection: &Connection, keymap: &Keymap, now_ts: i64) -> Res
         .optional()
         .context("failed to read schema version")?;
     match schema_version.as_deref() {
-        None | Some("2") => {}
-        Some("1") => migrate_v1_to_v2(connection)?,
+        None | Some("3") => {}
+        Some("1") => {
+            migrate_v1_to_v2(connection)?;
+            migrate_v2_to_v3(connection, keymap)?;
+        }
+        Some("2") => migrate_v2_to_v3(connection, keymap)?,
         Some(_) => bail!("unsupported database schema version"),
     }
     connection
         .execute(
-            "INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', '2')",
+            "INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', '3')",
             [],
         )
         .context("failed to initialize schema version")?;
@@ -533,6 +558,41 @@ fn migrate_v1_to_v2(connection: &Connection) -> Result<()> {
         )
         .context("failed to backfill the default profile")?;
     info!("migrated database schema from version 1 to 2");
+    Ok(())
+}
+
+/// v2 databases predate multi-device support, so every device they hold is the Glove80 read through
+/// evsieve. Backfilling them to the default keymap kind is accurate, not a guess.
+fn migrate_v2_to_v3(connection: &Connection, keymap: &Keymap) -> Result<()> {
+    for statement in [
+        "ALTER TABLE device ADD COLUMN keymap_kind TEXT",
+        "ALTER TABLE device ADD COLUMN keymap_hash TEXT",
+    ] {
+        match connection.execute(statement, []) {
+            Ok(_) => {}
+            Err(rusqlite::Error::SqliteFailure(_, Some(ref message)))
+                if message.contains("duplicate column name") => {}
+            Err(error) => {
+                return Err(error).context("failed to add a device keymap column");
+            }
+        }
+    }
+    connection
+        .execute(
+            "UPDATE device SET keymap_kind = ?1 WHERE keymap_kind IS NULL",
+            [crate::config::DEFAULT_KEYMAP_KIND],
+        )
+        .context("failed to backfill the default keymap kind")?;
+    connection
+        .execute(
+            "UPDATE device SET keymap_hash = ?1 WHERE keymap_hash IS NULL",
+            [&keymap.hash],
+        )
+        .context("failed to backfill the device keymap hash")?;
+    connection
+        .execute_batch("UPDATE meta SET value = '3' WHERE key = 'schema_version';")
+        .context("failed to record the version 3 schema")?;
+    info!("migrated database schema from version 2 to 3");
     Ok(())
 }
 
@@ -672,6 +732,13 @@ mod tests {
     use std::path::PathBuf;
     use tempfile::TempDir;
 
+    fn fixture_keymap() -> DeviceKeymap<'static> {
+        DeviceKeymap {
+            kind: crate::config::DEFAULT_KEYMAP_KIND,
+            hash: "fixture",
+        }
+    }
+
     fn keymap() -> Keymap {
         Keymap::fixture(&[
             (
@@ -702,7 +769,7 @@ mod tests {
         let mut store =
             Store::open(&db_path, &keymap(), 1_000).unwrap_or_else(|error| panic!("{error:#}"));
         let device_id = store
-            .register_device("fixture", None, 1_000)
+            .register_device("fixture", None, 1_000, &fixture_keymap())
             .unwrap_or_else(|error| panic!("{error:#}"));
         (temp, db_path, store, device_id)
     }
@@ -711,11 +778,11 @@ mod tests {
     fn reconnecting_reuses_the_existing_device_row() {
         let (_temp, _path, mut store, device_id) = open_store();
         let reconnected = store
-            .register_device("fixture", None, 2_000)
+            .register_device("fixture", None, 2_000, &fixture_keymap())
             .unwrap_or_else(|error| panic!("{error:#}"));
         assert_eq!(reconnected, device_id);
         let other = store
-            .register_device("other", None, 2_000)
+            .register_device("other", None, 2_000, &fixture_keymap())
             .unwrap_or_else(|error| panic!("{error:#}"));
         assert_ne!(other, device_id);
         let rows: i64 = store
@@ -804,7 +871,77 @@ mod tests {
                 |row| row.get(0),
             )
             .unwrap_or_else(|error| panic!("{error}"));
-        assert_eq!(version, "2");
+        assert_eq!(version, "3");
+    }
+
+    #[test]
+    fn a_registered_device_records_its_position_space() {
+        let (_temp, _path, mut store, device_id) = open_store();
+        let (kind, hash): (String, String) = store
+            .connection()
+            .query_row(
+                "SELECT keymap_kind, keymap_hash FROM device WHERE id = ?1",
+                [device_id],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap_or_else(|error| panic!("{error}"));
+        assert_eq!(kind, crate::config::DEFAULT_KEYMAP_KIND);
+        assert_eq!(hash, "fixture");
+
+        let laptop = store
+            .register_device(
+                "AT Translated Set 2 keyboard",
+                None,
+                1_000,
+                &DeviceKeymap {
+                    kind: "qwerty-ansi",
+                    hash: "qwerty",
+                },
+            )
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        assert_ne!(laptop, device_id);
+        let spaces: i64 = store
+            .connection()
+            .query_row(
+                "SELECT COUNT(DISTINCT keymap_kind) FROM device",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap_or_else(|error| panic!("{error}"));
+        assert_eq!(spaces, 2);
+    }
+
+    #[test]
+    fn migrating_a_v2_database_backfills_the_default_keymap_kind() {
+        let (_temp, path, store, _device_id) = open_store();
+        // Simulate a database written before multi-device support existed.
+        store
+            .connection()
+            .execute_batch(
+                "UPDATE device SET keymap_kind = NULL, keymap_hash = NULL;
+                 UPDATE meta SET value = '2' WHERE key = 'schema_version';",
+            )
+            .unwrap_or_else(|error| panic!("{error}"));
+        store.close().unwrap_or_else(|error| panic!("{error:#}"));
+
+        let reopened =
+            Store::open(&path, &keymap(), 3_000).unwrap_or_else(|error| panic!("{error:#}"));
+        let orphaned: i64 = reopened
+            .connection()
+            .query_row(
+                "SELECT COUNT(*) FROM device WHERE keymap_kind IS NULL OR keymap_hash IS NULL",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap_or_else(|error| panic!("{error}"));
+        assert_eq!(orphaned, 0);
+        let kind: String = reopened
+            .connection()
+            .query_row("SELECT keymap_kind FROM device LIMIT 1", [], |row| {
+                row.get(0)
+            })
+            .unwrap_or_else(|error| panic!("{error}"));
+        assert_eq!(kind, crate::config::DEFAULT_KEYMAP_KIND);
     }
 
     #[test]
@@ -847,7 +984,7 @@ mod tests {
                 |row| row.get(0),
             )
             .unwrap();
-        assert_eq!(schema_version, "2");
+        assert_eq!(schema_version, "3");
         let initial: Value = serde_json::from_str(&initial_history).unwrap();
         assert_eq!(initial.as_array().map(Vec::len), Some(1));
         store.close().unwrap();
@@ -1075,7 +1212,9 @@ mod tests {
     #[test]
     fn same_second_multi_device_tier_a_collision_records_less() {
         let (_temp, _path, mut store, first_device_id) = open_store();
-        let second_device_id = store.register_device("fixture-2", None, 1_000).unwrap();
+        let second_device_id = store
+            .register_device("fixture-2", None, 1_000, &fixture_keymap())
+            .unwrap();
         let data = TierAAccumulator {
             keystrokes: 25,
             ..TierAAccumulator::default()

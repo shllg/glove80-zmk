@@ -15,3 +15,16 @@ profiles = ["default", "training-de", "training-en", "gaming"]
 # Revert to "default" after this many seconds with no keystrokes on any device.
 # Set to 0 to disable the idle auto-revert entirely.
 auto_revert_idle_seconds = 900
+
+# Multi-device capture. Each rule pairs an evdev name fragment with the position space that
+# keyboard's Tier B counts belong to. Fragments must be unambiguous — no fragment may contain
+# another. Omit this table entirely to keep the single-keyboard `device_name_contains` above.
+# [[devices]]
+# name = "glove80"
+# name_contains = "Evsieve Virtual Device"
+# keymap_meta_path = "/home/sascha/src/glove80-zmk/out/keymap-meta.json"
+#
+# [[devices]]
+# name = "qwerty-ansi"
+# name_contains = "AT Translated Set 2 keyboard"
+# keymap_meta_path = "/home/sascha/src/glove80-zmk/config/qwerty-ansi-meta.json"

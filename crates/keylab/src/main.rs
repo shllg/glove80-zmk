@@ -78,6 +78,7 @@ struct RuntimeDevice {
     aggregate: Aggregator,
     device_id: i64,
     profile_id: i64,
+    rule_index: usize,
     disconnected: bool,
     last_tier_a_tick: Instant,
     capture_watchdog: SilentCaptureWatchdog,
@@ -159,7 +160,15 @@ fn selftest_keymap() -> Result<Keymap> {
 fn selftest_hold_database(path: &Path) -> Result<()> {
     let keymap = selftest_keymap()?;
     let mut store = Store::open(path, &keymap, unix_seconds()?)?;
-    store.register_device("verification fixture", None, unix_seconds()?)?;
+    store.register_device(
+        "verification fixture",
+        None,
+        unix_seconds()?,
+        &store::DeviceKeymap {
+            kind: config::DEFAULT_KEYMAP_KIND,
+            hash: &keymap.hash,
+        },
+    )?;
     store.replace_live_snapshot(
         unix_seconds()?,
         &[0; 10],
@@ -216,7 +225,15 @@ fn selftest_replay(path: &Path) -> Result<()> {
     }
 
     let start_ts = unix_seconds()?;
-    let device_id = store.register_device("verification fixture", None, start_ts)?;
+    let device_id = store.register_device(
+        "verification fixture",
+        None,
+        start_ts,
+        &store::DeviceKeymap {
+            kind: config::DEFAULT_KEYMAP_KIND,
+            hash: &keymap.hash,
+        },
+    )?;
     let mut aggregate = Aggregator::new(start_ts, 1);
     for index in 0_u64..25 {
         let press_ts = index.saturating_mul(2);
@@ -252,8 +269,11 @@ fn run() -> Result<()> {
     lock_process_memory()?;
     disable_process_dumping()?;
 
-    let keymap = Keymap::load(&config.keymap_meta_path)?;
-    let mut store = Store::open(&config.db_path, &keymap, unix_seconds()?)?;
+    let keymaps = load_device_keymaps(&config)?;
+    let primary = keymaps
+        .first()
+        .context("at least one device keymap is required")?;
+    let mut store = Store::open(&config.db_path, primary, unix_seconds()?)?;
     let data_dir = config
         .db_path
         .parent()
@@ -269,7 +289,7 @@ fn run() -> Result<()> {
 
     event_loop(
         &config,
-        &keymap,
+        &keymaps,
         &pause_path,
         &control_path,
         &terminate,
@@ -280,7 +300,7 @@ fn run() -> Result<()> {
 
 fn event_loop(
     config: &Config,
-    keymap: &Keymap,
+    keymaps: &[Keymap],
     pause_path: &Path,
     control_path: &Path,
     terminate: &AtomicBool,
@@ -317,7 +337,14 @@ fn event_loop(
     while !terminate.load(Ordering::Relaxed) {
         let now = Instant::now();
         if now >= next_discovery {
-            discover_devices(config, store, &mut devices, startup_scan_pending, &state)?;
+            discover_devices(
+                config,
+                keymaps,
+                store,
+                &mut devices,
+                startup_scan_pending,
+                &state,
+            )?;
             startup_scan_pending = false;
             next_discovery = now + discovery_duration;
         }
@@ -330,7 +357,7 @@ fn event_loop(
             &mut devices,
             &mut state,
         )?;
-        if process_device_events(config, keymap, pause_path, &state, store, &mut devices)? {
+        if process_device_events(config, keymaps, pause_path, &state, store, &mut devices)? {
             state.hard_paused = true;
             discard_all_partials(&mut devices)?;
         }
@@ -412,8 +439,23 @@ fn event_loop(
     Ok(())
 }
 
+/// One keymap per device rule, in rule order. `RuntimeDevice::rule_index` indexes this list, so a
+/// device is only ever resolved against the position space its own rule names.
+fn load_device_keymaps(config: &Config) -> Result<Vec<Keymap>> {
+    config
+        .devices
+        .iter()
+        .map(|rule| {
+            Keymap::load(&rule.keymap_meta_path).with_context(|| {
+                format!("failed to load the keymap for device rule {:?}", rule.name)
+            })
+        })
+        .collect()
+}
+
 fn discover_devices(
     config: &Config,
+    keymaps: &[Keymap],
     store: &mut Store,
     devices: &mut HashMap<PathBuf, RuntimeDevice>,
     startup: bool,
@@ -422,19 +464,40 @@ fn discover_devices(
     let bucket_id = current_bucket_id()?;
     let first_ts = unix_seconds()?;
     let mut added = 0;
-    let scan = device::for_each_matching(&config.device_name_contains, |path, input| {
+    let fragments: Vec<String> = config
+        .devices
+        .iter()
+        .map(|rule| rule.name_contains.clone())
+        .collect();
+    let scan = device::for_each_matching(&fragments, |path, input, rule_index| {
+        let rule = config
+            .devices
+            .get(rule_index)
+            .context("device rule index is out of range")?;
         if startup {
             info!(
                 device_name = %input.name,
                 event_path = %path.display(),
+                keymap_kind = %rule.name,
                 "matched input device"
             );
         }
         if devices.contains_key(&path) {
             return Ok(());
         }
+        let keymap = keymaps
+            .get(rule_index)
+            .context("device keymap index is out of range")?;
         let now = Instant::now();
-        let device_id = store.register_device(&input.name, input.uniq.as_deref(), first_ts)?;
+        let device_id = store.register_device(
+            &input.name,
+            input.uniq.as_deref(),
+            first_ts,
+            &store::DeviceKeymap {
+                kind: &rule.name,
+                hash: &keymap.hash,
+            },
+        )?;
         let mut aggregate = Aggregator::new(bucket_id, config.profiles.len());
         aggregate.set_profile(state.profile_index);
         devices.insert(
@@ -444,6 +507,7 @@ fn discover_devices(
                 aggregate,
                 device_id,
                 profile_id: state.profile_id,
+                rule_index,
                 disconnected: false,
                 last_tier_a_tick: now,
                 capture_watchdog: SilentCaptureWatchdog::new(now),
@@ -455,6 +519,7 @@ fn discover_devices(
     if startup {
         info!(
             matched_count = scan.matched_count,
+            rule_count = config.devices.len(),
             "startup input-device scan complete"
         );
         if scan.matched_count == 0 {
@@ -464,9 +529,9 @@ fn discover_devices(
                 scan.present_names.join(", ")
             };
             error!(
-                configured_substring = %config.device_name_contains,
+                configured_substrings = %fragments.join(", "),
                 present_device_names = %present_names,
-                "no input devices matched the configured substring"
+                "no input devices matched any configured substring"
             );
         }
     } else if added > 0 {
@@ -484,7 +549,7 @@ fn is_device_gone(error: &io::Error) -> bool {
 
 fn process_device_events(
     config: &Config,
-    keymap: &Keymap,
+    keymaps: &[Keymap],
     pause_path: &Path,
     state: &ResolvedControl,
     store: &mut Store,
@@ -515,6 +580,12 @@ fn process_device_events(
             if !event.is_key() {
                 continue;
             }
+            // evsieve merges the Kensington trackball into the keyboard's virtual device. A click
+            // is not a keystroke: counting it would inflate the keystroke total and land in the
+            // unattributed Tier B slot, since no keymap contains a BTN_* code.
+            if event.is_pointer_button() {
+                continue;
+            }
             runtime.capture_watchdog.observe_key_event(Instant::now());
             if paused {
                 continue;
@@ -522,6 +593,9 @@ fn process_device_events(
             if pause_requested(pause_path)? {
                 return Ok(true);
             }
+            let keymap = keymaps
+                .get(runtime.rule_index)
+                .context("device keymap index is out of range")?;
             if let Some(mut seal) = runtime.aggregate.handle_event(
                 event.t_ms(),
                 event.code(),

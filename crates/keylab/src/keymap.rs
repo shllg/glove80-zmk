@@ -61,7 +61,7 @@ impl<'de> Deserialize<'de> for Positions {
             type Value = Positions;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-                formatter.write_str("an array containing exactly 80 keymap positions")
+                formatter.write_str("an array containing 1 to 80 keymap positions")
             }
 
             fn visit_seq<A>(self, mut sequence: A) -> std::result::Result<Self::Value, A::Error>
@@ -75,8 +75,10 @@ impl<'de> Deserialize<'de> for Positions {
                         return Err(A::Error::custom("duplicate keymap position"));
                     }
                 }
-                if positions.len() != 80 {
-                    return Err(A::Error::custom("keymap must contain exactly 80 positions"));
+                // A board smaller than the Glove80 is legitimate — the laptop QWERTY has fewer
+                // keys — but the Tier B accumulator has exactly 81 slots, so 80 is a hard ceiling.
+                if positions.is_empty() || positions.len() > 80 {
+                    return Err(A::Error::custom("keymap must contain 1 to 80 positions"));
                 }
                 Ok(Positions(positions))
             }
@@ -217,6 +219,28 @@ mod tests {
         let keymap = Keymap::load(&path).unwrap_or_else(|error| panic!("{error:#}"));
         assert!(keymap.alt_hand_ambiguous);
         assert_eq!(keymap.resolve(30).map(|info| info.pos), Some(35));
+    }
+
+    #[test]
+    fn loads_the_hand_written_qwerty_keymap() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../config/qwerty-ansi-meta.json");
+        let keymap = Keymap::load(&path).unwrap_or_else(|error| panic!("{error:#}"));
+        assert!(
+            !keymap.alt_hand_ambiguous,
+            "a plain QWERTY board has no home row mods, so ALT is unambiguous"
+        );
+        // KEY_F is the right index home key; KEY_102ND exists for a DE ISO laptop.
+        let f = keymap
+            .resolve(33)
+            .unwrap_or_else(|| unreachable!("KEY_F must resolve"));
+        assert_eq!((f.hand, f.finger_id, f.row_idx), (HAND_LEFT, 0, 3));
+        let j = keymap
+            .resolve(36)
+            .unwrap_or_else(|| unreachable!("KEY_J must resolve"));
+        assert_eq!((j.hand, j.finger_id, j.row_idx), (HAND_RIGHT, 5, 3));
+        assert!(keymap.resolve(86).is_some(), "KEY_102ND must be mapped");
+        // Nothing from the Glove80's F-row exists on this board.
+        assert!(keymap.resolve(59).is_none());
     }
 
     #[test]

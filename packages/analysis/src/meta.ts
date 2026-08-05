@@ -73,8 +73,17 @@ export function loadAnalysisMeta(
   } catch (error) {
     throw new Error(`Unable to load keymap metadata from ${path}`, { cause: error });
   }
-  if (parsed.schemaVersion !== 1 || !Array.isArray(parsed.positions) || parsed.positions.length !== 80) {
-    throw new Error("Unsupported or invalid keymap metadata; expected schemaVersion 1 with 80 positions");
+  // A board smaller than the Glove80 is legitimate — the laptop QWERTY has fewer keys — but the
+  // Tier B position space runs 0-79 plus the unattributed slot, so 80 is a hard ceiling.
+  if (
+    parsed.schemaVersion !== 1
+    || !Array.isArray(parsed.positions)
+    || parsed.positions.length === 0
+    || parsed.positions.length > 80
+  ) {
+    throw new Error(
+      "Unsupported or invalid keymap metadata; expected schemaVersion 1 with 1 to 80 positions",
+    );
   }
 
   const positions = parsed.positions.map(parsePosition).sort((left, right) => left.pos - right.pos);
@@ -84,9 +93,6 @@ export function loadAnalysisMeta(
       throw new Error(`Invalid or duplicate keymap position ${position.pos}`);
     }
     positionsByPos.set(position.pos, position);
-  }
-  if (positionsByPos.size !== 80) {
-    throw new Error("keymap metadata must cover every position from 0 through 79");
   }
 
   const altRow = database

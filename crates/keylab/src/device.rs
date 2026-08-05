@@ -25,9 +25,26 @@ pub struct DeviceEvent {
     value: i32,
 }
 
+/// `EV_KEY` also carries pointer buttons. evsieve merges the Kensington trackball into the same
+/// virtual device as the Glove80, so its clicks arrive here as `EV_KEY` codes that no keyboard
+/// keymap contains — they would otherwise inflate both the keystroke count and the unattributed
+/// Tier B share. Ranges are `BTN_MISC..=BTN_GEAR_UP` and `BTN_TRIGGER_HAPPY..`.
+const POINTER_BUTTON_RANGES: [std::ops::RangeInclusive<u16>; 2] = [0x100..=0x151, 0x2c0..=0x2ff];
+
+pub fn is_pointer_button(code: u16) -> bool {
+    POINTER_BUTTON_RANGES
+        .iter()
+        .any(|range| range.contains(&code))
+}
+
 impl DeviceEvent {
     pub fn is_key(&self) -> bool {
         self.event_type == evdev::EventType::KEY.0
+    }
+
+    /// A pointer button is an `EV_KEY` event that is not a keystroke.
+    pub fn is_pointer_button(&self) -> bool {
+        self.is_key() && is_pointer_button(self.code)
     }
 
     pub fn is_sequence_loss(&self) -> bool {
@@ -93,9 +110,18 @@ impl InputDevice {
     }
 }
 
-pub fn for_each_matching<F>(name_substring: &str, mut callback: F) -> Result<DeviceScan>
+/// Resolves which rule a device name belongs to. `None` means the device is not ours to read.
+/// Ambiguity is impossible by construction — `Config::validate` rejects overlapping fragments —
+/// so the first match is the only match.
+pub fn matching_rule(name: &str, fragments: &[String]) -> Option<usize> {
+    fragments
+        .iter()
+        .position(|fragment| name.contains(fragment.as_str()))
+}
+
+pub fn for_each_matching<F>(fragments: &[String], mut callback: F) -> Result<DeviceScan>
 where
-    F: FnMut(PathBuf, InputDevice) -> Result<()>,
+    F: FnMut(PathBuf, InputDevice, usize) -> Result<()>,
 {
     let entries = match fs::read_dir("/dev/input") {
         Ok(entries) => entries,
@@ -122,12 +148,12 @@ where
         };
         let name = name.to_owned();
         present_names.push(name.clone());
-        if !name.contains(name_substring) {
+        let Some(rule_index) = matching_rule(&name, fragments) else {
             continue;
-        }
+        };
         let uniq = device.unique_name().map(str::to_owned);
         set_monotonic_clock(&device)?;
-        callback(path, InputDevice { device, name, uniq })?;
+        callback(path, InputDevice { device, name, uniq }, rule_index)?;
         matched_count += 1;
     }
     present_names.sort();
@@ -247,5 +273,32 @@ mod tests {
             .unwrap_or_else(|error| panic!("{error}"))
             .unwrap_or_else(|| unreachable!());
         assert!(sequence_loss.is_sequence_loss());
+    }
+
+    #[test]
+    fn pointer_buttons_are_separated_from_keystrokes() {
+        // Trackball and mouse buttons.
+        for code in [0x110_u16, 0x111, 0x112, 0x113, 0x114, 0x151, 0x2c0, 0x2ff] {
+            assert!(is_pointer_button(code), "{code:#x} is a pointer button");
+        }
+        // KEY_A, KEY_BACKSPACE, KEY_F23, and the high KEY_* block above the button ranges.
+        for code in [30_u16, 14, 193, 255, 0x160, 0x1ff] {
+            assert!(!is_pointer_button(code), "{code:#x} is a key");
+        }
+    }
+
+    #[test]
+    fn resolves_each_device_name_to_exactly_one_rule() {
+        let fragments = vec![
+            "Evsieve Virtual Device".to_owned(),
+            "AT Translated Set 2 keyboard".to_owned(),
+        ];
+        assert_eq!(matching_rule("Evsieve Virtual Device", &fragments), Some(0));
+        assert_eq!(
+            matching_rule("AT Translated Set 2 keyboard", &fragments),
+            Some(1)
+        );
+        assert_eq!(matching_rule("MoErgo Glove80 Mouse", &fragments), None);
+        assert_eq!(matching_rule("", &fragments), None);
     }
 }
