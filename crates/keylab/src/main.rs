@@ -48,6 +48,10 @@ impl SilentCaptureWatchdog {
         self.silence_since = now;
     }
 
+    fn last_key_event(&self) -> Instant {
+        self.silence_since
+    }
+
     fn warning_due(&mut self, now: Instant) -> bool {
         if silent_capture_warning_due(now, self.silence_since, self.last_warning_at) {
             self.last_warning_at = Some(now);
@@ -77,6 +81,31 @@ struct RuntimeDevice {
     disconnected: bool,
     last_tier_a_tick: Instant,
     capture_watchdog: SilentCaptureWatchdog,
+}
+
+/// The state actually in force, resolved from both channels. `hard_paused` comes from the `PAUSED`
+/// marker and keeps its documented meaning — it discards partial aggregates. `soft_paused` comes
+/// from the control file and preserves the Tier B accumulators.
+struct ResolvedControl {
+    hard_paused: bool,
+    soft_paused: bool,
+    profile: String,
+    profile_id: i64,
+    profile_index: usize,
+    last_activity: Instant,
+}
+
+impl ResolvedControl {
+    fn paused(&self) -> bool {
+        self.hard_paused || self.soft_paused
+    }
+}
+
+/// A profile left active through an idle stretch silently mislabels everything typed after it.
+/// Zero disables the revert entirely.
+fn auto_revert_due(now: Instant, last_activity: Instant, idle_seconds: u64) -> bool {
+    idle_seconds != 0
+        && now.saturating_duration_since(last_activity) >= Duration::from_secs(idle_seconds)
 }
 
 fn main() {
@@ -131,7 +160,15 @@ fn selftest_hold_database(path: &Path) -> Result<()> {
     let keymap = selftest_keymap()?;
     let mut store = Store::open(path, &keymap, unix_seconds()?)?;
     store.register_device("verification fixture", None, unix_seconds()?)?;
-    store.replace_live_snapshot(unix_seconds()?, &[0; 10], 0, 0)?;
+    store.replace_live_snapshot(
+        unix_seconds()?,
+        &[0; 10],
+        0,
+        0,
+        false,
+        config::DEFAULT_PROFILE,
+        &[config::DEFAULT_PROFILE.to_owned()],
+    )?;
     println!("SELFTEST_DB_READY aggregate_rows=1");
     io::stdout()
         .flush()
@@ -215,11 +252,12 @@ fn run() -> Result<()> {
 
     let keymap = Keymap::load(&config.keymap_meta_path)?;
     let mut store = Store::open(&config.db_path, &keymap, unix_seconds()?)?;
-    let pause_path = config
+    let data_dir = config
         .db_path
         .parent()
-        .context("database path must have a parent directory")?
-        .join("PAUSED");
+        .context("database path must have a parent directory")?;
+    let pause_path = data_dir.join("PAUSED");
+    let control_path = data_dir.join("control.json");
 
     let terminate = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(SIGTERM, Arc::clone(&terminate))
@@ -227,7 +265,14 @@ fn run() -> Result<()> {
     signal_hook::flag::register(SIGINT, Arc::clone(&terminate))
         .context("failed to install SIGINT handler")?;
 
-    event_loop(&config, &keymap, &pause_path, &terminate, &mut store)?;
+    event_loop(
+        &config,
+        &keymap,
+        &pause_path,
+        &control_path,
+        &terminate,
+        &mut store,
+    )?;
     store.close()
 }
 
@@ -235,6 +280,7 @@ fn event_loop(
     config: &Config,
     keymap: &Keymap,
     pause_path: &Path,
+    control_path: &Path,
     terminate: &AtomicBool,
     store: &mut Store,
 ) -> Result<()> {
@@ -245,20 +291,45 @@ fn event_loop(
     let mut next_discovery = Instant::now();
     let mut next_bucket_tick = Instant::now() + bucket_duration;
     let mut next_live_tick = Instant::now() + live_duration;
-    let mut paused = false;
     let mut startup_scan_pending = true;
+    let mut watcher =
+        control::ControlWatcher::new(control_path.to_path_buf(), config.profiles.clone());
+    let mut state = ResolvedControl {
+        hard_paused: false,
+        soft_paused: false,
+        profile: config::DEFAULT_PROFILE.to_owned(),
+        profile_id: store.register_profile(config::DEFAULT_PROFILE)?,
+        profile_index: 0,
+        last_activity: Instant::now(),
+    };
+    // Resolve once before the first discovery so devices are created under the right profile.
+    refresh_control(
+        &mut watcher,
+        pause_path,
+        config,
+        store,
+        &mut devices,
+        &mut state,
+    )?;
 
     while !terminate.load(Ordering::Relaxed) {
         let now = Instant::now();
         if now >= next_discovery {
-            discover_devices(config, store, &mut devices, startup_scan_pending)?;
+            discover_devices(config, store, &mut devices, startup_scan_pending, &state)?;
             startup_scan_pending = false;
             next_discovery = now + discovery_duration;
         }
 
-        refresh_pause_state(pause_path, &mut paused, &mut devices)?;
-        if process_device_events(config, keymap, pause_path, paused, store, &mut devices)? {
-            paused = true;
+        refresh_control(
+            &mut watcher,
+            pause_path,
+            config,
+            store,
+            &mut devices,
+            &mut state,
+        )?;
+        if process_device_events(config, keymap, pause_path, &state, store, &mut devices)? {
+            state.hard_paused = true;
             discard_all_partials(&mut devices)?;
         }
 
@@ -279,16 +350,23 @@ fn event_loop(
             info!(count = disconnected, "input devices disconnected");
         }
 
-        if !paused {
+        if !state.paused() {
             warn_for_silent_capture(&mut devices, Instant::now());
         }
 
         if now >= next_bucket_tick {
-            refresh_pause_state(pause_path, &mut paused, &mut devices)?;
+            refresh_control(
+                &mut watcher,
+                pause_path,
+                config,
+                store,
+                &mut devices,
+                &mut state,
+            )?;
             let next_bucket_id = current_bucket_id()?;
-            if paused {
+            if state.hard_paused {
                 discard_all_partials(&mut devices)?;
-            } else {
+            } else if !state.soft_paused {
                 for runtime in devices.values_mut() {
                     let elapsed_ms =
                         duration_millis(now.saturating_duration_since(runtime.last_tier_a_tick));
@@ -302,14 +380,22 @@ fn event_loop(
                     runtime.last_tier_a_tick = now;
                 }
             }
+            apply_idle_auto_revert(config, control_path, &devices, &mut state, now);
             next_bucket_tick = now + bucket_duration;
         }
 
         if now >= next_live_tick {
-            refresh_pause_state(pause_path, &mut paused, &mut devices)?;
-            if !paused {
-                replace_live_snapshot(store, &devices, now)?;
-            }
+            refresh_control(
+                &mut watcher,
+                pause_path,
+                config,
+                store,
+                &mut devices,
+                &mut state,
+            )?;
+            // The snapshot is written even while paused, with zeroed live figures. Freezing it
+            // would leave the viewer showing a stale profile chip with no way to tell.
+            replace_live_snapshot(config, store, &devices, &state, now)?;
             next_live_tick = now + live_duration;
         }
 
@@ -329,6 +415,7 @@ fn discover_devices(
     store: &mut Store,
     devices: &mut HashMap<PathBuf, RuntimeDevice>,
     startup: bool,
+    state: &ResolvedControl,
 ) -> Result<()> {
     let bucket_id = current_bucket_id()?;
     let first_ts = unix_seconds()?;
@@ -346,13 +433,15 @@ fn discover_devices(
         }
         let now = Instant::now();
         let device_id = store.register_device(&input.name, input.uniq.as_deref(), first_ts)?;
+        let mut aggregate = Aggregator::new(bucket_id, config.profiles.len());
+        aggregate.set_profile(state.profile_index);
         devices.insert(
             path,
             RuntimeDevice {
                 input,
-                aggregate: Aggregator::new(bucket_id, 1),
+                aggregate,
                 device_id,
-                profile_id: 1,
+                profile_id: state.profile_id,
                 disconnected: false,
                 last_tier_a_tick: now,
                 capture_watchdog: SilentCaptureWatchdog::new(now),
@@ -395,10 +484,11 @@ fn process_device_events(
     config: &Config,
     keymap: &Keymap,
     pause_path: &Path,
-    paused: bool,
+    state: &ResolvedControl,
     store: &mut Store,
     devices: &mut HashMap<PathBuf, RuntimeDevice>,
 ) -> Result<bool> {
+    let paused = state.paused();
     for runtime in devices.values_mut() {
         loop {
             let event = match runtime.input.next_event() {
@@ -453,23 +543,127 @@ fn process_device_events(
     Ok(false)
 }
 
-fn refresh_pause_state(
+/// Resolves effective state from both channels. The `PAUSED` marker is the hard pause and keeps
+/// its documented meaning: it discards partial aggregates. The control file is the soft pause and
+/// preserves the Tier B accumulators.
+fn refresh_control(
+    watcher: &mut control::ControlWatcher,
     pause_path: &Path,
-    paused: &mut bool,
+    config: &Config,
+    store: &mut Store,
     devices: &mut HashMap<PathBuf, RuntimeDevice>,
+    state: &mut ResolvedControl,
 ) -> Result<()> {
-    let pause_now = pause_requested(pause_path)?;
-    if pause_now != *paused {
+    let desired = watcher.poll();
+    let hard_paused = pause_requested(pause_path)?;
+
+    if hard_paused != state.hard_paused {
         discard_all_partials(devices)?;
-        if !pause_now {
+        if !hard_paused {
             let now = Instant::now();
             for runtime in devices.values_mut() {
                 runtime.capture_watchdog.resume(now);
             }
         }
-        *paused = pause_now;
+        state.hard_paused = hard_paused;
+    }
+
+    if desired.profile != state.profile {
+        seal_or_discard_all_tier_a(config, store, devices)?;
+        let profile_id = store.register_profile(&desired.profile)?;
+        let profile_index = config
+            .profiles
+            .iter()
+            .position(|name| *name == desired.profile)
+            .unwrap_or(0);
+        for runtime in devices.values_mut() {
+            runtime.profile_id = profile_id;
+            runtime.aggregate.set_profile(profile_index);
+        }
+        info!(profile = %desired.profile, "activity profile changed");
+        state.profile = desired.profile.clone();
+        state.profile_id = profile_id;
+        state.profile_index = profile_index;
+        state.last_activity = Instant::now();
+    }
+
+    if desired.paused != state.soft_paused {
+        if desired.paused {
+            seal_or_discard_all_tier_a(config, store, devices)?;
+        } else {
+            let now = Instant::now();
+            for runtime in devices.values_mut() {
+                runtime.capture_watchdog.resume(now);
+                runtime.last_tier_a_tick = now;
+            }
+            state.last_activity = now;
+        }
+        info!(paused = desired.paused, "soft pause state changed");
+        state.soft_paused = desired.paused;
     }
     Ok(())
+}
+
+/// Closes the current Tier A bucket on every device at a boundary that must not straddle two
+/// labels: the bucket is sealed when it clears both floors and discarded otherwise. Tier B is left
+/// untouched — that is what separates a soft boundary from `discard_partials`.
+fn seal_or_discard_all_tier_a(
+    config: &Config,
+    store: &mut Store,
+    devices: &mut HashMap<PathBuf, RuntimeDevice>,
+) -> Result<()> {
+    let next_bucket_id = current_bucket_id()?;
+    let now = Instant::now();
+    for runtime in devices.values_mut() {
+        let elapsed_ms = duration_millis(now.saturating_duration_since(runtime.last_tier_a_tick));
+        if let Some(seal) = runtime.aggregate.seal_or_discard_tier_a(
+            next_bucket_id,
+            elapsed_ms,
+            config.tier_a_seal_floor,
+        ) {
+            store.seal_tier_a(runtime.device_id, runtime.profile_id, &seal)?;
+        }
+        runtime.last_tier_a_tick = now;
+    }
+    Ok(())
+}
+
+/// Rewrites the control file back to the default profile after an idle stretch. The change is
+/// applied by the next `watcher.poll()` through the ordinary path, so a profile switch has exactly
+/// one implementation. A control file that cannot be written must not stop capture.
+fn apply_idle_auto_revert(
+    config: &Config,
+    control_path: &Path,
+    devices: &HashMap<PathBuf, RuntimeDevice>,
+    state: &mut ResolvedControl,
+    now: Instant,
+) {
+    if let Some(latest) = devices
+        .values()
+        .map(|runtime| runtime.capture_watchdog.last_key_event())
+        .max()
+    {
+        state.last_activity = state.last_activity.max(latest);
+    }
+    if state.paused()
+        || state.profile == config::DEFAULT_PROFILE
+        || !auto_revert_due(now, state.last_activity, config.auto_revert_idle_seconds)
+    {
+        return;
+    }
+    let reverted = control::ControlState {
+        paused: state.soft_paused,
+        profile: config::DEFAULT_PROFILE.to_owned(),
+    };
+    match control::write_control(control_path, &reverted) {
+        Ok(()) => info!(
+            idle_seconds = config.auto_revert_idle_seconds,
+            "idle auto-revert to the default profile"
+        ),
+        Err(error) => warn!(error = %error, "failed to write the idle auto-revert"),
+    }
+    // Re-arm regardless: a failed write must not retry on every bucket tick.
+    state.last_activity = now;
 }
 
 fn warn_for_silent_capture(devices: &mut HashMap<PathBuf, RuntimeDevice>, now: Instant) {
@@ -511,14 +705,16 @@ fn translate_tier_b_timestamps(seal: &mut aggregate::TierBSeal) -> Result<()> {
 }
 
 fn replace_live_snapshot(
+    config: &Config,
     store: &mut Store,
     devices: &HashMap<PathBuf, RuntimeDevice>,
+    state: &ResolvedControl,
     now: Instant,
 ) -> Result<()> {
     let mut finger_counts = [0_u32; 10];
     let mut keystrokes = 0_u32;
     let mut aggregate_span_ms = 0_u64;
-    for runtime in devices.values() {
+    for runtime in devices.values().filter(|_| !state.paused()) {
         for (target, value) in finger_counts
             .iter_mut()
             .zip(runtime.aggregate.live_finger_counts())
@@ -536,6 +732,9 @@ fn replace_live_snapshot(
         &finger_counts,
         keystrokes,
         aggregate_span_ms,
+        state.paused(),
+        &state.profile,
+        &config.profiles,
     )
 }
 
@@ -590,6 +789,176 @@ fn disable_process_dumping() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn control_test_store(directory: &Path) -> (PathBuf, Store) {
+        let db_path = directory.join("data").join("keylab.db");
+        let keymap = Keymap::fixture(&[(
+            30,
+            keymap::KeyInfo {
+                pos: 0,
+                hand: 0,
+                finger_id: 0,
+                row_idx: 4,
+            },
+        )]);
+        let store =
+            Store::open(&db_path, &keymap, 1_000).unwrap_or_else(|error| panic!("{error:#}"));
+        (db_path, store)
+    }
+
+    #[test]
+    fn refresh_control_applies_the_control_file_to_the_resolved_state() {
+        let temp = tempfile::tempdir().unwrap_or_else(|error| panic!("{error}"));
+        let (db_path, mut store) = control_test_store(temp.path());
+        let data_dir = db_path.parent().unwrap_or_else(|| unreachable!());
+        let control_path = data_dir.join("control.json");
+        let pause_path = data_dir.join("PAUSED");
+        let config = Config::default();
+        let mut watcher =
+            control::ControlWatcher::new(control_path.clone(), config.profiles.clone());
+        let mut devices: HashMap<PathBuf, RuntimeDevice> = HashMap::new();
+        let mut state = ResolvedControl {
+            hard_paused: false,
+            soft_paused: false,
+            profile: config::DEFAULT_PROFILE.to_owned(),
+            profile_id: store
+                .register_profile(config::DEFAULT_PROFILE)
+                .unwrap_or_else(|error| panic!("{error:#}")),
+            profile_index: 0,
+            last_activity: Instant::now(),
+        };
+
+        control::write_control(
+            &control_path,
+            &control::ControlState {
+                paused: true,
+                profile: "gaming".to_owned(),
+            },
+        )
+        .unwrap_or_else(|error| panic!("{error:#}"));
+        refresh_control(
+            &mut watcher,
+            &pause_path,
+            &config,
+            &mut store,
+            &mut devices,
+            &mut state,
+        )
+        .unwrap_or_else(|error| panic!("{error:#}"));
+
+        assert_eq!(state.profile, "gaming");
+        assert_eq!(state.profile_index, 3);
+        assert_ne!(state.profile_id, 1, "gaming must get its own profile row");
+        assert!(state.soft_paused);
+        assert!(!state.hard_paused);
+        assert!(state.paused());
+
+        // An unconfigured name is rejected by the watcher, so the resolved state must not move.
+        std::fs::write(
+            &control_path,
+            br#"{"paused":false,"profile":"not-configured","updated_at":1}"#,
+        )
+        .unwrap_or_else(|error| panic!("{error}"));
+        refresh_control(
+            &mut watcher,
+            &pause_path,
+            &config,
+            &mut store,
+            &mut devices,
+            &mut state,
+        )
+        .unwrap_or_else(|error| panic!("{error:#}"));
+        assert_eq!(state.profile, "gaming");
+        assert!(state.soft_paused);
+    }
+
+    #[test]
+    fn the_hard_pause_marker_is_resolved_independently_of_the_control_file() {
+        let temp = tempfile::tempdir().unwrap_or_else(|error| panic!("{error}"));
+        let (db_path, mut store) = control_test_store(temp.path());
+        let data_dir = db_path.parent().unwrap_or_else(|| unreachable!());
+        let control_path = data_dir.join("control.json");
+        let pause_path = data_dir.join("PAUSED");
+        let config = Config::default();
+        let mut watcher = control::ControlWatcher::new(control_path, config.profiles.clone());
+        let mut devices: HashMap<PathBuf, RuntimeDevice> = HashMap::new();
+        let mut state = ResolvedControl {
+            hard_paused: false,
+            soft_paused: false,
+            profile: config::DEFAULT_PROFILE.to_owned(),
+            profile_id: 1,
+            profile_index: 0,
+            last_activity: Instant::now(),
+        };
+
+        std::fs::write(&pause_path, b"").unwrap_or_else(|error| panic!("{error}"));
+        refresh_control(
+            &mut watcher,
+            &pause_path,
+            &config,
+            &mut store,
+            &mut devices,
+            &mut state,
+        )
+        .unwrap_or_else(|error| panic!("{error:#}"));
+        assert!(state.hard_paused);
+        assert!(!state.soft_paused, "the control file said nothing");
+
+        std::fs::remove_file(&pause_path).unwrap_or_else(|error| panic!("{error}"));
+        refresh_control(
+            &mut watcher,
+            &pause_path,
+            &config,
+            &mut store,
+            &mut devices,
+            &mut state,
+        )
+        .unwrap_or_else(|error| panic!("{error:#}"));
+        assert!(!state.paused());
+    }
+
+    #[test]
+    fn idle_auto_revert_fires_only_after_the_configured_idle_window() {
+        let start = Instant::now();
+        assert!(!auto_revert_due(
+            start + Duration::from_secs(899),
+            start,
+            900
+        ));
+        assert!(auto_revert_due(
+            start + Duration::from_secs(900),
+            start,
+            900
+        ));
+    }
+
+    #[test]
+    fn a_zero_idle_window_disables_the_auto_revert() {
+        let start = Instant::now();
+        assert!(!auto_revert_due(
+            start + Duration::from_secs(86_400),
+            start,
+            0
+        ));
+    }
+
+    #[test]
+    fn resolved_control_is_paused_by_either_channel() {
+        let mut state = ResolvedControl {
+            hard_paused: false,
+            soft_paused: false,
+            profile: config::DEFAULT_PROFILE.to_owned(),
+            profile_id: 1,
+            profile_index: 0,
+            last_activity: Instant::now(),
+        };
+        assert!(!state.paused());
+        state.soft_paused = true;
+        assert!(state.paused());
+        state.soft_paused = false;
+        state.hard_paused = true;
+        assert!(state.paused());
+    }
 
     #[test]
     fn silent_capture_watchdog_fires_at_five_minutes() {

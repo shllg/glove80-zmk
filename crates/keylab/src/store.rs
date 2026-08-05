@@ -191,12 +191,7 @@ impl Store {
         Ok(self.connection.last_insert_rowid())
     }
 
-    pub fn seal_tier_a(
-        &mut self,
-        device_id: i64,
-        profile_id: i64,
-        seal: &TierASeal,
-    ) -> Result<()> {
+    pub fn seal_tier_a(&mut self, device_id: i64, profile_id: i64, seal: &TierASeal) -> Result<()> {
         if seal.data.keystrokes < MIN_TIER_A_SEAL_FLOOR {
             bail!("refusing to persist a Tier A bucket below the privacy count floor");
         }
@@ -250,12 +245,7 @@ impl Store {
             .context("failed to commit Tier A transaction")
     }
 
-    pub fn seal_tier_b(
-        &mut self,
-        device_id: i64,
-        profile_id: i64,
-        seal: &TierBSeal,
-    ) -> Result<()> {
+    pub fn seal_tier_b(&mut self, device_id: i64, profile_id: i64, seal: &TierBSeal) -> Result<()> {
         if seal.keystrokes < MIN_TIER_B_SEAL_COUNT {
             bail!("refusing to persist a Tier B window below the privacy count floor");
         }
@@ -308,15 +298,24 @@ impl Store {
         finger_counts: &[u32; 10],
         keystrokes: u32,
         elapsed_ms: u64,
+        paused: bool,
+        profile: &str,
+        profiles: &[String],
     ) -> Result<()> {
         let rate = if elapsed_ms == 0 {
             0.0
         } else {
             f64::from(keystrokes) * 60_000.0 / elapsed_ms as f64
         };
+        // Profile names are user-authored labels, not keystroke data, so echoing them here is
+        // within the logging policy. This is the viewer's only authoritative source of control
+        // state: it must never infer it from its own last write.
         let snapshot = serde_json::to_string(&json!({
             "finger_count": finger_counts,
             "keystrokes_per_minute": rate,
+            "paused": paused,
+            "profile": profile,
+            "profiles": profiles,
         }))
         .context("failed to encode live snapshot")?;
         self.connection
@@ -748,7 +747,9 @@ mod tests {
         let (_temp, _path, store, _device_id) = open_store();
         let name: String = store
             .connection()
-            .query_row("SELECT name FROM profile WHERE id = 1", [], |row| row.get(0))
+            .query_row("SELECT name FROM profile WHERE id = 1", [], |row| {
+                row.get(0)
+            })
             .unwrap_or_else(|error| panic!("{error}"));
         assert_eq!(name, crate::config::DEFAULT_PROFILE);
     }
@@ -876,7 +877,7 @@ mod tests {
         let mut counts = [0_u32; 10];
         counts[2] = 12;
         store
-            .replace_live_snapshot(1_000, &counts, 30, 10_000)
+            .replace_live_snapshot(1_000, &counts, 30, 10_000, false, "default", &[])
             .unwrap();
         let encoded: String = store
             .connection()
@@ -886,12 +887,37 @@ mod tests {
             .unwrap();
         let snapshot: Value = serde_json::from_str(&encoded).unwrap();
         let object = snapshot.as_object().unwrap_or_else(|| unreachable!());
-        assert_eq!(object.len(), 2);
+        assert_eq!(object.len(), 5);
         assert_eq!(snapshot["finger_count"][2], 12);
         assert_eq!(snapshot["keystrokes_per_minute"], 180.0);
         assert!(snapshot.get("pos").is_none());
         assert!(snapshot.get("keycode").is_none());
         assert!(snapshot.get("row").is_none());
+    }
+
+    #[test]
+    fn live_snapshot_reports_the_control_state() {
+        let (_temp, _path, mut store, _device_id) = open_store();
+        store
+            .replace_live_snapshot(
+                1_000,
+                &[0; 10],
+                0,
+                0,
+                true,
+                "gaming",
+                &["default".to_owned(), "gaming".to_owned()],
+            )
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        let json: String = store
+            .connection()
+            .query_row("SELECT json FROM live_snapshot WHERE id = 1", [], |row| {
+                row.get(0)
+            })
+            .unwrap_or_else(|error| panic!("{error}"));
+        assert!(json.contains("\"paused\":true"));
+        assert!(json.contains("\"profile\":\"gaming\""));
+        assert!(json.contains("\"profiles\":[\"default\",\"gaming\"]"));
     }
 
     #[test]
@@ -1015,7 +1041,9 @@ mod tests {
             keystrokes: 2_000,
             pos_count: counts,
         };
-        assert!(store.seal_tier_b(device_id, 1, &inconsistent_tier_b).is_err());
+        assert!(store
+            .seal_tier_b(device_id, 1, &inconsistent_tier_b)
+            .is_err());
         assert_eq!(table_count(store.connection(), "bucket"), 0);
         assert_eq!(table_count(store.connection(), "key_window"), 0);
     }
