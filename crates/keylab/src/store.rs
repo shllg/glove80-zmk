@@ -8,6 +8,7 @@ use std::fs::{self, DirBuilder, OpenOptions};
 use std::io::Write;
 use std::os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt, PermissionsExt};
 use std::path::Path;
+use tracing::info;
 
 const SCHEMA: &str = r#"
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
@@ -19,9 +20,15 @@ CREATE TABLE IF NOT EXISTS device (
   first_ts  INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS profile (
+  id    INTEGER PRIMARY KEY,
+  name  TEXT NOT NULL UNIQUE
+);
+
 CREATE TABLE IF NOT EXISTS bucket (
   id          INTEGER PRIMARY KEY,
   device_id   INTEGER NOT NULL REFERENCES device(id),
+  profile_id  INTEGER REFERENCES profile(id),
   span_ms     INTEGER NOT NULL,
   active_ms   INTEGER NOT NULL,
   keystrokes  INTEGER NOT NULL,
@@ -78,6 +85,7 @@ CREATE TABLE IF NOT EXISTS event_count (
 CREATE TABLE IF NOT EXISTS key_window (
   id          INTEGER PRIMARY KEY,
   device_id   INTEGER NOT NULL REFERENCES device(id),
+  profile_id  INTEGER REFERENCES profile(id),
   start_ts    INTEGER NOT NULL,
   end_ts      INTEGER NOT NULL,
   keystrokes  INTEGER NOT NULL
@@ -162,7 +170,33 @@ impl Store {
         Ok(self.connection.last_insert_rowid())
     }
 
-    pub fn seal_tier_a(&mut self, device_id: i64, seal: &TierASeal) -> Result<()> {
+    /// Profiles mirror the device pattern: look up first, insert only when genuinely new, so a
+    /// profile switch back and forth never fragments one activity across several rows.
+    pub fn register_profile(&mut self, name: &str) -> Result<i64> {
+        let existing: Option<i64> = self
+            .connection
+            .query_row(
+                "SELECT id FROM profile WHERE name = ?1",
+                params![name],
+                |row| row.get(0),
+            )
+            .optional()
+            .context("failed to look up a profile")?;
+        if let Some(profile_id) = existing {
+            return Ok(profile_id);
+        }
+        self.connection
+            .execute("INSERT INTO profile(name) VALUES (?1)", params![name])
+            .context("failed to register a profile")?;
+        Ok(self.connection.last_insert_rowid())
+    }
+
+    pub fn seal_tier_a(
+        &mut self,
+        device_id: i64,
+        profile_id: i64,
+        seal: &TierASeal,
+    ) -> Result<()> {
         if seal.data.keystrokes < MIN_TIER_A_SEAL_FLOOR {
             bail!("refusing to persist a Tier A bucket below the privacy count floor");
         }
@@ -191,11 +225,12 @@ impl Store {
             .context("failed to begin Tier A transaction")?;
         transaction
             .execute(
-                "INSERT INTO bucket(id, device_id, span_ms, active_ms, keystrokes, autorepeats)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                "INSERT INTO bucket(id, device_id, profile_id, span_ms, active_ms, keystrokes, autorepeats)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
                 params![
                     seal.bucket_id,
                     device_id,
+                    profile_id,
                     span_ms,
                     active_ms,
                     seal.data.keystrokes,
@@ -215,7 +250,12 @@ impl Store {
             .context("failed to commit Tier A transaction")
     }
 
-    pub fn seal_tier_b(&mut self, device_id: i64, seal: &TierBSeal) -> Result<()> {
+    pub fn seal_tier_b(
+        &mut self,
+        device_id: i64,
+        profile_id: i64,
+        seal: &TierBSeal,
+    ) -> Result<()> {
         if seal.keystrokes < MIN_TIER_B_SEAL_COUNT {
             bail!("refusing to persist a Tier B window below the privacy count floor");
         }
@@ -235,9 +275,9 @@ impl Store {
             .context("failed to begin Tier B transaction")?;
         transaction
             .execute(
-                "INSERT INTO key_window(device_id, start_ts, end_ts, keystrokes)
-                 VALUES (?1, ?2, ?3, ?4)",
-                params![device_id, start_ts, end_ts, seal.keystrokes],
+                "INSERT INTO key_window(device_id, profile_id, start_ts, end_ts, keystrokes)
+                 VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![device_id, profile_id, start_ts, end_ts, seal.keystrokes],
             )
             .context("failed to write Tier B window")?;
         let window_id = transaction.last_insert_rowid();
@@ -369,6 +409,13 @@ fn verify_exact_mode(path: &Path, expected: u32, description: &str) -> Result<()
 }
 
 fn initialize_meta(connection: &Connection, keymap: &Keymap, now_ts: i64) -> Result<()> {
+    connection
+        .execute(
+            "INSERT OR IGNORE INTO profile(id, name) VALUES (1, ?1)",
+            [crate::config::DEFAULT_PROFILE],
+        )
+        .context("failed to seed the default profile")?;
+
     let schema_version: Option<String> = connection
         .query_row(
             "SELECT value FROM meta WHERE key = 'schema_version'",
@@ -377,12 +424,14 @@ fn initialize_meta(connection: &Connection, keymap: &Keymap, now_ts: i64) -> Res
         )
         .optional()
         .context("failed to read schema version")?;
-    if schema_version.as_deref().is_some_and(|value| value != "1") {
-        bail!("unsupported database schema version");
+    match schema_version.as_deref() {
+        None | Some("2") => {}
+        Some("1") => migrate_v1_to_v2(connection)?,
+        Some(_) => bail!("unsupported database schema version"),
     }
     connection
         .execute(
-            "INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', '1')",
+            "INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', '2')",
             [],
         )
         .context("failed to initialize schema version")?;
@@ -445,6 +494,34 @@ fn initialize_meta(connection: &Connection, keymap: &Keymap, now_ts: i64) -> Res
             [&keymap.hash],
         )
         .context("failed to write keymap hash")?;
+    Ok(())
+}
+
+/// v1 databases predate activity profiles. Every row they hold was captured on the Glove80 during
+/// ordinary use, so backfilling them to the default profile is accurate, not a guess.
+fn migrate_v1_to_v2(connection: &Connection) -> Result<()> {
+    for statement in [
+        "ALTER TABLE bucket ADD COLUMN profile_id INTEGER REFERENCES profile(id)",
+        "ALTER TABLE key_window ADD COLUMN profile_id INTEGER REFERENCES profile(id)",
+    ] {
+        match connection.execute(statement, []) {
+            Ok(_) => {}
+            // Re-running the migration after a partial failure must not abort the daemon.
+            Err(rusqlite::Error::SqliteFailure(_, Some(ref message)))
+                if message.contains("duplicate column name") => {}
+            Err(error) => {
+                return Err(error).context("failed to add the profile column");
+            }
+        }
+    }
+    connection
+        .execute_batch(
+            "UPDATE bucket SET profile_id = 1 WHERE profile_id IS NULL;
+             UPDATE key_window SET profile_id = 1 WHERE profile_id IS NULL;
+             UPDATE meta SET value = '2' WHERE key = 'schema_version';",
+        )
+        .context("failed to backfill the default profile")?;
+    info!("migrated database schema from version 1 to 2");
     Ok(())
 }
 
@@ -637,6 +714,86 @@ mod tests {
         assert_eq!(rows, 2);
     }
 
+    fn sample_tier_a_seal() -> TierASeal {
+        let data = TierAAccumulator {
+            keystrokes: 30,
+            active_ms: 1_000,
+            ..TierAAccumulator::default()
+        };
+        TierASeal {
+            bucket_id: 1_000,
+            span_ms: 10_000,
+            data,
+        }
+    }
+
+    #[test]
+    fn registering_a_profile_twice_reuses_the_row() {
+        let (_temp, _path, mut store, _device_id) = open_store();
+        let first = store
+            .register_profile("gaming")
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        let second = store
+            .register_profile("gaming")
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        assert_eq!(first, second);
+        let other = store
+            .register_profile("training-de")
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        assert_ne!(other, first);
+    }
+
+    #[test]
+    fn the_default_profile_exists_with_id_one_after_open() {
+        let (_temp, _path, store, _device_id) = open_store();
+        let name: String = store
+            .connection()
+            .query_row("SELECT name FROM profile WHERE id = 1", [], |row| row.get(0))
+            .unwrap_or_else(|error| panic!("{error}"));
+        assert_eq!(name, crate::config::DEFAULT_PROFILE);
+    }
+
+    #[test]
+    fn migrating_a_v1_database_backfills_every_row_to_default() {
+        let (_temp, path, mut store, device_id) = open_store();
+        let profile_id = store
+            .register_profile("gaming")
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        store
+            .seal_tier_a(device_id, profile_id, &sample_tier_a_seal())
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        // Simulate a database written before the migration existed.
+        store
+            .connection()
+            .execute_batch(
+                "UPDATE bucket SET profile_id = NULL;
+                 UPDATE meta SET value = '1' WHERE key = 'schema_version';",
+            )
+            .unwrap_or_else(|error| panic!("{error}"));
+        store.close().unwrap_or_else(|error| panic!("{error:#}"));
+
+        let reopened =
+            Store::open(&path, &keymap(), 3_000).unwrap_or_else(|error| panic!("{error:#}"));
+        let orphaned: i64 = reopened
+            .connection()
+            .query_row(
+                "SELECT COUNT(*) FROM bucket WHERE profile_id IS NULL",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap_or_else(|error| panic!("{error}"));
+        assert_eq!(orphaned, 0);
+        let version: String = reopened
+            .connection()
+            .query_row(
+                "SELECT value FROM meta WHERE key = 'schema_version'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap_or_else(|error| panic!("{error}"));
+        assert_eq!(version, "2");
+    }
+
     #[test]
     fn applies_all_database_pragmas() {
         let (_temp, _path, store, _device_id) = open_store();
@@ -677,7 +834,7 @@ mod tests {
                 |row| row.get(0),
             )
             .unwrap();
-        assert_eq!(schema_version, "1");
+        assert_eq!(schema_version, "2");
         let initial: Value = serde_json::from_str(&initial_history).unwrap();
         assert_eq!(initial.as_array().map(Vec::len), Some(1));
         store.close().unwrap();
@@ -805,7 +962,7 @@ mod tests {
         assert!(second.is_some());
         let second = second.unwrap_or_else(|| unreachable!());
         store
-            .seal_tier_a(device_id, &second)
+            .seal_tier_a(device_id, 1, &second)
             .unwrap_or_else(|error| panic!("{error:#}"));
         let row: (i64, i64) = store
             .connection()
@@ -829,7 +986,7 @@ mod tests {
             span_ms: 10_000,
             data: tier_a_data,
         };
-        assert!(store.seal_tier_a(device_id, &tier_a).is_err());
+        assert!(store.seal_tier_a(device_id, 1, &tier_a).is_err());
 
         tier_a_data = TierAAccumulator {
             keystrokes: 25,
@@ -840,7 +997,7 @@ mod tests {
             span_ms: 9_999,
             data: tier_a_data,
         };
-        assert!(store.seal_tier_a(device_id, &too_short).is_err());
+        assert!(store.seal_tier_a(device_id, 1, &too_short).is_err());
 
         let mut counts = [0_u32; 81];
         counts[0] = 1_999;
@@ -850,7 +1007,7 @@ mod tests {
             keystrokes: 1_999,
             pos_count: counts,
         };
-        assert!(store.seal_tier_b(device_id, &tier_b).is_err());
+        assert!(store.seal_tier_b(device_id, 1, &tier_b).is_err());
 
         let inconsistent_tier_b = TierBSeal {
             start_ts: 1_000,
@@ -858,7 +1015,7 @@ mod tests {
             keystrokes: 2_000,
             pos_count: counts,
         };
-        assert!(store.seal_tier_b(device_id, &inconsistent_tier_b).is_err());
+        assert!(store.seal_tier_b(device_id, 1, &inconsistent_tier_b).is_err());
         assert_eq!(table_count(store.connection(), "bucket"), 0);
         assert_eq!(table_count(store.connection(), "key_window"), 0);
     }
@@ -876,8 +1033,8 @@ mod tests {
             span_ms: 10_000,
             data,
         };
-        store.seal_tier_a(first_device_id, &seal).unwrap();
-        store.seal_tier_a(second_device_id, &seal).unwrap();
+        store.seal_tier_a(first_device_id, 1, &seal).unwrap();
+        store.seal_tier_a(second_device_id, 1, &seal).unwrap();
         assert_eq!(table_count(store.connection(), "bucket"), 1);
         assert_eq!(
             scalar(store.connection(), "SELECT device_id FROM bucket"),
@@ -900,7 +1057,7 @@ mod tests {
         assert!(seal.is_some());
         let seal = seal.unwrap_or_else(|| unreachable!());
         store
-            .seal_tier_b(device_id, &seal)
+            .seal_tier_b(device_id, 1, &seal)
             .unwrap_or_else(|error| panic!("{error:#}"));
         assert_eq!(table_count(store.connection(), "key_window"), 1);
         let sum: i64 = store
@@ -960,11 +1117,11 @@ mod tests {
         }
         assert!(tier_b.is_some());
         let tier_b = tier_b.unwrap_or_else(|| unreachable!());
-        store.seal_tier_b(device_id, &tier_b).unwrap();
+        store.seal_tier_b(device_id, 1, &tier_b).unwrap();
         let tier_a = aggregate
             .tick(1_010, 10_000, 25)
             .unwrap_or_else(|| unreachable!());
-        store.seal_tier_a(device_id, &tier_a).unwrap();
+        store.seal_tier_a(device_id, 1, &tier_a).unwrap();
 
         assert_eq!(table_count(store.connection(), "bucket"), 1);
         assert_eq!(

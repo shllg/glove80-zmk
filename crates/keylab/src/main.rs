@@ -73,6 +73,7 @@ struct RuntimeDevice {
     input: device::InputDevice,
     aggregate: Aggregator,
     device_id: i64,
+    profile_id: i64,
     disconnected: bool,
     last_tier_a_tick: Instant,
     capture_watchdog: SilentCaptureWatchdog,
@@ -191,7 +192,8 @@ fn selftest_replay(path: &Path) -> Result<()> {
     let seal = aggregate
         .tick(start_ts.saturating_add(10), 10_000, 25)
         .context("verification fixture did not reach the Tier A floor")?;
-    store.seal_tier_a(device_id, &seal)?;
+    let profile_id = store.register_profile(config::DEFAULT_PROFILE)?;
+    store.seal_tier_a(device_id, profile_id, &seal)?;
     info!(
         aggregate_rows = 1,
         keystrokes = 25,
@@ -295,7 +297,7 @@ fn event_loop(
                             .aggregate
                             .tick(next_bucket_id, elapsed_ms, config.tier_a_seal_floor)
                     {
-                        store.seal_tier_a(runtime.device_id, &seal)?;
+                        store.seal_tier_a(runtime.device_id, runtime.profile_id, &seal)?;
                     }
                     runtime.last_tier_a_tick = now;
                 }
@@ -350,6 +352,7 @@ fn discover_devices(
                 input,
                 aggregate: Aggregator::new(bucket_id),
                 device_id,
+                profile_id: 1,
                 disconnected: false,
                 last_tier_a_tick: now,
                 capture_watchdog: SilentCaptureWatchdog::new(now),
@@ -439,7 +442,7 @@ fn process_device_events(
                     return Ok(true);
                 }
                 translate_tier_b_timestamps(&mut seal)?;
-                store.seal_tier_b(runtime.device_id, &seal)?;
+                store.seal_tier_b(runtime.device_id, runtime.profile_id, &seal)?;
             }
             debug_assert!(runtime.aggregate.bounded_footprint() < 600);
         }
