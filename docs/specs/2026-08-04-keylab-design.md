@@ -98,6 +98,8 @@ Because the daemon runs as the user, the database is user-owned and SQLite WAL r
 
 v1: the daemon watches for `~/.local/share/glove80-lab/PAUSED` and stops recording while it exists.
 
+> **Superseded in part by [2026-08-05-keylab-profiles-and-training-plan.md](2026-08-05-keylab-profiles-and-training-plan.md).** That document adds a second, *soft* pause via `control.json` which keeps reading the device, counts nothing, and preserves the Tier B accumulators. The `PAUSED` marker described here keeps its meaning unchanged as the **hard** pause: it still discards every partial aggregate. The effective pause is `PAUSED exists || control.paused`.
+
 Known limitation, stated plainly: creating that file during a password prompt is impractical. The keyboard-bound pause toggle with LED indication is v2, alongside firmware layer signalling.
 
 ## Architecture

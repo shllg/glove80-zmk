@@ -30,7 +30,7 @@ bash crates/keylab/verify-hardening.sh
 sudo crates/keylab/install.sh
 ```
 
-The installer builds a locked release binary, installs it as `/usr/local/bin/keylab` with mode `0755` and `root:root` ownership, installs the system unit, creates the private data/configuration directories, and installs the example configuration only when no configuration already exists. It never overwrites an existing configuration silently. It reloads systemd but only prints the enable/start commands; run them after reviewing the configuration:
+The installer builds locked release binaries, installs them as `/usr/local/bin/keylab` and `/usr/local/bin/keylabctl` with mode `0755` and `root:root` ownership, installs the system unit, creates the private data/configuration directories, and installs the example configuration only when no configuration already exists. It never overwrites an existing configuration silently. It reloads systemd but only prints the enable/start commands; run them after reviewing the configuration:
 
 ```bash
 systemctl enable keylab.service
@@ -60,9 +60,11 @@ bucket_seconds = 10
 tier_a_seal_floor = 25
 tier_b_seal_count = 2000
 live_snapshot_seconds = 1
+profiles = ["default", "training-de", "training-en", "gaming"]
+auto_revert_idle_seconds = 900
 ```
 
-`device_name_contains` selects evdev devices by a case-sensitive name fragment. `keymap_meta_path` must point to the metadata emitted by `pnpm build`. The daemon refuses bucket/floor settings below 10 seconds, 25 keystrokes, and 2000 keystrokes. Restart the service after configuration changes:
+`device_name_contains` selects evdev devices by a case-sensitive name fragment. `keymap_meta_path` must point to the metadata emitted by `pnpm build`. The daemon refuses bucket/floor settings below 10 seconds, 25 keystrokes, and 2000 keystrokes, and refuses more than 8 profiles or a list whose first entry is not `default`. Restart the service after configuration changes:
 
 ```bash
 systemctl restart keylab.service
@@ -78,23 +80,78 @@ The evsieve command includes `--block key:f23@kb`, so F23 never reaches the virt
 
 At startup, keylab logs each matched device and event path plus the total match count. For each match, a passive watchdog warns after five unpaused minutes without any `EV_KEY` event and repeats no more than once every 30 minutes. The warning usually means another process holds an exclusive grab and capture points at the wrong device. When it fires, inspect the active remapper topology and set `device_name_contains` to the device that actually emits the remapped events. keylab does not probe with `EVIOCGRAB`, because even a brief probe could swallow a keystroke.
 
+## Activity profiles
+
+Every sealed Tier A bucket and Tier B window carries a `profile_id`. The profile is an *activity* label — practice, gaming, language drilling — and is orthogonal to `device_id`, so "gaming across both keyboards" stays answerable.
+
+```bash
+keylabctl profile list        # configured profiles; * marks the active one
+keylabctl profile set gaming
+keylabctl status
+```
+
+Rules that matter:
+
+- **The configured list is a closed set.** `profiles` in `keylab.toml` must start with `default`, hold at most **8** entries, and use only `[a-z0-9-]`. A name outside the list is rejected by both `keylabctl` and the daemon, which keeps its last known-good state rather than guessing.
+- **The cap is a privacy invariant, not a preference.** Each profile holds its own 81-slot Tier B histogram; `MAX_PROFILES = 8` is what keeps the daemon's in-memory footprint bounded.
+- **Tier B is preserved across a switch, per profile.** Switching profiles never discards positional progress. It also means a profile you rarely use may take weeks to reach the 2000-keystroke floor and seal a window — correct behaviour, not a fault.
+- **Tier A is sealed or discarded at the boundary.** A bucket that clears both floors (25 keystrokes, 10 seconds) is sealed under the outgoing profile; anything below is discarded. A switch therefore smears at most one bucket.
+- **Idle auto-revert.** After `auto_revert_idle_seconds` (default 900) with no keystrokes on any device, the daemon rewrites `control.json` back to `default`, so a forgotten `gaming` profile cannot silently poison a working day. Set it to `0` to disable.
+
+Check the split:
+
+```bash
+sqlite3 -readonly "$HOME/.local/share/glove80-lab/keylab.db" \
+  "SELECT p.name, SUM(b.keystrokes) FROM bucket b JOIN profile p ON p.id = b.profile_id GROUP BY 1 ORDER BY 2 DESC;"
+```
+
+`pnpm analysis report` reads the `default` profile unless told otherwise; `--profile gaming` selects one and `--profile '*'` pools them all. The report header always names the profile, so a filtered report is never mistaken for a full one.
+
 ## Pause
 
-Recording stops while this marker exists:
+There are three separate mechanisms with three different guarantees. Do not conflate them.
+
+| | command | guarantee | Tier B |
+|---|---|---|---|
+| soft | `keylabctl pause` | events read, nothing counted | preserved |
+| hard | `touch ~/.local/share/glove80-lab/PAUSED` | device still open, all partials discarded | discarded |
+| stop | `sudo systemctl stop keylab.service` | device closed, nothing read | discarded |
+
+The **soft pause** lives in `control.json` and exists so a pause does not throw away up to 1999 keystrokes of Tier B progress. The daemon keeps reading the device and counts nothing:
+
+```bash
+keylabctl pause
+keylabctl resume
+```
+
+The **hard pause** is the original marker file and keeps its v1 meaning exactly:
 
 ```bash
 touch "$HOME/.local/share/glove80-lab/PAUSED"
-```
-
-Remove it to resume:
-
-```bash
 rm -- "$HOME/.local/share/glove80-lab/PAUSED"
 ```
 
-Creating or removing the marker discards all partial Tier A and Tier B aggregates; they are never flushed below their floors.
+Creating or removing the marker discards all partial Tier A and Tier B aggregates; they are never flushed below their floors. The effective pause is `PAUSED exists || control.paused`, so either channel alone stops counting.
 
-Known limitation, stated plainly: creating that file during a password prompt is impractical. The keyboard-bound pause toggle with LED indication is v2, alongside firmware layer signalling.
+A soft pause is **"not counted", not "not read"** — the device stays open. Only `systemctl stop` closes it.
+
+Known limitation, stated plainly: reaching for either control during a password prompt is impractical. The keyboard-bound pause toggle with LED indication is v2, alongside firmware layer signalling.
+
+## Control file
+
+`~/.local/share/glove80-lab/control.json`, beside the database and the `PAUSED` marker:
+
+```json
+{
+  "paused": false,
+  "profile": "default",
+  "updated_at": 1785900000
+}
+```
+
+It is user-writable by design — the daemon runs as `sascha`, not root, so a control socket would force removal of `SocketBindDeny=any` and buy nothing. Writers (`keylabctl`, the viewer, the daemon's own auto-revert) write to `control.json.tmp`, `fsync`, then `rename`, so a reader never sees a half-written file. The daemon `stat`s it on every 10 ms loop iteration and re-parses only when the modification time or size moved.
+
+A malformed, unreadable, or unknown-profile file logs one warning and keeps the last known-good state. It never kills the daemon and never silently resumes capture.
 
 ## Inspect
 
@@ -111,7 +168,10 @@ Useful read-only commands at the SQLite prompt include:
 SELECT COUNT(*), SUM(keystrokes) FROM bucket;
 SELECT COUNT(*), SUM(keystrokes) FROM key_window;
 SELECT updated_at, json FROM live_snapshot;
+SELECT p.name, SUM(b.keystrokes) FROM bucket b JOIN profile p ON p.id = b.profile_id GROUP BY 1;
 ```
+
+The schema is at version 2. A version 1 database is migrated in place the first time the new daemon opens it: the `profile_id` columns are added and every existing row is backfilled to `default`. That backfill is accurate rather than a guess — every v1 row was captured on the Glove80 during ordinary use, before profiles existed. The analysis and viewer packages require version 2 and say so plainly if they meet an unmigrated database.
 
 Tier B's `pos_count` table contains diluted physical-position histograms. Treat the entire database, including `keylab.db-wal` and `keylab.db-shm`, as privacy-sensitive.
 
@@ -144,7 +204,7 @@ Modifier **hold** durations are measurable — the mod press is emitted at resol
 
 ## What this does not protect against
 
-- **Host-wide input-device permissions:** `/etc/udev/rules.d/99-vibetyper-uinput.rules` sets `KERNEL=="event*", SUBSYSTEM=="input", MODE="0666"`, making every input device world-readable, and makes `/dev/uinput` world-writable. On this host, any local process can therefore read all keystrokes and inject synthetic input independently of keylab; keylab's process and service hardening cannot mitigate a host-wide permission grant. The corrected rule can drop the `event*` line and set uinput to `GROUP="input", MODE="0660"` without breaking the current topology: Hyprland receives devices through logind, evsieve reads them through the `input` group, and vibetyper writes uinput through the `input` group.
+- **Host-wide input-device permissions:** keylab's process and service hardening cannot mitigate a permission grant made at the host level — if the device nodes are readable by everyone, every local process can log keystrokes regardless of how keylab is confined. This host previously carried `/etc/udev/rules.d/99-vibetyper-uinput.rules`, which set `KERNEL=="event*", SUBSYSTEM=="input", MODE="0666"` and made `/dev/uinput` world-writable. That file was removed on 2026-08-04; `/etc/udev/rules.d/99-uinput.rules` already grants uinput to the `input` group at `0660`, so vibetyper still injects, evsieve still reads through the `input` group, and Hyprland still receives devices through logind. Note that udev applies node permissions on `add`, not on `change`: after removing such a rule, trigger with `--action=add` or reboot, and reboot specifically for `/dev/uinput`, which is a static node whose mode is fixed at module load. Verify with `ls -l /dev/input/event* /dev/uinput` — both should read `crw-rw----` owned by `root:input`.
 - **Hibernation:** suspend-to-disk writes `mlockall`ed pages into the resume image. Use an encrypted swap/resume device; `mlockall` protects only against normal swap while the daemon is running.
 - **Privileged memory access:** root, or anything with `CAP_SYS_PTRACE`, can read the daemon's memory regardless of `PR_SET_DUMPABLE`. Same-user processes can see that keylab exists even though unprivileged memory access is blocked.
 - **Backups and sync:** the database under `$HOME` is picked up by backup tools unless excluded. keylab writes `CACHEDIR.TAG` and `README.txt`; Borg and restic honour the tag only when their exclude-caches option is enabled. Timeshift, Dropbox, and Syncthing need explicit exclusion. Use these exact options/entry (the Syncthing entry assumes `$HOME` is the folder root):

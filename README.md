@@ -289,7 +289,7 @@ Read the results by severity:
 
 ### Wait for the heatmap
 
-Per-key positional data (Tier B) only exists once **2000 keystrokes** accumulate in one uninterrupted session. Below that floor nothing is written, so the heatmap stays blank -- by design, not a fault. A restart, a device disconnect, or toggling pause resets the counter to zero.
+Per-key positional data (Tier B) only exists once **2000 keystrokes** accumulate in one uninterrupted session *within one profile*. Below that floor nothing is written, so the heatmap stays blank -- by design, not a fault. A restart, a device disconnect, or the hard `PAUSED` marker resets the counter to zero; a soft `keylabctl pause` and a profile switch do not.
 
 ```bash
 start=$(date -d "$(systemctl show keylab.service -p ActiveEnterTimestamp --value | cut -d' ' -f2-3)" +%s)
@@ -304,19 +304,50 @@ Per-finger, per-row, and modifier metrics (Tier A) appear far sooner -- that flo
 ```bash
 pnpm analysis report --since all           # or 7d / 24h / 30m
 pnpm analysis report --since 7d --json     # machine-readable
+pnpm analysis report --since all --profile gaming   # one activity profile
+pnpm analysis report --since all --profile '*'      # pool every profile
 pnpm viewer                                # live dashboard on http://127.0.0.1:4123
 ```
 
+Reports and the viewer read the **`default`** profile unless told otherwise, so practice and gaming sessions never quietly inflate real-use numbers. The report header always names the profile it read.
+
 The viewer's time range defaults to `Live - 30m`. A 2000-keystroke Tier B window usually spans longer than that, so switch to `today` or `all` or the heatmap will look empty when it is not.
+
+### Activity profiles
+
+A monkeytype session is lowercase prose at unnatural pace with no shortcuts and no thinking pauses. Pooled with real work it produces a statistic that describes neither. Tag the activity instead:
+
+```bash
+keylabctl profile list         # configured profiles; * marks the active one
+keylabctl profile set training-en
+keylabctl profile set default
+keylabctl status               # service state, both pauses, profile, capture age
+```
+
+Names come from `profiles` in `~/.config/glove80-lab/keylab.toml`. The first entry must be `default`, at most **8** are allowed, and only `[a-z0-9-]`. **A name outside that list is rejected** — by `keylabctl`, by the viewer, and by the daemon, which keeps its last known-good state rather than guessing. The cap is a privacy invariant: every profile carries its own positional histogram in RAM.
+
+Forgetting to leave a profile is the failure that actually bites, so after 15 minutes with no keystrokes on any device the daemon reverts to `default` by itself (`auto_revert_idle_seconds`, `0` disables). The viewer's header chip is the second line of defence — it shows the profile the **daemon** reports, never the one last picked in the browser.
+
+Check the split:
+
+```bash
+sqlite3 -readonly "$HOME/.local/share/glove80-lab/keylab.db" \
+  "SELECT p.name, SUM(b.keystrokes) FROM bucket b JOIN profile p ON p.id = b.profile_id GROUP BY 1 ORDER BY 2 DESC;"
+```
 
 ### Pause
 
+Two pauses, different guarantees:
+
 ```bash
-touch "$HOME/.local/share/glove80-lab/PAUSED"   # stop recording
-rm -- "$HOME/.local/share/glove80-lab/PAUSED"   # resume
+keylabctl pause                                 # soft: read, count nothing, KEEP Tier B progress
+keylabctl resume
+
+touch "$HOME/.local/share/glove80-lab/PAUSED"   # hard: discard every partial aggregate
+rm -- "$HOME/.local/share/glove80-lab/PAUSED"
 ```
 
-Both discard all partial aggregates; they are never flushed below their privacy floors.
+The soft pause exists because the hard one throws away up to 1999 keystrokes of Tier B progress every time. Neither closes the device — only `sudo systemctl stop keylab.service` does that. Partial aggregates are never flushed below their privacy floors either way.
 
 ### What persists
 
