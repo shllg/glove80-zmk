@@ -13,10 +13,10 @@ if systemctl is-enabled --quiet keylab.service 2>/dev/null; then
   systemctl disable keylab.service
 fi
 
-rm -f -- /usr/local/bin/keylab /etc/systemd/system/keylab.service
+rm -f -- /usr/local/bin/keylab /usr/local/bin/keylabctl /etc/systemd/system/keylab.service
 systemctl daemon-reload
 
-printf '%s\n' 'Removed the keylab binary and systemd unit.'
+printf '%s\n' 'Removed the keylab and keylabctl binaries and the systemd unit.'
 printf '%s\n' 'The database was deliberately left alone at /home/sascha/.local/share/glove80-lab/keylab.db'
 printf '%s\n' 'Its -wal and -shm files, configuration, and containing data directory were also left untouched.'
 printf '%s\n' 'Delete them deliberately only after deciding that the captured data is no longer needed.'

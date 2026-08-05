@@ -36,6 +36,8 @@ fi
 
 install -D -m 0755 -o root -g root \
   "$repo_root/target/release/keylab" /usr/local/bin/keylab
+install -D -m 0755 -o root -g root \
+  "$repo_root/target/release/keylabctl" /usr/local/bin/keylabctl
 install -D -m 0644 -o root -g root \
   "$script_dir/keylab.service" /etc/systemd/system/keylab.service
 
@@ -55,6 +57,6 @@ fi
 
 systemctl daemon-reload
 
-printf '%s\n' 'Installed keylab. Review the configuration, then run these commands deliberately:'
+printf '%s\n' 'Installed keylab and keylabctl. Review the configuration, then run these commands deliberately:'
 printf '%s\n' '  systemctl enable keylab.service'
 printf '%s\n' '  systemctl start keylab.service'
