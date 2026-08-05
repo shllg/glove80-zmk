@@ -13,15 +13,25 @@
         <p class="eyebrow">Glove80 telemetry</p>
         <h1>keylab</h1>
       </div>
-      <label class="range-control">
-        <span>Time range</span>
-        <select id="range">
-          <option value="live">Live · 30m</option>
-          <option value="today">Today</option>
-          <option value="7d">7 days</option>
-          <option value="all">All</option>
-        </select>
-      </label>
+      <div class="header-controls">
+        <div class="control-state">
+          <span id="control-chip" class="chip">profile …</span>
+          <button id="pause-toggle" type="button" class="chip-button">Pause</button>
+        </div>
+        <label class="range-control">
+          <span>Activity profile</span>
+          <select id="profile"></select>
+        </label>
+        <label class="range-control">
+          <span>Time range</span>
+          <select id="range">
+            <option value="live">Live · 30m</option>
+            <option value="today">Today</option>
+            <option value="7d">7 days</option>
+            <option value="all">All</option>
+          </select>
+        </label>
+      </div>
     </header>
 
     <main>

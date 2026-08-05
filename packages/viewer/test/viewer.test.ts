@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { openKeylabDatabase } from "../../analysis/src/db";
 import { loadAnalysisMeta } from "../../analysis/src/meta";
 import { calculateMetrics, parseViewerRange } from "../../analysis/src/metrics";
@@ -22,19 +24,28 @@ afterEach(() => {
   for (const fixture of fixtures.splice(0)) fixture.cleanup();
 });
 
-function startViewer(options: { pollIntervalMs?: number; keepaliveIntervalMs?: number } = {}) {
-  const fixture = createFixture();
-  fixtures.push(fixture);
-  const app = createViewerServer({
+function testOptions(
+  fixture: SeededFixture,
+  options: { pollIntervalMs?: number; keepaliveIntervalMs?: number } = {},
+) {
+  return {
     dbPath: fixture.path,
     metaPath: fixture.metaPath,
-    host: "127.0.0.1",
+    host: "127.0.0.1" as const,
     port: 0,
     now: () => FIXTURE_NOW,
     pollIntervalMs: options.pollIntervalMs ?? 20,
     keepaliveIntervalMs: options.keepaliveIntervalMs ?? 10_000,
     logger: silentLogger,
-  });
+    profiles: ["default", "training-de", "training-en", "gaming"],
+    controlPath: join(fixture.directory, "control.json"),
+  };
+}
+
+function startViewer(options: { pollIntervalMs?: number; keepaliveIntervalMs?: number } = {}) {
+  const fixture = createFixture();
+  fixtures.push(fixture);
+  const app = createViewerServer(testOptions(fixture, options));
   apps.push(app);
   return { fixture, app };
 }
@@ -97,6 +108,114 @@ describe("viewer API", () => {
     });
     expect(response.status).toBe(421);
     expect(await response.text()).toBe("Misdirected request\n");
+  });
+});
+
+describe("control endpoint", () => {
+  test("reports the daemon's authoritative state, not the viewer's own", async () => {
+    const { fixture, app } = startViewer();
+    const writer = new Database(fixture.path);
+    try {
+      writer.query("UPDATE live_snapshot SET json = ? WHERE id = 1").run(
+        JSON.stringify({
+          finger_count: Array(10).fill(0),
+          keystrokes_per_minute: 0,
+          paused: true,
+          profile: "gaming",
+          profiles: ["default", "gaming"],
+        }),
+      );
+    } finally {
+      writer.close();
+    }
+    const response = await fetch(`${app.url}/api/control`);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      paused: true,
+      profile: "gaming",
+      profiles: ["default", "gaming"],
+    });
+  });
+
+  test("falls back to the configured profiles when the snapshot predates the control fields", async () => {
+    const { fixture, app } = startViewer();
+    const writer = new Database(fixture.path);
+    try {
+      writer.query("UPDATE live_snapshot SET json = ? WHERE id = 1").run(
+        JSON.stringify({ finger_count: Array(10).fill(0), keystrokes_per_minute: 0 }),
+      );
+    } finally {
+      writer.close();
+    }
+    const body = await (await fetch(`${app.url}/api/control`)).json();
+    expect(body).toMatchObject({
+      paused: false,
+      profile: "default",
+      profiles: ["default", "training-de", "training-en", "gaming"],
+    });
+  });
+
+  test("rejects a control POST from a foreign origin", async () => {
+    const { app } = startViewer();
+    const response = await fetch(`${app.url}/api/control`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: "https://evil.example" },
+      body: JSON.stringify({ profile: "gaming" }),
+    });
+    expect(response.status).toBe(403);
+  });
+
+  test("rejects a control POST without a JSON content type", async () => {
+    const { app } = startViewer();
+    const response = await fetch(`${app.url}/api/control`, {
+      method: "POST",
+      headers: { "content-type": "text/plain" },
+      body: "profile=gaming",
+    });
+    expect(response.status).toBe(415);
+  });
+
+  test("rejects an unconfigured profile name", async () => {
+    const { app } = startViewer();
+    const response = await fetch(`${app.url}/api/control`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ profile: "not-a-profile" }),
+    });
+    expect(response.status).toBe(400);
+  });
+
+  test("accepts a same-origin POST and writes the control file atomically", async () => {
+    const { fixture, app } = startViewer();
+    const controlPath = join(fixture.directory, "control.json");
+    const response = await fetch(`${app.url}/api/control`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: app.url },
+      body: JSON.stringify({ profile: "gaming", paused: true }),
+    });
+    expect(response.status).toBe(204);
+    expect(JSON.parse(readFileSync(controlPath, "utf8"))).toMatchObject({
+      paused: true,
+      profile: "gaming",
+    });
+
+    // A partial update must preserve the field it does not mention.
+    const second = await fetch(`${app.url}/api/control`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ paused: false }),
+    });
+    expect(second.status).toBe(204);
+    expect(JSON.parse(readFileSync(controlPath, "utf8"))).toMatchObject({
+      paused: false,
+      profile: "gaming",
+    });
+  });
+
+  test("still rejects every other method and path", async () => {
+    const { app } = startViewer();
+    const response = await fetch(`${app.url}/api/summary?range=all`, { method: "POST" });
+    expect(response.status).toBe(405);
   });
 });
 

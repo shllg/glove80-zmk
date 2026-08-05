@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import type { Database } from "bun:sqlite";
-import { readFileSync } from "node:fs";
+import { closeSync, fsyncSync, openSync, readFileSync, renameSync, writeSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,10 +18,15 @@ const SECURITY_HEADERS = {
 };
 const PUBLIC_DIRECTORY = resolve(dirname(fileURLToPath(import.meta.url)), "../public");
 
+/** Mirrors `crates/keylab/src/config.rs`'s `Default::default` so the two never drift apart. */
+export const DEFAULT_PROFILES = ["default", "training-de", "training-en", "gaming"] as const;
+
 export interface ViewerArgs {
   dbPath: string;
   port: number;
   host: typeof HOST;
+  profiles?: string[];
+  controlPath?: string;
 }
 
 export interface ViewerServerOptions extends ViewerArgs {
@@ -30,6 +35,16 @@ export interface ViewerServerOptions extends ViewerArgs {
   pollIntervalMs?: number;
   keepaliveIntervalMs?: number;
   logger?: Pick<Console, "log" | "error">;
+}
+
+export interface ControlState {
+  paused: boolean;
+  profile: string;
+  profiles: string[];
+}
+
+interface SnapshotRow {
+  json: string;
 }
 
 export interface ViewerApp {
@@ -73,6 +88,18 @@ export function parseViewerArgs(args: string[]): ViewerArgs {
       }
       parsed.host = HOST;
       index += 1;
+    } else if (argument === "--profiles") {
+      const value = args[index + 1];
+      if (!value) throw new Error("--profiles requires a comma-separated list");
+      const names = value.split(",").map((name) => name.trim()).filter((name) => name.length > 0);
+      if (names.length === 0) throw new Error("--profiles requires at least one name");
+      parsed.profiles = names;
+      index += 1;
+    } else if (argument === "--control") {
+      const value = args[index + 1];
+      if (!value) throw new Error("--control requires a path");
+      parsed.controlPath = resolve(value);
+      index += 1;
     } else {
       throw new Error(`Unknown argument ${argument}`);
     }
@@ -92,6 +119,54 @@ function staticResponse(fileName: string, contentType: string): Response {
   return new Response(readFileSync(join(PUBLIC_DIRECTORY, fileName)), {
     headers: responseHeaders(contentType),
   });
+}
+
+/**
+ * The daemon is the only authority on control state: it echoes `paused`, `profile`, and the
+ * configured profile list into `live_snapshot`. Reading the viewer's own last write back would
+ * show a state the daemon may have rejected or auto-reverted.
+ */
+function readControlState(database: Database, fallbackProfiles: string[]): ControlState {
+  const row = database.query("SELECT json FROM live_snapshot WHERE id = 1").get() as
+    | SnapshotRow
+    | null;
+  const snapshot = row ? (JSON.parse(row.json) as Partial<ControlState>) : {};
+  const profiles = Array.isArray(snapshot.profiles) && snapshot.profiles.length > 0
+    ? snapshot.profiles
+    : fallbackProfiles;
+  return {
+    paused: snapshot.paused === true,
+    profile: typeof snapshot.profile === "string" ? snapshot.profile : (profiles[0] ?? "default"),
+    profiles,
+  };
+}
+
+/** Writes to a sibling temporary file and renames, matching `control::write_control` in the daemon. */
+function writeControlFile(path: string, state: { paused: boolean; profile: string }): void {
+  const temporary = `${path}.tmp`;
+  const payload = `${JSON.stringify(
+    { paused: state.paused, profile: state.profile, updated_at: Math.floor(Date.now() / 1000) },
+    null,
+    2,
+  )}\n`;
+  const handle = openSync(temporary, "w", 0o600);
+  try {
+    writeSync(handle, payload);
+    fsyncSync(handle);
+  } finally {
+    closeSync(handle);
+  }
+  renameSync(temporary, path);
+}
+
+function readControlFile(path: string): { paused: boolean; profile: string } | null {
+  try {
+    const parsed = JSON.parse(readFileSync(path, "utf8")) as { paused?: unknown; profile?: unknown };
+    if (typeof parsed.paused !== "boolean" || typeof parsed.profile !== "string") return null;
+    return { paused: parsed.paused, profile: parsed.profile };
+  } catch {
+    return null;
+  }
 }
 
 function readUpdatedAt(database: Database): number | null {
@@ -176,18 +251,71 @@ export function createViewerServer(options: ViewerServerOptions): ViewerApp {
   const now = options.now ?? (() => Math.floor(Date.now() / 1000));
   const pollIntervalMs = options.pollIntervalMs ?? 500;
   const keepaliveIntervalMs = options.keepaliveIntervalMs ?? 15_000;
+  const profiles = options.profiles ?? [...DEFAULT_PROFILES];
+  // The control file lives beside the database, exactly where the daemon looks for it.
+  const controlPath = options.controlPath ?? join(dirname(options.dbPath), "control.json");
 
   let server: ReturnType<typeof Bun.serve>;
   try {
     server = Bun.serve({
       hostname: HOST,
       port: options.port,
-      fetch(request) {
+      async fetch(request) {
         try {
           const url = new URL(request.url);
           if (url.hostname !== HOST && url.hostname !== "localhost") {
             return new Response("Misdirected request\n", {
               status: 421,
+              headers: responseHeaders("text/plain; charset=utf-8"),
+            });
+          }
+          if (url.pathname === "/api/control" && request.method === "POST") {
+            // A localhost server accepts simple cross-origin POSTs from any page the browser has
+            // open. Requiring a JSON content type forces a preflight, which the origin check then
+            // rejects.
+            const origin = request.headers.get("origin");
+            if (origin !== null && origin !== `http://${HOST}:${server.port}`) {
+              return new Response("Forbidden\n", {
+                status: 403,
+                headers: responseHeaders("text/plain; charset=utf-8"),
+              });
+            }
+            if (request.headers.get("content-type") !== "application/json") {
+              return new Response("Unsupported media type\n", {
+                status: 415,
+                headers: responseHeaders("text/plain; charset=utf-8"),
+              });
+            }
+            let body: { paused?: unknown; profile?: unknown };
+            try {
+              body = (await request.json()) as { paused?: unknown; profile?: unknown };
+            } catch {
+              return new Response("Malformed JSON\n", {
+                status: 400,
+                headers: responseHeaders("text/plain; charset=utf-8"),
+              });
+            }
+            if (body.profile !== undefined
+              && (typeof body.profile !== "string" || !profiles.includes(body.profile))) {
+              return new Response("Unknown profile\n", {
+                status: 400,
+                headers: responseHeaders("text/plain; charset=utf-8"),
+              });
+            }
+            if (body.paused !== undefined && typeof body.paused !== "boolean") {
+              return new Response("paused must be a boolean\n", {
+                status: 400,
+                headers: responseHeaders("text/plain; charset=utf-8"),
+              });
+            }
+            const current = readControlFile(controlPath)
+              ?? { paused: false, profile: profiles[0] ?? "default" };
+            writeControlFile(controlPath, {
+              paused: (body.paused as boolean | undefined) ?? current.paused,
+              profile: (body.profile as string | undefined) ?? current.profile,
+            });
+            return new Response(null, {
+              status: 204,
               headers: responseHeaders("text/plain; charset=utf-8"),
             });
           }
@@ -205,6 +333,11 @@ export function createViewerServer(options: ViewerServerOptions): ViewerApp {
           }
           if (url.pathname === "/events") {
             return sseResponse(request, database, cleanups, pollIntervalMs, keepaliveIntervalMs, logger);
+          }
+          if (url.pathname === "/api/control") {
+            return Response.json(readControlState(database, profiles), {
+              headers: responseHeaders("application/json; charset=utf-8"),
+            });
           }
           if (url.pathname === "/api/summary") {
             const range = parseViewerRange(url.searchParams.get("range") ?? "live", now());

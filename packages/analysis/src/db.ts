@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 
-export const SUPPORTED_SCHEMA_VERSION = 1;
+export const SUPPORTED_SCHEMA_VERSION = 2;
 
 interface MetaRow {
   value: string;
@@ -24,7 +24,8 @@ export function openKeylabDatabase(path: string): Database {
     const version = Number(row.value);
     if (version !== SUPPORTED_SCHEMA_VERSION) {
       throw new Error(
-        `Unsupported keylab schema_version ${JSON.stringify(row.value)}; expected ${SUPPORTED_SCHEMA_VERSION}`,
+        `Unsupported keylab schema_version ${JSON.stringify(row.value)}; expected ${SUPPORTED_SCHEMA_VERSION}`
+          + (version === 1 ? ". Restart keylab.service once; the daemon migrates v1 in place." : ""),
       );
     }
     return database;

@@ -348,10 +348,16 @@ describe("analysis metrics", () => {
 });
 
 describe("database opener", () => {
-  test("rejects schema_version 2 clearly", () => {
-    const fixture = createFixture({ schemaVersion: 2 });
+  test("rejects a future schema_version clearly", () => {
+    const fixture = createFixture({ schemaVersion: 3 });
     fixtures.push(fixture);
-    expect(() => openKeylabDatabase(fixture.path)).toThrow("schema_version \"2\"; expected 1");
+    expect(() => openKeylabDatabase(fixture.path)).toThrow("schema_version \"3\"; expected 2");
+  });
+
+  test("points an unmigrated v1 database at the daemon", () => {
+    const fixture = createFixture({ schemaVersion: 1 });
+    fixtures.push(fixture);
+    expect(() => openKeylabDatabase(fixture.path)).toThrow("the daemon migrates v1 in place");
   });
 
   test("really opens read-only", () => {
