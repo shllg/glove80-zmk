@@ -8,7 +8,7 @@ import {
   parseSince,
 } from "../src/metrics";
 import { renderReport } from "../src/report";
-import { createFixture, FIXTURE_NOW, type SeededFixture } from "./fixture";
+import { createFixture, createProfileFixture, FIXTURE_NOW, type SeededFixture } from "./fixture";
 
 const fixtures: SeededFixture[] = [];
 
@@ -60,6 +60,7 @@ describe("analysis metrics", () => {
         dailyDose: metrics.dailyDose,
       }).toEqual({
         header: {
+          profile: "default",
           totalKeystrokes: 100,
           autorepeats: 5,
           bucketCount: 1,
@@ -264,8 +265,8 @@ describe("analysis metrics", () => {
       }).toEqual({
         hour: 23,
         header: {
-          totalKeystrokes: 100, autorepeats: 5, bucketCount: 1, tierBWindowCount: 1,
-          altHandAmbiguous: true, noData: false,
+          profile: "default", totalKeystrokes: 100, autorepeats: 5, bucketCount: 1,
+          tierBWindowCount: 1, altHandAmbiguous: true, noData: false,
         },
         perFinger: [
           { label: "L_index", presses: 30, share: 0.3 },
@@ -344,6 +345,65 @@ describe("analysis metrics", () => {
     } finally {
       database.close();
     }
+  });
+});
+
+describe("profile filtering", () => {
+  function profileMetrics(options?: { profile?: string }) {
+    const fixture = createProfileFixture();
+    fixtures.push(fixture);
+    const database = openKeylabDatabase(fixture.path);
+    const meta = loadAnalysisMeta(database, fixture.metaPath);
+    try {
+      return calculateMetrics(database, meta, parseSince("all", FIXTURE_NOW), options);
+    } finally {
+      database.close();
+    }
+  }
+
+  test("defaults to the default profile only", () => {
+    expect(profileMetrics().header.totalKeystrokes).toBe(100);
+  });
+
+  test("selects a single named profile", () => {
+    expect(profileMetrics({ profile: "gaming" }).header.totalKeystrokes).toBe(40);
+  });
+
+  test("pools every profile when asked", () => {
+    expect(profileMetrics({ profile: "*" }).header.totalKeystrokes).toBe(140);
+  });
+
+  test("filters Tier B windows and positions too, not only Tier A", () => {
+    const defaultProfile = profileMetrics();
+    const gaming = profileMetrics({ profile: "gaming" });
+    expect(defaultProfile.header.tierBWindowCount).toBe(1);
+    expect(defaultProfile.outerUpperQuadrant.positional.tierBKeystrokes).toBe(100);
+    expect(gaming.outerUpperQuadrant.positional.tierBKeystrokes).toBe(40);
+    expect(profileMetrics({ profile: "*" }).header.tierBWindowCount).toBe(2);
+  });
+
+  test("names the active profile in the header so a filtered report is never mistaken", () => {
+    expect(profileMetrics().header.profile).toBe("default");
+    expect(profileMetrics({ profile: "gaming" }).header.profile).toBe("gaming");
+    expect(profileMetrics({ profile: "*" }).header.profile).toBe("* (all profiles)");
+  });
+
+  test("rejects a profile that the database has never recorded", () => {
+    const fixture = createProfileFixture();
+    fixtures.push(fixture);
+    const database = openKeylabDatabase(fixture.path);
+    const meta = loadAnalysisMeta(database, fixture.metaPath);
+    try {
+      expect(() => calculateMetrics(database, meta, parseSince("all", FIXTURE_NOW), {
+        profile: "training-de",
+      })).toThrow("Unknown profile");
+    } finally {
+      database.close();
+    }
+  });
+
+  test("the rendered report states the profile", () => {
+    expect(renderReport(profileMetrics({ profile: "gaming" }))).toContain("Profile: gaming");
   });
 });
 

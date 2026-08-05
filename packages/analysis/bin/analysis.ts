@@ -10,16 +10,20 @@ interface CliOptions {
   since: string;
   dbPath: string;
   json: boolean;
+  profile: string;
 }
 
 export function parseAnalysisArgs(args: string[]): CliOptions {
   if (args[0] !== "report") {
-    throw new Error("Usage: analysis report [--since 7d|24h|30m|all] [--db PATH] [--json]");
+    throw new Error(
+      "Usage: analysis report [--since 7d|24h|30m|all] [--db PATH] [--profile NAME|*] [--json]",
+    );
   }
   const options: CliOptions = {
     since: "7d",
     dbPath: join(homedir(), ".local/share/glove80-lab/keylab.db"),
     json: false,
+    profile: "default",
   };
   for (let index = 1; index < args.length; index += 1) {
     const argument = args[index];
@@ -29,6 +33,11 @@ export function parseAnalysisArgs(args: string[]): CliOptions {
       const value = args[index + 1];
       if (!value) throw new Error("--since requires a value");
       options.since = value;
+      index += 1;
+    } else if (argument === "--profile") {
+      const value = args[index + 1];
+      if (!value) throw new Error("--profile requires a name or *");
+      options.profile = value;
       index += 1;
     } else if (argument === "--db") {
       const value = args[index + 1];
@@ -48,7 +57,9 @@ export function runAnalysis(args: string[]): void {
   const database = openKeylabDatabase(options.dbPath);
   try {
     const meta = loadAnalysisMeta(database);
-    const metrics = calculateMetrics(database, meta, parseSince(options.since));
+    const metrics = calculateMetrics(database, meta, parseSince(options.since), {
+      profile: options.profile,
+    });
     process.stdout.write(options.json ? `${JSON.stringify(metrics, null, 2)}\n` : renderReport(metrics));
   } finally {
     database.close();

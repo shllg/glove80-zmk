@@ -20,6 +20,7 @@ export function renderReport(metrics: AnalysisMetrics): string {
   const lines: string[] = [
     "keylab analysis",
     `Range: ${metrics.range.label}`,
+    `Profile: ${metrics.header.profile}`,
     `Keystrokes: ${metrics.header.totalKeystrokes}  Autorepeats: ${metrics.header.autorepeats}`,
     `Tier A buckets: ${metrics.header.bucketCount}  Tier B windows: ${metrics.header.tierBWindowCount}`,
   ];

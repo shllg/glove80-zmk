@@ -24,6 +24,20 @@ export interface TimeRange {
   nowTs: number;
 }
 
+/** `"*"` pools every profile; any other name is resolved against the `profile` table. */
+export const ALL_PROFILES = "*";
+export const ALL_PROFILES_LABEL = "* (all profiles)";
+
+export interface MetricsOptions {
+  profile?: string;
+}
+
+/** `null` means "no profile clause at all", which is how pooling is expressed. */
+interface ProfileScope {
+  id: number | null;
+  label: string;
+}
+
 export interface PositionalContext {
   tierBKeystrokes: number;
   attributedPresses: number;
@@ -105,6 +119,7 @@ export interface PositionLoad {
 export interface RangeMetrics {
   range: TimeRange;
   header: {
+    profile: string;
     totalKeystrokes: number;
     autorepeats: number;
     bucketCount: number;
@@ -270,10 +285,39 @@ function safeDivide(numerator: number, denominator: number): number {
   return denominator === 0 ? 0 : numerator / denominator;
 }
 
+/**
+ * Resolves the requested profile once, before any query runs. An unknown name is an error rather
+ * than an empty result: a silent zero would read as "you did not type in that profile".
+ */
+export function resolveProfileScope(database: Database, profile?: string): ProfileScope {
+  if (profile === ALL_PROFILES) {
+    return { id: null, label: ALL_PROFILES_LABEL };
+  }
+  const name = profile ?? "default";
+  const row = database
+    .query("SELECT id FROM profile WHERE name = ?")
+    .get(name) as { id: number } | null;
+  if (!row) {
+    const known = (database.query("SELECT name FROM profile ORDER BY id").all() as Array<{
+      name: string;
+    }>).map((entry) => entry.name);
+    throw new Error(
+      `Unknown profile ${JSON.stringify(name)}; this database holds: ${known.join(", ") || "(none)"}`,
+    );
+  }
+  return { id: Number(row.id), label: name };
+}
+
+/**
+ * The profile clause rides along with the time clause because every scoped query already joins the
+ * table that carries `profile_id`. Deriving the alias from the timestamp column keeps the two from
+ * ever being applied to different tables.
+ */
 function timestampFilter(
   column: string,
   range: TimeRange,
   hour: number | undefined,
+  profile: ProfileScope,
 ): { sql: string; params: number[] } {
   const clauses: string[] = [];
   const params: number[] = [];
@@ -287,11 +331,21 @@ function timestampFilter(
     clauses.push(`CAST(strftime('%H', ${column}, 'unixepoch', 'localtime') AS INTEGER) = ?`);
     params.push(hour);
   }
+  if (profile.id !== null) {
+    const alias = column.split(".")[0];
+    clauses.push(`${alias}.profile_id = ?`);
+    params.push(profile.id);
+  }
   return { sql: clauses.length === 0 ? "1 = 1" : clauses.join(" AND "), params };
 }
 
-function getTotals(database: Database, range: TimeRange, hour?: number): TotalsRow {
-  const filter = timestampFilter("b.id", range, hour);
+function getTotals(
+  database: Database,
+  range: TimeRange,
+  profile: ProfileScope,
+  hour?: number,
+): TotalsRow {
+  const filter = timestampFilter("b.id", range, hour, profile);
   return database.query(`
     SELECT COALESCE(SUM(b.keystrokes), 0) AS total,
            COALESCE(SUM(b.autorepeats), 0) AS autorepeats,
@@ -300,8 +354,13 @@ function getTotals(database: Database, range: TimeRange, hour?: number): TotalsR
   `).get(...filter.params) as TotalsRow;
 }
 
-function getTierBWindowCount(database: Database, range: TimeRange, hour?: number): number {
-  const filter = timestampFilter("kw.start_ts", range, hour);
+function getTierBWindowCount(
+  database: Database,
+  range: TimeRange,
+  profile: ProfileScope,
+  hour?: number,
+): number {
+  const filter = timestampFilter("kw.start_ts", range, hour, profile);
   const row = database.query(`
     SELECT COUNT(*) AS value FROM key_window kw WHERE ${filter.sql}
   `).get(...filter.params) as ScalarRow;
@@ -311,9 +370,10 @@ function getTierBWindowCount(database: Database, range: TimeRange, hour?: number
 function getFingerLoad(
   database: Database,
   range: TimeRange,
+  profile: ProfileScope,
   hour?: number,
 ): FingerLoad[] {
-  const filter = timestampFilter("b.id", range, hour);
+  const filter = timestampFilter("b.id", range, hour, profile);
   const rows = database.query(`
     SELECT fc.finger_id AS id, SUM(fc.presses) AS presses
     FROM finger_count fc JOIN bucket b ON b.id = fc.bucket_id
@@ -334,8 +394,13 @@ function getFingerLoad(
   });
 }
 
-function getRowLoad(database: Database, range: TimeRange, hour?: number): RowLoad[] {
-  const filter = timestampFilter("b.id", range, hour);
+function getRowLoad(
+  database: Database,
+  range: TimeRange,
+  profile: ProfileScope,
+  hour?: number,
+): RowLoad[] {
+  const filter = timestampFilter("b.id", range, hour, profile);
   const rows = database.query(`
     SELECT rc.hand, rc.row_idx, SUM(rc.presses) AS presses
     FROM row_count rc JOIN bucket b ON b.id = rc.bucket_id
@@ -363,8 +428,13 @@ function getRowLoad(database: Database, range: TimeRange, hour?: number): RowLoa
   return result;
 }
 
-function getPositionRows(database: Database, range: TimeRange, hour?: number): PositionRow[] {
-  const filter = timestampFilter("kw.start_ts", range, hour);
+function getPositionRows(
+  database: Database,
+  range: TimeRange,
+  profile: ProfileScope,
+  hour?: number,
+): PositionRow[] {
+  const filter = timestampFilter("kw.start_ts", range, hour, profile);
   return database.query(`
     SELECT pc.pos, SUM(pc.presses) AS presses
     FROM pos_count pc JOIN key_window kw ON kw.id = pc.window_id
@@ -389,9 +459,10 @@ function positionalContext(rows: PositionRow[]): PositionalContext {
 function getModifierHolds(
   database: Database,
   range: TimeRange,
+  profile: ProfileScope,
   hour?: number,
 ): ModifierHoldMetric[] {
-  const filter = timestampFilter("b.id", range, hour);
+  const filter = timestampFilter("b.id", range, hour, profile);
   const rows = database.query(`
     SELECT mh.mod_class AS subject, mh.dur_bucket AS bucket, SUM(mh.n) AS n
     FROM mod_hold_hist mh JOIN bucket b ON b.id = mh.bucket_id
@@ -428,10 +499,11 @@ function getModifierHolds(
 function getMisfires(
   database: Database,
   range: TimeRange,
+  profile: ProfileScope,
   totalKeystrokes: number,
   hour?: number,
 ): RangeMetrics["misfires"] {
-  const filter = timestampFilter("b.id", range, hour);
+  const filter = timestampFilter("b.id", range, hour, profile);
   const rows = database.query(`
     SELECT ec.kind, ec.subject, SUM(ec.n) AS n
     FROM event_count ec JOIN bucket b ON b.id = ec.bucket_id
@@ -463,6 +535,7 @@ function getCorrectionTax(
   positionRows: PositionRow[],
   positional: PositionalContext,
   totalKeystrokes: number,
+  profile: ProfileScope,
   hour?: number,
 ): RangeMetrics["correctionTax"] {
   const counts = new Map(positionRows.map((row) => [Number(row.pos), Number(row.presses)]));
@@ -472,7 +545,7 @@ function getCorrectionTax(
   const positionalBackspacePresses = backspacePositions
     .reduce((sum, pos) => sum + (counts.get(pos) ?? 0), 0);
 
-  const filter = timestampFilter("b.id", range, hour);
+  const filter = timestampFilter("b.id", range, hour, profile);
   const rows = database.query(`
     SELECT ec.subject, SUM(ec.n) AS n
     FROM event_count ec JOIN bucket b ON b.id = ec.bucket_id
@@ -502,9 +575,10 @@ function getCorrectionTax(
 function getDailyDose(
   database: Database,
   range: TimeRange,
+  profile: ProfileScope,
   hour?: number,
 ): RangeMetrics["dailyDose"] {
-  const filter = timestampFilter("b.id", range, hour);
+  const filter = timestampFilter("b.id", range, hour, profile);
   const dayRows = database.query(`
     SELECT strftime('%Y-%m-%d', b.id, 'unixepoch', 'localtime') AS date,
            SUM(b.keystrokes) AS keystrokes
@@ -566,11 +640,12 @@ function computeRangeMetrics(
   database: Database,
   meta: AnalysisMeta,
   range: TimeRange,
+  profile: ProfileScope,
   hour?: number,
 ): RangeMetrics {
-  const totals = getTotals(database, range, hour);
+  const totals = getTotals(database, range, profile, hour);
   const totalKeystrokes = Number(totals.total ?? 0);
-  const positionRows = getPositionRows(database, range, hour);
+  const positionRows = getPositionRows(database, range, profile, hour);
   const positional = positionalContext(positionRows);
   const positionLoad = toPositionLoad(meta.positions, positionRows);
   const outerByHand = (["L", "R"] as const).map((hand) => {
@@ -586,27 +661,28 @@ function computeRangeMetrics(
   return {
     range,
     header: {
+      profile: profile.label,
       totalKeystrokes,
       autorepeats: Number(totals.autorepeats ?? 0),
       bucketCount: Number(totals.count),
-      tierBWindowCount: getTierBWindowCount(database, range, hour),
+      tierBWindowCount: getTierBWindowCount(database, range, profile, hour),
       altHandAmbiguous: meta.altHandAmbiguous,
       noData: Number(totals.count) === 0 && positional.tierBKeystrokes === 0,
     },
-    perFinger: getFingerLoad(database, range, hour),
-    perRow: getRowLoad(database, range, hour),
+    perFinger: getFingerLoad(database, range, profile, hour),
+    perRow: getRowLoad(database, range, profile, hour),
     outerUpperQuadrant: {
       source: "Tier B",
       excludesUnattributed: true,
       byHand: outerByHand,
       positional,
     },
-    modifierHolds: getModifierHolds(database, range, hour),
-    misfires: getMisfires(database, range, totalKeystrokes, hour),
+    modifierHolds: getModifierHolds(database, range, profile, hour),
+    misfires: getMisfires(database, range, profile, totalKeystrokes, hour),
     correctionTax: getCorrectionTax(
-      database, meta, range, positionRows, positional, totalKeystrokes, hour,
+      database, meta, range, positionRows, positional, totalKeystrokes, profile, hour,
     ),
-    dailyDose: getDailyDose(database, range, hour),
+    dailyDose: getDailyDose(database, range, profile, hour),
     positionLoad,
   };
 }
@@ -615,14 +691,16 @@ export function calculateMetrics(
   database: Database,
   meta: AnalysisMeta,
   range: TimeRange,
+  options: MetricsOptions = {},
 ): AnalysisMetrics {
   const readSnapshot = (): AnalysisMetrics => {
-    const metrics = computeRangeMetrics(database, meta, range);
+    const profile = resolveProfileScope(database, options.profile);
+    const metrics = computeRangeMetrics(database, meta, range, profile);
     return {
       ...metrics,
       fatigueDrift: Array.from({ length: 24 }, (_, hour) => ({
         hour,
-        metrics: computeRangeMetrics(database, meta, range, hour),
+        metrics: computeRangeMetrics(database, meta, range, profile, hour),
       })),
     };
   };
