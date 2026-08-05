@@ -1,4 +1,4 @@
-use crate::config::MIN_BUCKET_SECONDS;
+use crate::config::{MAX_PROFILES, MIN_BUCKET_SECONDS};
 use crate::encode::{
     duration_bucket, gap_bucket, modifier_class_for_keycode, run_bucket, BSP_BURST,
     BSP_BURST_AFTER_MOD, LONELY_MOD, MOD_DURING_ALPHA,
@@ -143,17 +143,19 @@ pub struct Aggregator {
     bsp_run: u32,
     last_mod_release_ts: Option<u64>,
     keys_since_mod_down: HashMap<u8, u32>,
-    pub tier_b_accum: [u32; 81],
+    pub tier_b_accum: Vec<[u32; 81]>,
     pub tier_a: TierAAccumulator,
     tier_a_bucket_id: i64,
     tier_a_span_ms: u64,
-    tier_b_start_ts: Option<u64>,
+    tier_b_start_ts: Vec<Option<u64>>,
+    profile_index: usize,
     last_mod_release_class: Option<u8>,
     bsp_run_after_mod_class: Option<u8>,
 }
 
 impl Aggregator {
-    pub fn new(bucket_id: i64) -> Self {
+    pub fn new(bucket_id: i64, profile_count: usize) -> Self {
+        let profile_count = profile_count.clamp(1, MAX_PROFILES);
         Self {
             held: HeldKeys::default(),
             last_event_ts: NO_EVENT_TS,
@@ -162,13 +164,23 @@ impl Aggregator {
             bsp_run: 0,
             last_mod_release_ts: None,
             keys_since_mod_down: HashMap::with_capacity(8),
-            tier_b_accum: [0; 81],
+            tier_b_accum: vec![[0; 81]; profile_count],
             tier_a: TierAAccumulator::default(),
             tier_a_bucket_id: bucket_id,
             tier_a_span_ms: 0,
-            tier_b_start_ts: None,
+            tier_b_start_ts: vec![None; profile_count],
+            profile_index: 0,
             last_mod_release_class: None,
             bsp_run_after_mod_class: None,
+        }
+    }
+
+    /// A profile switch changes which Tier B histogram receives events. Nothing is discarded: a
+    /// window sealed under one profile must contain only that profile's keystrokes, and resetting
+    /// on every switch would keep the 2000-keystroke floor permanently out of reach.
+    pub fn set_profile(&mut self, profile_index: usize) {
+        if profile_index < self.tier_b_accum.len() {
+            self.profile_index = profile_index;
         }
     }
 
@@ -270,19 +282,21 @@ impl Aggregator {
             *count = count.saturating_add(1);
         }
 
+        let profile_index = self.profile_index;
         let tier_b_was_empty = self.tier_b_total() == 0;
         if tier_b_was_empty {
-            self.tier_b_start_ts = Some(t_ms);
+            self.tier_b_start_ts[profile_index] = Some(t_ms);
         }
-        self.tier_b_accum[pos_index] = self.tier_b_accum[pos_index].saturating_add(1);
+        self.tier_b_accum[profile_index][pos_index] =
+            self.tier_b_accum[profile_index][pos_index].saturating_add(1);
         let total = self.tier_b_total();
         if total < tier_b_seal_count {
             return None;
         }
 
-        let mut counts = self.tier_b_accum;
-        self.tier_b_accum.zeroize();
-        let start_ts = self.tier_b_start_ts.take().unwrap_or(t_ms);
+        let mut counts = self.tier_b_accum[profile_index];
+        self.tier_b_accum[profile_index].zeroize();
+        let start_ts = self.tier_b_start_ts[profile_index].take().unwrap_or(t_ms);
         let seal = TierBSeal {
             start_ts,
             end_ts: t_ms,
@@ -380,8 +394,10 @@ impl Aggregator {
             .saturating_add(current_bucket_elapsed_ms)
     }
 
+    /// The active profile's total only. A window is sealed per profile, so pooling here would make
+    /// one profile's traffic seal another profile's window.
     pub fn tier_b_total(&self) -> u32 {
-        self.tier_b_accum
+        self.tier_b_accum[self.profile_index]
             .iter()
             .copied()
             .fold(0_u32, u32::saturating_add)
@@ -389,7 +405,9 @@ impl Aggregator {
 
     pub fn discard_partials(&mut self, next_bucket_id: i64) {
         self.tier_a.zeroize();
-        self.tier_b_accum.zeroize();
+        for accumulator in &mut self.tier_b_accum {
+            accumulator.zeroize();
+        }
         self.held.zeroize();
         self.keys_since_mod_down.clear();
         self.last_event_ts.zeroize();
@@ -400,7 +418,9 @@ impl Aggregator {
         self.last_mod_release_ts.zeroize();
         self.last_mod_release_class.zeroize();
         self.bsp_run_after_mod_class.zeroize();
-        self.tier_b_start_ts.zeroize();
+        for start_ts in &mut self.tier_b_start_ts {
+            start_ts.zeroize();
+        }
         self.tier_a_span_ms.zeroize();
         self.tier_a_bucket_id = next_bucket_id;
     }
@@ -425,10 +445,21 @@ impl Aggregator {
 
     pub fn bounded_footprint(&self) -> usize {
         TIER_A_FIXED_ENTRIES
-            + self.tier_b_accum.len()
+            + self
+                .tier_b_accum
+                .iter()
+                .map(|accumulator| accumulator.len())
+                .sum::<usize>()
             + self.held.len()
             + self.keys_since_mod_down.len()
     }
+}
+
+/// The ceiling `bounded_footprint` may never exceed, for any stream length and any number of
+/// profile switches. Every profile carries its own 81-slot histogram; `MAX_PROFILES` is what keeps
+/// that product finite.
+pub fn footprint_bound(profile_count: usize) -> usize {
+    TIER_A_FIXED_ENTRIES + 81 * profile_count.clamp(1, MAX_PROFILES) + MAX_HELD_KEYS + 16
 }
 
 impl Drop for Aggregator {
@@ -482,7 +513,7 @@ mod tests {
 
     #[test]
     fn lonely_modifier_fires_with_nothing_between() {
-        let mut aggregate = Aggregator::new(0);
+        let mut aggregate = Aggregator::new(0, 1);
         event(&mut aggregate, 0, 29, 1);
         event(&mut aggregate, 50, 29, 0);
         assert_eq!(aggregate.tier_a.event_count[usize::from(LONELY_MOD)][0], 1);
@@ -490,7 +521,7 @@ mod tests {
 
     #[test]
     fn lonely_modifier_does_not_fire_with_alpha_between() {
-        let mut aggregate = Aggregator::new(0);
+        let mut aggregate = Aggregator::new(0, 1);
         event(&mut aggregate, 0, 29, 1);
         event(&mut aggregate, 10, 30, 1);
         event(&mut aggregate, 20, 30, 0);
@@ -500,7 +531,7 @@ mod tests {
 
     #[test]
     fn overlapping_modifiers_count_independently() {
-        let mut aggregate = Aggregator::new(0);
+        let mut aggregate = Aggregator::new(0, 1);
         event(&mut aggregate, 0, 29, 1);
         event(&mut aggregate, 10, 42, 1);
         event(&mut aggregate, 20, 30, 1);
@@ -510,7 +541,7 @@ mod tests {
         assert_eq!(aggregate.tier_a.event_count[usize::from(LONELY_MOD)][0], 0);
         assert_eq!(aggregate.tier_a.event_count[usize::from(LONELY_MOD)][3], 0);
 
-        let mut aggregate = Aggregator::new(0);
+        let mut aggregate = Aggregator::new(0, 1);
         event(&mut aggregate, 0, 29, 1);
         event(&mut aggregate, 10, 42, 1);
         event(&mut aggregate, 20, 42, 0);
@@ -523,7 +554,7 @@ mod tests {
 
     #[test]
     fn autorepeat_does_not_suppress_lonely_modifier() {
-        let mut aggregate = Aggregator::new(0);
+        let mut aggregate = Aggregator::new(0, 1);
         event(&mut aggregate, 0, 29, 1);
         event(&mut aggregate, 20, 30, 2);
         event(&mut aggregate, 40, 29, 0);
@@ -533,7 +564,7 @@ mod tests {
 
     #[test]
     fn modifier_during_alpha_uses_strict_250ms_window() {
-        let mut at_249 = Aggregator::new(0);
+        let mut at_249 = Aggregator::new(0, 1);
         event(&mut at_249, 1, 30, 1);
         event(&mut at_249, 250, 29, 1);
         assert_eq!(
@@ -541,7 +572,7 @@ mod tests {
             1
         );
 
-        let mut at_251 = Aggregator::new(0);
+        let mut at_251 = Aggregator::new(0, 1);
         event(&mut at_251, 1, 30, 1);
         event(&mut at_251, 252, 29, 1);
         assert_eq!(
@@ -553,7 +584,7 @@ mod tests {
     #[test]
     fn backspace_bursts_use_run_buckets() {
         for (length, expected_bucket) in [(1_u64, 0_u8), (2, 1), (4, 3), (6, 4), (12, 5), (17, 6)] {
-            let mut aggregate = Aggregator::new(0);
+            let mut aggregate = Aggregator::new(0, 1);
             for index in 0..length {
                 event(&mut aggregate, 1 + index * 10, 14, 1);
                 event(&mut aggregate, 2 + index * 10, 14, 0);
@@ -568,7 +599,7 @@ mod tests {
 
     #[test]
     fn backspace_after_modifier_uses_run_start_time() {
-        let mut at_499 = Aggregator::new(0);
+        let mut at_499 = Aggregator::new(0, 1);
         event(&mut at_499, 10, 29, 1);
         event(&mut at_499, 20, 29, 0);
         event(&mut at_499, 519, 14, 1);
@@ -579,7 +610,7 @@ mod tests {
             1
         );
 
-        let mut at_501 = Aggregator::new(0);
+        let mut at_501 = Aggregator::new(0, 1);
         event(&mut at_501, 10, 29, 1);
         event(&mut at_501, 20, 29, 0);
         event(&mut at_501, 521, 14, 1);
@@ -593,7 +624,7 @@ mod tests {
 
     #[test]
     fn active_time_caps_each_inter_event_gap() {
-        let mut aggregate = Aggregator::new(0);
+        let mut aggregate = Aggregator::new(0, 1);
         event(&mut aggregate, 100, 30, 1);
         event(&mut aggregate, 350, 30, 0);
         event(&mut aggregate, 10_000, 48, 1);
@@ -602,7 +633,7 @@ mod tests {
 
     #[test]
     fn autorepeat_only_changes_autorepeat_counter() {
-        let mut aggregate = Aggregator::new(0);
+        let mut aggregate = Aggregator::new(0, 1);
         event(&mut aggregate, 100, 30, 2);
         assert_eq!(aggregate.tier_a.autorepeats, 1);
         assert_eq!(aggregate.tier_a.keystrokes, 0);
@@ -613,17 +644,17 @@ mod tests {
 
     #[test]
     fn unknown_keycode_is_unattributed_only() {
-        let mut aggregate = Aggregator::new(0);
+        let mut aggregate = Aggregator::new(0, 1);
         event(&mut aggregate, 100, 200, 1);
         assert_eq!(aggregate.tier_a.keystrokes, 1);
         assert_eq!(aggregate.tier_a.finger_count, [0; 10]);
         assert_eq!(aggregate.tier_a.row_count, [0; 12]);
-        assert_eq!(aggregate.tier_b_accum[80], 1);
+        assert_eq!(aggregate.tier_b_accum[0][80], 1);
     }
 
     #[test]
     fn tier_a_floor_carries_and_extends_span() {
-        let mut aggregate = Aggregator::new(1_000);
+        let mut aggregate = Aggregator::new(1_000, 1);
         for index in 0..24 {
             event(&mut aggregate, 1 + index * 2, 30, 1);
             event(&mut aggregate, 2 + index * 2, 30, 0);
@@ -642,7 +673,7 @@ mod tests {
 
     #[test]
     fn tier_a_never_seals_before_ten_real_seconds() {
-        let mut aggregate = Aggregator::new(1_000);
+        let mut aggregate = Aggregator::new(1_000, 1);
         for index in 0..25 {
             event(&mut aggregate, index, 30, 1);
         }
@@ -655,7 +686,7 @@ mod tests {
 
     #[test]
     fn tier_b_seals_only_at_2000_and_preserves_sum() {
-        let mut aggregate = Aggregator::new(0);
+        let mut aggregate = Aggregator::new(0, 1);
         for index in 0..1_999 {
             let seal = aggregate.handle_event(index, 30, 1, &keymap(), 2_000);
             assert!(seal.is_none());
@@ -670,7 +701,7 @@ mod tests {
 
     #[test]
     fn discard_zeroes_both_partial_tiers_and_context() {
-        let mut aggregate = Aggregator::new(0);
+        let mut aggregate = Aggregator::new(0, 1);
         for index in 0..1_500 {
             let seal = aggregate.handle_event(index, 30, 1, &keymap(), 2_000);
             assert!(seal.is_none());
@@ -684,7 +715,7 @@ mod tests {
 
     #[test]
     fn sequence_loss_resync_keeps_both_tiers_and_clears_context() {
-        let mut aggregate = Aggregator::new(0);
+        let mut aggregate = Aggregator::new(0, 1);
         for index in 0..1_500 {
             let seal = aggregate.handle_event(index, 30, 1, &keymap(), 2_000);
             assert!(seal.is_none());
@@ -708,8 +739,81 @@ mod tests {
     }
 
     #[test]
+    fn each_profile_accumulates_tier_b_independently() {
+        let mut aggregate = Aggregator::new(0, 2);
+        for index in 0..1_500 {
+            assert!(aggregate
+                .handle_event(index, 30, 1, &keymap(), 2_000)
+                .is_none());
+        }
+        aggregate.set_profile(1);
+        for index in 1_500..3_000 {
+            assert!(
+                aggregate
+                    .handle_event(index, 30, 1, &keymap(), 2_000)
+                    .is_none(),
+                "the second profile must start from zero, not inherit 1500"
+            );
+        }
+        aggregate.set_profile(0);
+        for index in 3_000..3_499 {
+            assert!(aggregate
+                .handle_event(index, 30, 1, &keymap(), 2_000)
+                .is_none());
+        }
+        let seal = aggregate.handle_event(3_499, 30, 1, &keymap(), 2_000);
+        let seal = seal.unwrap_or_else(|| unreachable!("the first profile should reach 2000"));
+        assert_eq!(seal.keystrokes, 2_000);
+    }
+
+    #[test]
+    fn switching_profiles_does_not_discard_tier_b_progress() {
+        let mut aggregate = Aggregator::new(0, 2);
+        for index in 0..1_000 {
+            aggregate.handle_event(index, 30, 1, &keymap(), 2_000);
+        }
+        aggregate.set_profile(1);
+        aggregate.set_profile(0);
+        assert_eq!(aggregate.tier_b_total(), 1_000);
+    }
+
+    #[test]
+    fn footprint_stays_bounded_across_every_profile() {
+        let mut aggregate = Aggregator::new(0, MAX_PROFILES);
+        for index in 0..20_000_u64 {
+            aggregate.set_profile((index as usize) % MAX_PROFILES);
+            aggregate.handle_event(index, 30, 1, &keymap(), 2_000);
+        }
+        assert!(aggregate.bounded_footprint() <= footprint_bound(MAX_PROFILES));
+    }
+
+    #[test]
+    fn a_profile_index_beyond_the_configured_count_is_ignored() {
+        let mut aggregate = Aggregator::new(0, 2);
+        aggregate.handle_event(0, 30, 1, &keymap(), 2_000);
+        aggregate.set_profile(9);
+        assert_eq!(
+            aggregate.tier_b_total(),
+            1,
+            "an out-of-range profile must leave the active accumulator alone"
+        );
+    }
+
+    #[test]
+    fn discard_partials_clears_every_profile() {
+        let mut aggregate = Aggregator::new(0, 2);
+        aggregate.handle_event(0, 30, 1, &keymap(), 2_000);
+        aggregate.set_profile(1);
+        aggregate.handle_event(1, 30, 1, &keymap(), 2_000);
+        aggregate.discard_partials(10);
+        assert_eq!(aggregate.tier_b_total(), 0);
+        aggregate.set_profile(0);
+        assert_eq!(aggregate.tier_b_total(), 0);
+    }
+
+    #[test]
     fn footprint_does_not_scale_with_stream_length() {
-        let mut after_100 = Aggregator::new(0);
+        let mut after_100 = Aggregator::new(0, 1);
         for index in 0..100 {
             event(
                 &mut after_100,
@@ -720,7 +824,7 @@ mod tests {
         }
         let small = after_100.bounded_footprint();
 
-        let mut after_200k = Aggregator::new(0);
+        let mut after_200k = Aggregator::new(0, 1);
         for index in 0..200_000 {
             let seal = after_200k.handle_event(
                 index,

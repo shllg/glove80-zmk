@@ -948,7 +948,7 @@ mod tests {
     #[test]
     fn tier_a_floor_never_writes_sub_floor_bucket() {
         let (_temp, _path, mut store, device_id) = open_store();
-        let mut aggregate = Aggregator::new(1_000);
+        let mut aggregate = Aggregator::new(1_000, 1);
         for index in 0..24 {
             aggregate.handle_event(index, 30, 1, &keymap(), 2_000);
         }
@@ -1045,7 +1045,7 @@ mod tests {
     #[test]
     fn tier_b_floor_and_unattributed_position_are_exact() {
         let (_temp, _path, mut store, device_id) = open_store();
-        let mut aggregate = Aggregator::new(0);
+        let mut aggregate = Aggregator::new(0, 1);
         for index in 0..1_998 {
             let seal = aggregate.handle_event(index, 30, 1, &keymap(), 2_000);
             assert!(seal.is_none());
@@ -1077,14 +1077,14 @@ mod tests {
     #[test]
     fn shutdown_discard_writes_no_partial_rows() {
         let (_temp, _path, store, _device_id) = open_store();
-        let mut tier_b_partial = Aggregator::new(0);
+        let mut tier_b_partial = Aggregator::new(0, 1);
         for index in 0..1_500 {
             tier_b_partial.handle_event(index, 30, 1, &keymap(), 2_000);
         }
         tier_b_partial.discard_partials(10);
         assert_eq!(tier_b_partial.tier_b_total(), 0);
 
-        let mut tier_a_partial = Aggregator::new(0);
+        let mut tier_a_partial = Aggregator::new(0, 1);
         for index in 0..24 {
             tier_a_partial.handle_event(index, 30, 1, &keymap(), 2_000);
         }
@@ -1098,7 +1098,7 @@ mod tests {
     #[test]
     fn full_replay_produces_exact_rows_in_every_aggregate_table() {
         let (_temp, _path, mut store, device_id) = open_store();
-        let mut aggregate = Aggregator::new(1_000);
+        let mut aggregate = Aggregator::new(1_000, 1);
 
         aggregate.handle_event(100, 30, 1, &keymap(), 2_000);
         aggregate.handle_event(110, 30, 0, &keymap(), 2_000);

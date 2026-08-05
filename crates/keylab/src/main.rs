@@ -178,7 +178,7 @@ fn selftest_replay(path: &Path) -> Result<()> {
 
     let start_ts = unix_seconds()?;
     let device_id = store.register_device("verification fixture", None, start_ts)?;
-    let mut aggregate = Aggregator::new(start_ts);
+    let mut aggregate = Aggregator::new(start_ts, 1);
     for index in 0_u64..25 {
         let press_ts = index.saturating_mul(2);
         if aggregate
@@ -350,7 +350,7 @@ fn discover_devices(
             path,
             RuntimeDevice {
                 input,
-                aggregate: Aggregator::new(bucket_id),
+                aggregate: Aggregator::new(bucket_id, 1),
                 device_id,
                 profile_id: 1,
                 disconnected: false,
@@ -444,7 +444,10 @@ fn process_device_events(
                 translate_tier_b_timestamps(&mut seal)?;
                 store.seal_tier_b(runtime.device_id, runtime.profile_id, &seal)?;
             }
-            debug_assert!(runtime.aggregate.bounded_footprint() < 600);
+            debug_assert!(
+                runtime.aggregate.bounded_footprint()
+                    <= aggregate::footprint_bound(config.profiles.len())
+            );
         }
     }
     Ok(false)
