@@ -114,6 +114,15 @@ const DATA_README: &str = concat!(
     "Exclude the entire directory from backups, sync tools, and cloud storage.\n"
 );
 
+/// The control state echoed into the live snapshot. The viewer reads it from there rather than
+/// from its own last write, so the daemon stays the single authority on what is actually in force.
+#[derive(Clone, Copy)]
+pub struct LiveControl<'a> {
+    pub paused: bool,
+    pub profile: &'a str,
+    pub profiles: &'a [String],
+}
+
 pub struct Store {
     connection: Connection,
 }
@@ -298,10 +307,13 @@ impl Store {
         finger_counts: &[u32; 10],
         keystrokes: u32,
         elapsed_ms: u64,
-        paused: bool,
-        profile: &str,
-        profiles: &[String],
+        control: &LiveControl<'_>,
     ) -> Result<()> {
+        let LiveControl {
+            paused,
+            profile,
+            profiles,
+        } = *control;
         let rate = if elapsed_ms == 0 {
             0.0
         } else {
@@ -877,7 +889,17 @@ mod tests {
         let mut counts = [0_u32; 10];
         counts[2] = 12;
         store
-            .replace_live_snapshot(1_000, &counts, 30, 10_000, false, "default", &[])
+            .replace_live_snapshot(
+                1_000,
+                &counts,
+                30,
+                10_000,
+                &LiveControl {
+                    paused: false,
+                    profile: "default",
+                    profiles: &[],
+                },
+            )
             .unwrap();
         let encoded: String = store
             .connection()
@@ -904,9 +926,11 @@ mod tests {
                 &[0; 10],
                 0,
                 0,
-                true,
-                "gaming",
-                &["default".to_owned(), "gaming".to_owned()],
+                &LiveControl {
+                    paused: true,
+                    profile: "gaming",
+                    profiles: &["default".to_owned(), "gaming".to_owned()],
+                },
             )
             .unwrap_or_else(|error| panic!("{error:#}"));
         let json: String = store

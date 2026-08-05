@@ -171,30 +171,41 @@ mod tests {
 
     #[test]
     fn rejects_more_profiles_than_the_cap() {
-        let mut config = Config::default();
-        config.profiles = (0..MAX_PROFILES + 1).map(|index| format!("p{index}")).collect();
+        let config = Config {
+            profiles: (0..MAX_PROFILES + 1)
+                .map(|index| format!("p{index}"))
+                .collect(),
+            ..Config::default()
+        };
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn rejects_a_profile_list_without_the_default_profile() {
-        let mut config = Config::default();
-        config.profiles = vec!["gaming".to_owned()];
+        let config = Config {
+            profiles: vec!["gaming".to_owned()],
+            ..Config::default()
+        };
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn rejects_duplicate_and_malformed_profile_names() {
-        let mut config = Config::default();
-        config.profiles = vec![
-            DEFAULT_PROFILE.to_owned(),
-            "gaming".to_owned(),
-            "gaming".to_owned(),
-        ];
-        assert!(config.validate().is_err());
+        let duplicated = Config {
+            profiles: vec![
+                DEFAULT_PROFILE.to_owned(),
+                "gaming".to_owned(),
+                "gaming".to_owned(),
+            ],
+            ..Config::default()
+        };
+        assert!(duplicated.validate().is_err());
 
-        config.profiles = vec![DEFAULT_PROFILE.to_owned(), "Training DE".to_owned()];
-        assert!(config.validate().is_err());
+        let malformed = Config {
+            profiles: vec![DEFAULT_PROFILE.to_owned(), "Training DE".to_owned()],
+            ..Config::default()
+        };
+        assert!(malformed.validate().is_err());
     }
 
     #[test]
@@ -204,7 +215,9 @@ mod tests {
             config.profiles.first().map(String::as_str),
             Some(DEFAULT_PROFILE)
         );
-        config.validate().unwrap_or_else(|error| panic!("{error:#}"));
+        config
+            .validate()
+            .unwrap_or_else(|error| panic!("{error:#}"));
     }
 
     #[test]
@@ -213,6 +226,8 @@ mod tests {
             auto_revert_idle_seconds: 0,
             ..Config::default()
         };
-        config.validate().unwrap_or_else(|error| panic!("{error:#}"));
+        config
+            .validate()
+            .unwrap_or_else(|error| panic!("{error:#}"));
     }
 }

@@ -92,7 +92,7 @@ fn run() -> Result<()> {
             Ok(())
         }
         Command::SetProfile(name) => {
-            if !config.profiles.iter().any(|configured| *configured == name) {
+            if !config.profiles.contains(&name) {
                 bail!(
                     "unknown profile {name:?}; configured profiles are: {}",
                     config.profiles.join(", ")

@@ -67,7 +67,10 @@ impl ControlWatcher {
                 return self.state.clone();
             }
         };
-        let signature = metadata.modified().ok().map(|mtime| (mtime, metadata.len()));
+        let signature = metadata
+            .modified()
+            .ok()
+            .map(|mtime| (mtime, metadata.len()));
         if signature.is_some() && signature == self.signature {
             return self.state.clone();
         }
@@ -92,7 +95,7 @@ impl ControlWatcher {
         let source = fs::read_to_string(&self.path).context("failed to read the control file")?;
         let parsed: ControlFile =
             serde_json::from_str(&source).context("invalid control file contents")?;
-        if !self.profiles.iter().any(|name| *name == parsed.profile) {
+        if !self.profiles.contains(&parsed.profile) {
             anyhow::bail!("control file names a profile that is not configured");
         }
         Ok(ControlState {
@@ -195,8 +198,11 @@ mod tests {
     fn an_unknown_profile_is_rejected_and_does_not_change_state() {
         let temp = tempfile::tempdir().unwrap_or_else(|error| panic!("{error}"));
         let (path, mut watcher) = watcher(temp.path());
-        fs::write(&path, br#"{"paused":false,"profile":"nope","updated_at":0}"#)
-            .unwrap_or_else(|error| panic!("{error}"));
+        fs::write(
+            &path,
+            br#"{"paused":false,"profile":"nope","updated_at":0}"#,
+        )
+        .unwrap_or_else(|error| panic!("{error}"));
         assert_eq!(watcher.poll().profile, "default");
     }
 

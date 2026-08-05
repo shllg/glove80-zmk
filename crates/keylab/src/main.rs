@@ -165,9 +165,11 @@ fn selftest_hold_database(path: &Path) -> Result<()> {
         &[0; 10],
         0,
         0,
-        false,
-        config::DEFAULT_PROFILE,
-        &[config::DEFAULT_PROFILE.to_owned()],
+        &store::LiveControl {
+            paused: false,
+            profile: config::DEFAULT_PROFILE,
+            profiles: &[config::DEFAULT_PROFILE.to_owned()],
+        },
     )?;
     println!("SELFTEST_DB_READY aggregate_rows=1");
     io::stdout()
@@ -732,9 +734,11 @@ fn replace_live_snapshot(
         &finger_counts,
         keystrokes,
         aggregate_span_ms,
-        state.paused(),
-        &state.profile,
-        &config.profiles,
+        &store::LiveControl {
+            paused: state.paused(),
+            profile: &state.profile,
+            profiles: &config.profiles,
+        },
     )
 }
 
