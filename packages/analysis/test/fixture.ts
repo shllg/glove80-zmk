@@ -8,7 +8,10 @@ export const FIXTURE_NOW = 1_700_000_000;
 
 const SCHEMA = `
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);
-CREATE TABLE device (id INTEGER PRIMARY KEY, name TEXT NOT NULL, uniq TEXT, first_ts INTEGER NOT NULL);
+CREATE TABLE device (
+  id INTEGER PRIMARY KEY, name TEXT NOT NULL, uniq TEXT, first_ts INTEGER NOT NULL,
+  keymap_kind TEXT, keymap_hash TEXT
+);
 CREATE TABLE profile (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE);
 CREATE TABLE bucket (
   id INTEGER PRIMARY KEY, device_id INTEGER NOT NULL REFERENCES device(id),
@@ -79,10 +82,10 @@ export function createFixture(
   const database = new Database(path, { create: true });
   database.exec(SCHEMA);
   database.query("INSERT INTO meta(key, value) VALUES (?, ?)").run(
-    "schema_version", String(options.schemaVersion ?? 2),
+    "schema_version", String(options.schemaVersion ?? 3),
   );
   database.query("INSERT INTO meta(key, value) VALUES (?, ?)").run("alt_hand_ambiguous", "1");
-  database.query("INSERT INTO device(id, name, uniq, first_ts) VALUES (1, 'fixture', NULL, ?)")
+  database.query("INSERT INTO device(id, name, uniq, first_ts, keymap_kind, keymap_hash) VALUES (1, 'fixture', NULL, ?, 'glove80', 'fixture')")
     .run(FIXTURE_NOW - 1_000_000);
   database.query("INSERT INTO profile(id, name) VALUES (1, 'default')").run();
   database.query("INSERT INTO live_snapshot(id, updated_at, json) VALUES (1, ?, ?)")
@@ -193,6 +196,65 @@ export function createFixture(
 }
 
 /**
+ * Two devices in two different position spaces, each with its own Tier A and Tier B rows. Tier A
+ * may be pooled across them; Tier B may not, and the guard has to say so out loud.
+ */
+export function createMultiDeviceFixture(): SeededFixture {
+  const directory = mkdtempSync(join(tmpdir(), "keylab-devices-"));
+  const path = join(directory, "keylab.db");
+  const metaPath = resolve(dirname(fileURLToPath(import.meta.url)), "../../../out/keymap-meta.json");
+  const database = new Database(path, { create: true });
+  database.exec(SCHEMA);
+  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '3')").run();
+  database.query("INSERT INTO meta(key, value) VALUES ('alt_hand_ambiguous', '0')").run();
+  database.query(`
+    INSERT INTO device(id, name, uniq, first_ts, keymap_kind, keymap_hash) VALUES
+      (1, 'Evsieve Virtual Device', NULL, ?, 'glove80', 'glove80-hash'),
+      (2, 'AT Translated Set 2 keyboard', NULL, ?, 'qwerty-ansi', 'qwerty-hash')
+  `).run(FIXTURE_NOW - 1_000_000, FIXTURE_NOW - 1_000_000);
+  database.query("INSERT INTO profile(id, name) VALUES (1, 'default')").run();
+  database.query("INSERT INTO live_snapshot(id, updated_at, json) VALUES (1, ?, ?)")
+    .run(FIXTURE_NOW, JSON.stringify({
+      finger_count: Array(10).fill(0), keystrokes_per_minute: 0,
+      paused: false, profile: "default", profiles: ["default"],
+    }));
+
+  const recentBucketId = FIXTURE_NOW - 60;
+  const insertBucket = database.query(
+    "INSERT INTO bucket(id, device_id, profile_id, span_ms, active_ms, keystrokes, autorepeats)"
+    + " VALUES (?, ?, 1, 10000, 8000, ?, 0)",
+  );
+  insertBucket.run(recentBucketId, 1, 100);
+  insertBucket.run(recentBucketId + 20, 2, 60);
+  const insertFinger = database.query(
+    "INSERT INTO finger_count(bucket_id, finger_id, presses) VALUES (?, ?, ?)",
+  );
+  insertFinger.run(recentBucketId, 0, 100);
+  insertFinger.run(recentBucketId + 20, 3, 60);
+
+  const insertWindow = database.query(
+    "INSERT INTO key_window(id, device_id, profile_id, start_ts, end_ts, keystrokes)"
+    + " VALUES (?, ?, 1, ?, ?, ?)",
+  );
+  insertWindow.run(1, 1, recentBucketId, recentBucketId + 10, 100);
+  insertWindow.run(2, 2, recentBucketId + 20, recentBucketId + 30, 60);
+  const insertPosition = database.query(
+    "INSERT INTO pos_count(window_id, pos, presses) VALUES (?, ?, ?)",
+  );
+  insertPosition.run(1, 0, 100);
+  insertPosition.run(2, 0, 60);
+  database.close();
+
+  return {
+    directory,
+    path,
+    metaPath,
+    recentBucketId,
+    cleanup: () => rmSync(directory, { recursive: true, force: true }),
+  };
+}
+
+/**
  * 100 keystrokes on the `default` profile and 40 on `gaming`, so a filtered read, an unfiltered
  * read, and a pooled read all produce visibly different totals.
  */
@@ -202,9 +264,9 @@ export function createProfileFixture(): SeededFixture {
   const metaPath = resolve(dirname(fileURLToPath(import.meta.url)), "../../../out/keymap-meta.json");
   const database = new Database(path, { create: true });
   database.exec(SCHEMA);
-  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '2')").run();
+  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '3')").run();
   database.query("INSERT INTO meta(key, value) VALUES ('alt_hand_ambiguous', '0')").run();
-  database.query("INSERT INTO device(id, name, uniq, first_ts) VALUES (1, 'fixture', NULL, ?)")
+  database.query("INSERT INTO device(id, name, uniq, first_ts, keymap_kind, keymap_hash) VALUES (1, 'fixture', NULL, ?, 'glove80', 'fixture')")
     .run(FIXTURE_NOW - 1_000_000);
   database.query("INSERT INTO profile(id, name) VALUES (1, 'default'), (2, 'gaming')").run();
   database.query("INSERT INTO live_snapshot(id, updated_at, json) VALUES (1, ?, ?)")

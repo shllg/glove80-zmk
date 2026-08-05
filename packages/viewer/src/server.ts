@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { openKeylabDatabase } from "@glove80/analysis/db";
 import { loadAnalysisMeta } from "@glove80/analysis/meta";
 import { calculateMetrics, parseViewerRange } from "@glove80/analysis/metrics";
-import { orderByGlove80Geometry } from "./geometry";
+import { orderForPositionSpace } from "./geometry";
 
 const HOST = "127.0.0.1";
 const SECURITY_HEADERS = {
@@ -167,6 +167,26 @@ function readControlFile(path: string): { paused: boolean; profile: string } | n
   } catch {
     return null;
   }
+}
+
+export interface ViewerDevice {
+  id: number;
+  name: string;
+  positionSpace: string | null;
+}
+
+function readDevices(database: Database): ViewerDevice[] {
+  return (database.query(`
+    SELECT d.id, d.name, d.keymap_kind AS positionSpace
+    FROM device d
+    WHERE EXISTS (SELECT 1 FROM bucket b WHERE b.device_id = d.id)
+       OR EXISTS (SELECT 1 FROM key_window kw WHERE kw.device_id = d.id)
+    ORDER BY d.id
+  `).all() as ViewerDevice[]).map((device) => ({
+    id: Number(device.id),
+    name: device.name,
+    positionSpace: device.positionSpace ?? null,
+  }));
 }
 
 function readUpdatedAt(database: Database): number | null {
@@ -339,10 +359,19 @@ export function createViewerServer(options: ViewerServerOptions): ViewerApp {
               headers: responseHeaders("application/json; charset=utf-8"),
             });
           }
+          if (url.pathname === "/api/devices") {
+            return Response.json(readDevices(database), {
+              headers: responseHeaders("application/json; charset=utf-8"),
+            });
+          }
           if (url.pathname === "/api/summary") {
             const range = parseViewerRange(url.searchParams.get("range") ?? "live", now());
-            const metrics = calculateMetrics(database, meta, range);
-            metrics.positionLoad = orderByGlove80Geometry(metrics.positionLoad);
+            const device = url.searchParams.get("device") ?? undefined;
+            const metrics = calculateMetrics(database, meta, range, device ? { device } : {});
+            metrics.positionLoad = orderForPositionSpace(
+              metrics.header.positionSpace,
+              metrics.positionLoad,
+            );
             return Response.json(metrics, {
               headers: responseHeaders("application/json; charset=utf-8"),
             });

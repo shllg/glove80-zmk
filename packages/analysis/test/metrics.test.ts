@@ -8,7 +8,13 @@ import {
   parseSince,
 } from "../src/metrics";
 import { renderReport } from "../src/report";
-import { createFixture, createProfileFixture, FIXTURE_NOW, type SeededFixture } from "./fixture";
+import {
+  createFixture,
+  createMultiDeviceFixture,
+  createProfileFixture,
+  FIXTURE_NOW,
+  type SeededFixture,
+} from "./fixture";
 
 const fixtures: SeededFixture[] = [];
 
@@ -61,6 +67,8 @@ describe("analysis metrics", () => {
       }).toEqual({
         header: {
           profile: "default",
+          device: "* (all devices)",
+          positionSpace: "glove80",
           totalKeystrokes: 100,
           autorepeats: 5,
           bucketCount: 1,
@@ -265,7 +273,8 @@ describe("analysis metrics", () => {
       }).toEqual({
         hour: 23,
         header: {
-          profile: "default", totalKeystrokes: 100, autorepeats: 5, bucketCount: 1,
+          profile: "default", device: "* (all devices)", positionSpace: "glove80",
+          totalKeystrokes: 100, autorepeats: 5, bucketCount: 1,
           tierBWindowCount: 1, altHandAmbiguous: true, noData: false,
         },
         perFinger: [
@@ -407,17 +416,86 @@ describe("profile filtering", () => {
   });
 });
 
-describe("database opener", () => {
-  test("rejects a future schema_version clearly", () => {
-    const fixture = createFixture({ schemaVersion: 3 });
+describe("multi-device position spaces", () => {
+  function multiDevice() {
+    const fixture = createMultiDeviceFixture();
     fixtures.push(fixture);
-    expect(() => openKeylabDatabase(fixture.path)).toThrow("schema_version \"3\"; expected 2");
+    const database = openKeylabDatabase(fixture.path);
+    const meta = loadAnalysisMeta(database, fixture.metaPath);
+    return { database, meta };
+  }
+
+  test("refuses to pool Tier B across two position spaces", () => {
+    const { database, meta } = multiDevice();
+    try {
+      expect(() => calculateMetrics(database, meta, parseSince("all", FIXTURE_NOW)))
+        .toThrow("Refusing to pool Tier B positional data across 2 position spaces");
+      expect(() => calculateMetrics(database, meta, parseSince("all", FIXTURE_NOW), {
+        device: "*",
+      })).toThrow("glove80, qwerty-ansi");
+    } finally {
+      database.close();
+    }
   });
 
-  test("points an unmigrated v1 database at the daemon", () => {
-    const fixture = createFixture({ schemaVersion: 1 });
+  test("selecting one device makes the positional read legal and names its space", () => {
+    const { database, meta } = multiDevice();
+    try {
+      const glove80 = calculateMetrics(database, meta, parseSince("all", FIXTURE_NOW), { device: 1 });
+      expect(glove80.header.positionSpace).toBe("glove80");
+      expect(glove80.header.totalKeystrokes).toBe(100);
+      expect(glove80.outerUpperQuadrant.positional.tierBKeystrokes).toBe(100);
+
+      const laptop = calculateMetrics(database, meta, parseSince("all", FIXTURE_NOW), { device: 2 });
+      expect(laptop.header.positionSpace).toBe("qwerty-ansi");
+      expect(laptop.header.totalKeystrokes).toBe(60);
+      expect(laptop.outerUpperQuadrant.positional.tierBKeystrokes).toBe(60);
+    } finally {
+      database.close();
+    }
+  });
+
+  test("Tier A pools across devices once the range holds no Tier B conflict", () => {
+    const { database, meta } = multiDevice();
+    try {
+      // A range that excludes every Tier B window leaves Tier A free to pool both keyboards.
+      const range = { label: "tier-a-only", sinceTs: null, nowTs: FIXTURE_NOW - 100 };
+      const pooled = calculateMetrics(database, meta, range, { device: "*" });
+      expect(pooled.header.positionSpace).toBeNull();
+      expect(pooled.header.totalKeystrokes).toBe(0);
+
+      const wide = calculateMetrics(database, meta, parseSince("all", FIXTURE_NOW), { device: 1 });
+      expect(wide.perFinger[0]?.presses).toBe(100);
+    } finally {
+      database.close();
+    }
+  });
+
+  test("rejects a device id the database does not hold", () => {
+    const { database, meta } = multiDevice();
+    try {
+      expect(() => calculateMetrics(database, meta, parseSince("all", FIXTURE_NOW), { device: 99 }))
+        .toThrow("Unknown device id 99");
+    } finally {
+      database.close();
+    }
+  });
+});
+
+describe("database opener", () => {
+  test("rejects a future schema_version clearly", () => {
+    const fixture = createFixture({ schemaVersion: 4 });
     fixtures.push(fixture);
-    expect(() => openKeylabDatabase(fixture.path)).toThrow("the daemon migrates v1 in place");
+    expect(() => openKeylabDatabase(fixture.path)).toThrow("schema_version \"4\"; expected 3");
+  });
+
+  test("points an unmigrated older database at the daemon", () => {
+    for (const version of [1, 2]) {
+      const fixture = createFixture({ schemaVersion: version });
+      fixtures.push(fixture);
+      expect(() => openKeylabDatabase(fixture.path))
+        .toThrow("the daemon migrates older schemas in place");
+    }
   });
 
   test("really opens read-only", () => {

@@ -21,6 +21,10 @@ export function renderReport(metrics: AnalysisMetrics): string {
     "keylab analysis",
     `Range: ${metrics.range.label}`,
     `Profile: ${metrics.header.profile}`,
+    `Device: ${metrics.header.device}`
+      + (metrics.header.positionSpace === null
+        ? "  (no Tier B data in range)"
+        : `  Position space: ${metrics.header.positionSpace}`),
     `Keystrokes: ${metrics.header.totalKeystrokes}  Autorepeats: ${metrics.header.autorepeats}`,
     `Tier A buckets: ${metrics.header.bucketCount}  Tier B windows: ${metrics.header.tierBWindowCount}`,
   ];

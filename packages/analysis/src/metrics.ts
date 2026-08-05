@@ -28,12 +28,22 @@ export interface TimeRange {
 export const ALL_PROFILES = "*";
 export const ALL_PROFILES_LABEL = "* (all profiles)";
 
+export const ALL_DEVICES = "*";
+export const ALL_DEVICES_LABEL = "* (all devices)";
+
 export interface MetricsOptions {
   profile?: string;
+  /** A device id, or `"*"` to pool. Tier A pools freely; Tier B does not — see the guard below. */
+  device?: number | string;
 }
 
 /** `null` means "no profile clause at all", which is how pooling is expressed. */
 interface ProfileScope {
+  id: number | null;
+  label: string;
+}
+
+interface DeviceScope {
   id: number | null;
   label: string;
 }
@@ -120,6 +130,8 @@ export interface RangeMetrics {
   range: TimeRange;
   header: {
     profile: string;
+    device: string;
+    positionSpace: string | null;
     totalKeystrokes: number;
     autorepeats: number;
     bucketCount: number;
@@ -308,16 +320,83 @@ export function resolveProfileScope(database: Database, profile?: string): Profi
   return { id: Number(row.id), label: name };
 }
 
+export function resolveDeviceScope(database: Database, device?: number | string): DeviceScope {
+  if (device === undefined || device === ALL_DEVICES) {
+    return { id: null, label: ALL_DEVICES_LABEL };
+  }
+  const id = Number(device);
+  if (!Number.isInteger(id)) {
+    throw new Error(`Invalid device ${JSON.stringify(device)}; expected an id or "*"`);
+  }
+  const row = database
+    .query("SELECT name FROM device WHERE id = ?")
+    .get(id) as { name: string } | null;
+  if (!row) {
+    throw new Error(`Unknown device id ${id}`);
+  }
+  return { id, label: `${id} (${row.name})` };
+}
+
 /**
- * The profile clause rides along with the time clause because every scoped query already joins the
- * table that carries `profile_id`. Deriving the alias from the timestamp column keeps the two from
- * ever being applied to different tables.
+ * **Tier A is semantic and crosses keyboards.** `finger_id`, `hand`, `row_idx`, hold and gap
+ * histograms mean the same thing on any board, so pooling them answers "am I slower and more
+ * pinky-loaded on the laptop?".
+ *
+ * **Tier B is geometric and must never be pooled across position spaces.** `pos` only means
+ * something inside one keyboard's geometry: position 35 is `A` on the Glove80 and something else
+ * entirely on a row-staggered board. Summing them produces a heatmap of nothing.
+ *
+ * This is the invariant most likely to be violated silently, so it throws rather than returning a
+ * plausible-looking number.
+ */
+export function assertSinglePositionSpace(
+  database: Database,
+  device: DeviceScope,
+  profile: ProfileScope,
+  range: TimeRange,
+): string | null {
+  const clauses = ["kw.start_ts <= ?"];
+  const params: Array<number | string> = [range.nowTs];
+  if (range.sinceTs !== null) {
+    clauses.unshift("kw.start_ts >= ?");
+    params.unshift(range.sinceTs);
+  }
+  if (device.id !== null) {
+    clauses.push("kw.device_id = ?");
+    params.push(device.id);
+  }
+  if (profile.id !== null) {
+    clauses.push("kw.profile_id = ?");
+    params.push(profile.id);
+  }
+  const spaces = database.query(`
+    SELECT DISTINCT COALESCE(d.keymap_kind, 'unknown') AS kind
+    FROM key_window kw JOIN device d ON d.id = kw.device_id
+    WHERE ${clauses.join(" AND ")}
+    ORDER BY kind
+  `).all(...params) as Array<{ kind: string }>;
+  if (spaces.length > 1) {
+    throw new Error(
+      "Refusing to pool Tier B positional data across "
+      + `${spaces.length} position spaces (${spaces.map((space) => space.kind).join(", ")}). `
+      + "Position identity only means something inside one keyboard's geometry; "
+      + "select a single device with the device option.",
+    );
+  }
+  return spaces[0]?.kind ?? null;
+}
+
+/**
+ * The profile and device clauses ride along with the time clause because every scoped query already
+ * joins the table that carries both foreign keys. Deriving the alias from the timestamp column
+ * keeps them from ever being applied to different tables.
  */
 function timestampFilter(
   column: string,
   range: TimeRange,
   hour: number | undefined,
   profile: ProfileScope,
+  device: DeviceScope,
 ): { sql: string; params: number[] } {
   const clauses: string[] = [];
   const params: number[] = [];
@@ -331,10 +410,14 @@ function timestampFilter(
     clauses.push(`CAST(strftime('%H', ${column}, 'unixepoch', 'localtime') AS INTEGER) = ?`);
     params.push(hour);
   }
+  const alias = column.split(".")[0];
   if (profile.id !== null) {
-    const alias = column.split(".")[0];
     clauses.push(`${alias}.profile_id = ?`);
     params.push(profile.id);
+  }
+  if (device.id !== null) {
+    clauses.push(`${alias}.device_id = ?`);
+    params.push(device.id);
   }
   return { sql: clauses.length === 0 ? "1 = 1" : clauses.join(" AND "), params };
 }
@@ -343,9 +426,10 @@ function getTotals(
   database: Database,
   range: TimeRange,
   profile: ProfileScope,
+  device: DeviceScope,
   hour?: number,
 ): TotalsRow {
-  const filter = timestampFilter("b.id", range, hour, profile);
+  const filter = timestampFilter("b.id", range, hour, profile, device);
   return database.query(`
     SELECT COALESCE(SUM(b.keystrokes), 0) AS total,
            COALESCE(SUM(b.autorepeats), 0) AS autorepeats,
@@ -358,9 +442,10 @@ function getTierBWindowCount(
   database: Database,
   range: TimeRange,
   profile: ProfileScope,
+  device: DeviceScope,
   hour?: number,
 ): number {
-  const filter = timestampFilter("kw.start_ts", range, hour, profile);
+  const filter = timestampFilter("kw.start_ts", range, hour, profile, device);
   const row = database.query(`
     SELECT COUNT(*) AS value FROM key_window kw WHERE ${filter.sql}
   `).get(...filter.params) as ScalarRow;
@@ -371,9 +456,10 @@ function getFingerLoad(
   database: Database,
   range: TimeRange,
   profile: ProfileScope,
+  device: DeviceScope,
   hour?: number,
 ): FingerLoad[] {
-  const filter = timestampFilter("b.id", range, hour, profile);
+  const filter = timestampFilter("b.id", range, hour, profile, device);
   const rows = database.query(`
     SELECT fc.finger_id AS id, SUM(fc.presses) AS presses
     FROM finger_count fc JOIN bucket b ON b.id = fc.bucket_id
@@ -398,9 +484,10 @@ function getRowLoad(
   database: Database,
   range: TimeRange,
   profile: ProfileScope,
+  device: DeviceScope,
   hour?: number,
 ): RowLoad[] {
-  const filter = timestampFilter("b.id", range, hour, profile);
+  const filter = timestampFilter("b.id", range, hour, profile, device);
   const rows = database.query(`
     SELECT rc.hand, rc.row_idx, SUM(rc.presses) AS presses
     FROM row_count rc JOIN bucket b ON b.id = rc.bucket_id
@@ -432,9 +519,10 @@ function getPositionRows(
   database: Database,
   range: TimeRange,
   profile: ProfileScope,
+  device: DeviceScope,
   hour?: number,
 ): PositionRow[] {
-  const filter = timestampFilter("kw.start_ts", range, hour, profile);
+  const filter = timestampFilter("kw.start_ts", range, hour, profile, device);
   return database.query(`
     SELECT pc.pos, SUM(pc.presses) AS presses
     FROM pos_count pc JOIN key_window kw ON kw.id = pc.window_id
@@ -460,9 +548,10 @@ function getModifierHolds(
   database: Database,
   range: TimeRange,
   profile: ProfileScope,
+  device: DeviceScope,
   hour?: number,
 ): ModifierHoldMetric[] {
-  const filter = timestampFilter("b.id", range, hour, profile);
+  const filter = timestampFilter("b.id", range, hour, profile, device);
   const rows = database.query(`
     SELECT mh.mod_class AS subject, mh.dur_bucket AS bucket, SUM(mh.n) AS n
     FROM mod_hold_hist mh JOIN bucket b ON b.id = mh.bucket_id
@@ -500,10 +589,11 @@ function getMisfires(
   database: Database,
   range: TimeRange,
   profile: ProfileScope,
+  device: DeviceScope,
   totalKeystrokes: number,
   hour?: number,
 ): RangeMetrics["misfires"] {
-  const filter = timestampFilter("b.id", range, hour, profile);
+  const filter = timestampFilter("b.id", range, hour, profile, device);
   const rows = database.query(`
     SELECT ec.kind, ec.subject, SUM(ec.n) AS n
     FROM event_count ec JOIN bucket b ON b.id = ec.bucket_id
@@ -536,6 +626,7 @@ function getCorrectionTax(
   positional: PositionalContext,
   totalKeystrokes: number,
   profile: ProfileScope,
+  device: DeviceScope,
   hour?: number,
 ): RangeMetrics["correctionTax"] {
   const counts = new Map(positionRows.map((row) => [Number(row.pos), Number(row.presses)]));
@@ -545,7 +636,7 @@ function getCorrectionTax(
   const positionalBackspacePresses = backspacePositions
     .reduce((sum, pos) => sum + (counts.get(pos) ?? 0), 0);
 
-  const filter = timestampFilter("b.id", range, hour, profile);
+  const filter = timestampFilter("b.id", range, hour, profile, device);
   const rows = database.query(`
     SELECT ec.subject, SUM(ec.n) AS n
     FROM event_count ec JOIN bucket b ON b.id = ec.bucket_id
@@ -576,9 +667,10 @@ function getDailyDose(
   database: Database,
   range: TimeRange,
   profile: ProfileScope,
+  device: DeviceScope,
   hour?: number,
 ): RangeMetrics["dailyDose"] {
-  const filter = timestampFilter("b.id", range, hour, profile);
+  const filter = timestampFilter("b.id", range, hour, profile, device);
   const dayRows = database.query(`
     SELECT strftime('%Y-%m-%d', b.id, 'unixepoch', 'localtime') AS date,
            SUM(b.keystrokes) AS keystrokes
@@ -641,11 +733,13 @@ function computeRangeMetrics(
   meta: AnalysisMeta,
   range: TimeRange,
   profile: ProfileScope,
+  device: DeviceScope,
+  positionSpace: string | null,
   hour?: number,
 ): RangeMetrics {
-  const totals = getTotals(database, range, profile, hour);
+  const totals = getTotals(database, range, profile, device, hour);
   const totalKeystrokes = Number(totals.total ?? 0);
-  const positionRows = getPositionRows(database, range, profile, hour);
+  const positionRows = getPositionRows(database, range, profile, device, hour);
   const positional = positionalContext(positionRows);
   const positionLoad = toPositionLoad(meta.positions, positionRows);
   const outerByHand = (["L", "R"] as const).map((hand) => {
@@ -662,27 +756,29 @@ function computeRangeMetrics(
     range,
     header: {
       profile: profile.label,
+      device: device.label,
+      positionSpace,
       totalKeystrokes,
       autorepeats: Number(totals.autorepeats ?? 0),
       bucketCount: Number(totals.count),
-      tierBWindowCount: getTierBWindowCount(database, range, profile, hour),
+      tierBWindowCount: getTierBWindowCount(database, range, profile, device, hour),
       altHandAmbiguous: meta.altHandAmbiguous,
       noData: Number(totals.count) === 0 && positional.tierBKeystrokes === 0,
     },
-    perFinger: getFingerLoad(database, range, profile, hour),
-    perRow: getRowLoad(database, range, profile, hour),
+    perFinger: getFingerLoad(database, range, profile, device, hour),
+    perRow: getRowLoad(database, range, profile, device, hour),
     outerUpperQuadrant: {
       source: "Tier B",
       excludesUnattributed: true,
       byHand: outerByHand,
       positional,
     },
-    modifierHolds: getModifierHolds(database, range, profile, hour),
-    misfires: getMisfires(database, range, profile, totalKeystrokes, hour),
+    modifierHolds: getModifierHolds(database, range, profile, device, hour),
+    misfires: getMisfires(database, range, profile, device, totalKeystrokes, hour),
     correctionTax: getCorrectionTax(
-      database, meta, range, positionRows, positional, totalKeystrokes, profile, hour,
+      database, meta, range, positionRows, positional, totalKeystrokes, profile, device, hour,
     ),
-    dailyDose: getDailyDose(database, range, profile, hour),
+    dailyDose: getDailyDose(database, range, profile, device, hour),
     positionLoad,
   };
 }
@@ -695,12 +791,16 @@ export function calculateMetrics(
 ): AnalysisMetrics {
   const readSnapshot = (): AnalysisMetrics => {
     const profile = resolveProfileScope(database, options.profile);
-    const metrics = computeRangeMetrics(database, meta, range, profile);
+    const device = resolveDeviceScope(database, options.device);
+    // Runs before any positional query: a request that spans two position spaces must fail loudly
+    // rather than return a pooled heatmap that means nothing.
+    const positionSpace = assertSinglePositionSpace(database, device, profile, range);
+    const metrics = computeRangeMetrics(database, meta, range, profile, device, positionSpace);
     return {
       ...metrics,
       fatigueDrift: Array.from({ length: 24 }, (_, hour) => ({
         hour,
-        metrics: computeRangeMetrics(database, meta, range, profile, hour),
+        metrics: computeRangeMetrics(database, meta, range, profile, device, positionSpace, hour),
       })),
     };
   };

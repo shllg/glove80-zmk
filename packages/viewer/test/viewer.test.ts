@@ -5,9 +5,18 @@ import { join } from "node:path";
 import { openKeylabDatabase } from "../../analysis/src/db";
 import { loadAnalysisMeta } from "../../analysis/src/meta";
 import { calculateMetrics, parseViewerRange } from "../../analysis/src/metrics";
-import { createFixture, FIXTURE_NOW, type SeededFixture } from "../../analysis/test/fixture";
+import {
+  createFixture,
+  createMultiDeviceFixture,
+  FIXTURE_NOW,
+  type SeededFixture,
+} from "../../analysis/test/fixture";
 import { toPhysicalRows } from "../../keymap/src/layout";
-import { buildHeatmapGeometry, positionStructuredLayout } from "../src/geometry";
+import {
+  buildHeatmapGeometry,
+  orderForPositionSpace,
+  positionStructuredLayout,
+} from "../src/geometry";
 import { createRefreshScheduler } from "../public/refresh-scheduler.js";
 import {
   createViewerServer,
@@ -108,6 +117,54 @@ describe("viewer API", () => {
     });
     expect(response.status).toBe(421);
     expect(await response.text()).toBe("Misdirected request\n");
+  });
+});
+
+describe("multi-device viewer", () => {
+  function startMultiDeviceViewer() {
+    const fixture = createMultiDeviceFixture();
+    fixtures.push(fixture);
+    const app = createViewerServer(testOptions(fixture));
+    apps.push(app);
+    return { fixture, app };
+  }
+
+  test("lists every device that has data, with its position space", async () => {
+    const { app } = startMultiDeviceViewer();
+    const devices = await (await fetch(`${app.url}/api/devices`)).json();
+    expect(devices).toEqual([
+      { id: 1, name: "Evsieve Virtual Device", positionSpace: "glove80" },
+      { id: 2, name: "AT Translated Set 2 keyboard", positionSpace: "qwerty-ansi" },
+    ]);
+  });
+
+  test("a summary spanning two position spaces fails rather than pooling silently", async () => {
+    const { app } = startMultiDeviceViewer();
+    const response = await fetch(`${app.url}/api/summary?range=all&device=*`);
+    expect(response.status).toBe(500);
+  });
+
+  test("selecting one keyboard returns that keyboard's geometry only", async () => {
+    const { app } = startMultiDeviceViewer();
+    const glove80 = await (await fetch(`${app.url}/api/summary?range=all&device=1`)).json();
+    expect(glove80.header.positionSpace).toBe("glove80");
+    expect(glove80.header.totalKeystrokes).toBe(100);
+    expect(glove80.positionLoad).toHaveLength(80);
+
+    const laptop = await (await fetch(`${app.url}/api/summary?range=all&device=2`)).json();
+    expect(laptop.header.positionSpace).toBe("qwerty-ansi");
+    expect(laptop.header.totalKeystrokes).toBe(60);
+  });
+
+  test("a non-Glove80 space is ordered row-major rather than by Glove80 coordinates", () => {
+    const positions = [
+      { pos: 5, hand: "R", row: 3, col: 2 },
+      { pos: 1, hand: "L", row: 1, col: 6 },
+      { pos: 4, hand: "L", row: 3, col: 6 },
+      { pos: 2, hand: "L", row: 1, col: 2 },
+    ];
+    expect(orderForPositionSpace("qwerty-ansi", positions).map((cell) => cell.pos))
+      .toEqual([1, 2, 4, 5]);
   });
 });
 

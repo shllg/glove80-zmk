@@ -11,12 +11,14 @@ interface CliOptions {
   dbPath: string;
   json: boolean;
   profile: string;
+  device: string;
 }
 
 export function parseAnalysisArgs(args: string[]): CliOptions {
   if (args[0] !== "report") {
     throw new Error(
-      "Usage: analysis report [--since 7d|24h|30m|all] [--db PATH] [--profile NAME|*] [--json]",
+      "Usage: analysis report [--since 7d|24h|30m|all] [--db PATH] [--profile NAME|*]"
+        + " [--device ID|*] [--json]",
     );
   }
   const options: CliOptions = {
@@ -24,6 +26,7 @@ export function parseAnalysisArgs(args: string[]): CliOptions {
     dbPath: join(homedir(), ".local/share/glove80-lab/keylab.db"),
     json: false,
     profile: "default",
+    device: "*",
   };
   for (let index = 1; index < args.length; index += 1) {
     const argument = args[index];
@@ -38,6 +41,11 @@ export function parseAnalysisArgs(args: string[]): CliOptions {
       const value = args[index + 1];
       if (!value) throw new Error("--profile requires a name or *");
       options.profile = value;
+      index += 1;
+    } else if (argument === "--device") {
+      const value = args[index + 1];
+      if (!value) throw new Error("--device requires an id or *");
+      options.device = value;
       index += 1;
     } else if (argument === "--db") {
       const value = args[index + 1];
@@ -59,6 +67,7 @@ export function runAnalysis(args: string[]): void {
     const meta = loadAnalysisMeta(database);
     const metrics = calculateMetrics(database, meta, parseSince(options.since), {
       profile: options.profile,
+      device: options.device,
     });
     process.stdout.write(options.json ? `${JSON.stringify(metrics, null, 2)}\n` : renderReport(metrics));
   } finally {

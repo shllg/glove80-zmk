@@ -107,3 +107,31 @@ export function orderByGlove80Geometry<T extends { pos: number }>(positions: rea
     return position;
   });
 }
+
+/**
+ * A board that is not the Glove80 has no hand-placed geometry here, so it is rendered in its own
+ * metadata order: row first, then column outward-to-inward, which is how a row-staggered board
+ * reads. Falling back to Glove80 coordinates would draw a keyboard that does not exist.
+ */
+export function orderByRowMajorGeometry<
+  T extends { pos: number; hand: string; row: number; col: number | null },
+>(positions: readonly T[]): T[] {
+  return [...positions].sort((left, right) => {
+    if (left.row !== right.row) return left.row - right.row;
+    if (left.hand !== right.hand) return left.hand === "L" ? -1 : 1;
+    const leftCol = left.col ?? 0;
+    const rightCol = right.col ?? 0;
+    // Left hand runs outward-to-inward, the right hand mirrors it.
+    const byColumn = left.hand === "L" ? rightCol - leftCol : leftCol - rightCol;
+    return byColumn !== 0 ? byColumn : left.pos - right.pos;
+  });
+}
+
+/** Chooses the ordering that belongs to a device's position space. */
+export function orderForPositionSpace<
+  T extends { pos: number; hand: string; row: number; col: number | null },
+>(positionSpace: string | null, positions: readonly T[]): T[] {
+  return positionSpace === null || positionSpace === "glove80"
+    ? orderByGlove80Geometry(positions)
+    : orderByRowMajorGeometry(positions);
+}
