@@ -520,6 +520,7 @@ fn discover_devices(
     if startup {
         info!(
             matched_count = scan.matched_count,
+            skipped_count = scan.skipped_count,
             rule_count = config.devices.len(),
             "startup input-device scan complete"
         );
@@ -529,11 +530,22 @@ fn discover_devices(
             } else {
                 scan.present_names.join(", ")
             };
-            error!(
-                configured_substrings = %fragments.join(", "),
-                present_device_names = %present_names,
-                "no input devices matched any configured substring"
-            );
+            // A device that matched and could not be prepared is a different fault from one that
+            // never matched, and sending someone to check their configuration for the first is
+            // sending them to the wrong place.
+            if scan.skipped_count > 0 {
+                error!(
+                    skipped_count = scan.skipped_count,
+                    configured_substrings = %fragments.join(", "),
+                    "every matching input device was skipped; see the warnings above for why"
+                );
+            } else {
+                error!(
+                    configured_substrings = %fragments.join(", "),
+                    present_device_names = %present_names,
+                    "no input devices matched any configured substring"
+                );
+            }
         }
     } else if added > 0 {
         info!(count = added, "input devices connected");

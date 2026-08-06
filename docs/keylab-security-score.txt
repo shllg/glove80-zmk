@@ -1,5 +1,5 @@
 keylab systemd security exposure score: 0.8
 maximum accepted score: 2.0
 systemd version: systemd 261 (261.1-1-arch)
-verified at: 2026-08-05T11:56:59+02:00
+verified at: 2026-08-06T14:33:51+02:00
 unit: crates/keylab/keylab.service

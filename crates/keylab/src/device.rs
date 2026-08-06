@@ -8,6 +8,7 @@ use std::os::fd::AsRawFd;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
+use tracing::warn;
 use zeroize::{Zeroize, Zeroizing};
 
 // EVIOCSCLOCKID takes a pointer to the clock id, not the id by value: the kernel
@@ -81,6 +82,9 @@ pub struct InputDevice {
 
 pub struct DeviceScan {
     pub matched_count: usize,
+    /// Devices that matched a rule but could not be prepared for capture on this scan. Counted
+    /// separately so "nothing matched your configuration" is never printed for devices that did.
+    pub skipped_count: usize,
     pub present_names: Vec<String>,
 }
 
@@ -128,12 +132,14 @@ where
         Err(error) if error.kind() == io::ErrorKind::NotFound => {
             return Ok(DeviceScan {
                 matched_count: 0,
+                skipped_count: 0,
                 present_names: Vec::new(),
             });
         }
         Err(error) => return Err(error).context("failed to enumerate input devices"),
     };
     let mut matched_count = 0;
+    let mut skipped_count = 0;
     let mut present_names = Vec::new();
     for entry in entries.flatten() {
         let path = entry.path();
@@ -152,7 +158,26 @@ where
             continue;
         };
         let uniq = device.unique_name().map(str::to_owned);
-        set_monotonic_clock(&device)?;
+        // Every other per-device failure in this loop is a skip; this one used to be fatal. A
+        // matched device that disappears between `open` and the ioctl — exactly what an input
+        // remapper with `persist=reopen` produces when the keyboard reconnects — therefore took
+        // the daemon down with it, including every other keyboard that was working, and systemd
+        // restarted it into the same race five seconds later. Skipping leaves the device to the
+        // next scan, which is when it will have settled.
+        //
+        // The device is never captured with realtime timestamps instead: those jump whenever NTP
+        // steps the clock, which would silently corrupt every hold and gap measurement in Tier A.
+        // A device that cannot be switched is not measurable, so it is left alone and reported.
+        if let Err(error) = set_monotonic_clock(&device) {
+            warn!(
+                device_name = %name,
+                event_path = %path.display(),
+                error = %format!("{error:#}"),
+                "failed to set the monotonic input clock; skipping this device for this scan"
+            );
+            skipped_count += 1;
+            continue;
+        }
         callback(path, InputDevice { device, name, uniq }, rule_index)?;
         matched_count += 1;
     }
@@ -160,6 +185,7 @@ where
     present_names.dedup();
     Ok(DeviceScan {
         matched_count,
+        skipped_count,
         present_names,
     })
 }
@@ -240,9 +266,15 @@ fn set_monotonic_clock(device: &RawDevice) -> Result<()> {
     let clock_id: libc::c_int = libc::CLOCK_MONOTONIC;
     // SAFETY: EVIOCSCLOCKID receives a valid evdev file descriptor and a pointer to an
     // integer clock id that outlives the call.
-    unsafe { eviocsclockid(device.as_raw_fd(), &clock_id) }
-        .context("failed to set monotonic input clock")?;
-    Ok(())
+    let errno = match unsafe { eviocsclockid(device.as_raw_fd(), &clock_id) } {
+        Ok(_) => return Ok(()),
+        Err(errno) => errno,
+    };
+    // The errno is the whole diagnosis: ENODEV is a device that went away mid-scan and will be
+    // back, anything else is a device this kernel will not hand over monotonic timestamps for.
+    Err(anyhow::Error::new(errno)).context(format!(
+        "failed to set monotonic input clock (EVIOCSCLOCKID: {errno})"
+    ))
 }
 
 #[cfg(test)]
