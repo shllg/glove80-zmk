@@ -237,6 +237,46 @@ describe("analysis metrics", () => {
     }
   });
 
+  // Schema v5 demoted the seal second from `bucket.id` to `bucket.ts`, and the fixture's bucket ids
+  // are now small surrogates. A read still filtering or grouping on `id` would compare a unix second
+  // against 1 or 2 and silently return nothing, so these numbers are the v4 numbers or they are a
+  // regression — there is no third outcome.
+  test("analysis totals are unchanged by the column rename", () => {
+    const recent = seededMetrics();
+    const all = seededMetrics({ since: "all" });
+    try {
+      expect(recent.metrics.header.totalKeystrokes).toBe(100);
+      expect(recent.metrics.header.autorepeats).toBe(5);
+      expect(recent.metrics.header.bucketCount).toBe(1);
+      expect(all.metrics.header.totalKeystrokes).toBe(1_100);
+      expect(all.metrics.header.bucketCount).toBe(2);
+      // Every family that joins `bucket`, not only the totals that read it directly.
+      expect(recent.metrics.perFinger.reduce((sum, finger) => sum + finger.presses, 0)).toBe(100);
+      expect(recent.metrics.perRow.reduce((sum, row) => sum + row.presses, 0)).toBe(100);
+      expect(recent.metrics.modifierHolds.reduce((sum, hold) => sum + hold.count, 0)).toBe(6);
+      expect(recent.metrics.misfires.kinds.reduce((sum, kind) => sum + kind.count, 0)).toBe(6);
+    } finally {
+      recent.database.close();
+      all.database.close();
+    }
+  });
+
+  test("the daily dose still groups by local day", () => {
+    const all = seededMetrics({ since: "all" });
+    try {
+      // Two buckets eight days apart, each its own local day — a grouping that read the surrogate
+      // id would collapse them into one nonsense date instead.
+      expect(all.metrics.dailyDose.days).toEqual([
+        { date: "2023-11-06", keystrokes: 1_000, holdHours: 0 },
+        { date: "2023-11-14", keystrokes: 100, holdHours: 5_212.5 / 3_600_000 },
+      ]);
+      expect(all.metrics.dailyDose.dayCount).toBe(2);
+      expect(all.metrics.dailyDose.keystrokesPerDay).toBe(550);
+    } finally {
+      all.database.close();
+    }
+  });
+
   test("snapshots every metric family in the active local-hour fatigue bucket", () => {
     const { fixture, database, metrics } = seededMetrics();
     try {
@@ -696,23 +736,24 @@ describe("multi-device position spaces", () => {
 
 describe("database opener", () => {
   test("rejects a future schema_version clearly", () => {
-    const fixture = createFixture({ schemaVersion: 5 });
+    const fixture = createFixture({ schemaVersion: 6 });
     fixtures.push(fixture);
-    expect(() => openKeylabDatabase(fixture.path)).toThrow("schema_version \"5\"; expected 4");
+    expect(() => openKeylabDatabase(fixture.path)).toThrow("schema_version \"6\"; expected 5");
   });
 
   test("rejects a v3 database with an actionable message", () => {
     const fixture = createFixture({ schemaVersion: 3 });
     fixtures.push(fixture);
-    // v3 predates Tier C. The daemon's v3 -> v4 migration is the fix, and the message has to say so.
+    // v3 predates Tier C. The daemon's v3 -> v4 -> v5 migration is the fix, and the message has to
+    // say so.
     expect(() => openKeylabDatabase(fixture.path))
-      .toThrow("Unsupported keylab schema_version \"3\"; expected 4");
+      .toThrow("Unsupported keylab schema_version \"3\"; expected 5");
     expect(() => openKeylabDatabase(fixture.path))
       .toThrow("Restart keylab.service once; the daemon migrates older schemas in place.");
   });
 
   test("points an unmigrated older database at the daemon", () => {
-    for (const version of [1, 2, 3]) {
+    for (const version of [1, 2, 3, 4]) {
       const fixture = createFixture({ schemaVersion: version });
       fixtures.push(fixture);
       expect(() => openKeylabDatabase(fixture.path))

@@ -555,7 +555,7 @@ function getTotals(
   device: DeviceScope,
   hour?: number,
 ): TotalsRow {
-  const filter = timestampFilter("b.id", range, hour, profile, device);
+  const filter = timestampFilter("b.ts", range, hour, profile, device);
   return database.query(`
     SELECT COALESCE(SUM(b.keystrokes), 0) AS total,
            COALESCE(SUM(b.autorepeats), 0) AS autorepeats,
@@ -585,7 +585,7 @@ function getFingerLoad(
   device: DeviceScope,
   hour?: number,
 ): FingerLoad[] {
-  const filter = timestampFilter("b.id", range, hour, profile, device);
+  const filter = timestampFilter("b.ts", range, hour, profile, device);
   const rows = database.query(`
     SELECT fc.finger_id AS id, SUM(fc.presses) AS presses
     FROM finger_count fc JOIN bucket b ON b.id = fc.bucket_id
@@ -613,7 +613,7 @@ function getRowLoad(
   device: DeviceScope,
   hour?: number,
 ): RowLoad[] {
-  const filter = timestampFilter("b.id", range, hour, profile, device);
+  const filter = timestampFilter("b.ts", range, hour, profile, device);
   const rows = database.query(`
     SELECT rc.hand, rc.row_idx, SUM(rc.presses) AS presses
     FROM row_count rc JOIN bucket b ON b.id = rc.bucket_id
@@ -677,7 +677,7 @@ function getModifierHolds(
   device: DeviceScope,
   hour?: number,
 ): ModifierHoldMetric[] {
-  const filter = timestampFilter("b.id", range, hour, profile, device);
+  const filter = timestampFilter("b.ts", range, hour, profile, device);
   const rows = database.query(`
     SELECT mh.mod_class AS subject, mh.dur_bucket AS bucket, SUM(mh.n) AS n
     FROM mod_hold_hist mh JOIN bucket b ON b.id = mh.bucket_id
@@ -719,7 +719,7 @@ function getMisfires(
   totalKeystrokes: number,
   hour?: number,
 ): RangeMetrics["misfires"] {
-  const filter = timestampFilter("b.id", range, hour, profile, device);
+  const filter = timestampFilter("b.ts", range, hour, profile, device);
   const rows = database.query(`
     SELECT ec.kind, ec.subject, SUM(ec.n) AS n
     FROM event_count ec JOIN bucket b ON b.id = ec.bucket_id
@@ -762,7 +762,7 @@ function getCorrectionTax(
   const positionalBackspacePresses = backspacePositions
     .reduce((sum, pos) => sum + (counts.get(pos) ?? 0), 0);
 
-  const filter = timestampFilter("b.id", range, hour, profile, device);
+  const filter = timestampFilter("b.ts", range, hour, profile, device);
   const rows = database.query(`
     SELECT ec.subject, SUM(ec.n) AS n
     FROM event_count ec JOIN bucket b ON b.id = ec.bucket_id
@@ -963,22 +963,22 @@ function getDailyDose(
   device: DeviceScope,
   hour?: number,
 ): RangeMetrics["dailyDose"] {
-  const filter = timestampFilter("b.id", range, hour, profile, device);
+  const filter = timestampFilter("b.ts", range, hour, profile, device);
   const dayRows = database.query(`
-    SELECT strftime('%Y-%m-%d', b.id, 'unixepoch', 'localtime') AS date,
+    SELECT strftime('%Y-%m-%d', b.ts, 'unixepoch', 'localtime') AS date,
            SUM(b.keystrokes) AS keystrokes
     FROM bucket b WHERE ${filter.sql}
     GROUP BY date ORDER BY date
   `).all(...filter.params) as DayRow[];
   const holdRows = database.query(`
-    SELECT strftime('%Y-%m-%d', b.id, 'unixepoch', 'localtime') AS date,
+    SELECT strftime('%Y-%m-%d', b.ts, 'unixepoch', 'localtime') AS date,
            h.dur_bucket AS bucket, SUM(h.n) AS n
     FROM hold_hist h JOIN bucket b ON b.id = h.bucket_id
     WHERE ${filter.sql}
     GROUP BY date, h.dur_bucket
   `).all(...filter.params) as DayHistRow[];
   const modRows = database.query(`
-    SELECT strftime('%Y-%m-%d', b.id, 'unixepoch', 'localtime') AS date,
+    SELECT strftime('%Y-%m-%d', b.ts, 'unixepoch', 'localtime') AS date,
            h.dur_bucket AS bucket, SUM(h.n) AS n
     FROM mod_hold_hist h JOIN bucket b ON b.id = h.bucket_id
     WHERE ${filter.sql}

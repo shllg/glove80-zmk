@@ -14,9 +14,11 @@ CREATE TABLE device (
 );
 CREATE TABLE profile (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE);
 CREATE TABLE bucket (
-  id INTEGER PRIMARY KEY, device_id INTEGER NOT NULL REFERENCES device(id),
+  id INTEGER PRIMARY KEY, ts INTEGER NOT NULL,
+  device_id INTEGER NOT NULL REFERENCES device(id),
   profile_id INTEGER REFERENCES profile(id), span_ms INTEGER NOT NULL,
-  active_ms INTEGER NOT NULL, keystrokes INTEGER NOT NULL, autorepeats INTEGER NOT NULL
+  active_ms INTEGER NOT NULL, keystrokes INTEGER NOT NULL, autorepeats INTEGER NOT NULL,
+  UNIQUE (ts, device_id, profile_id)
 );
 CREATE TABLE finger_count (
   bucket_id INTEGER NOT NULL REFERENCES bucket(id), finger_id INTEGER NOT NULL, presses INTEGER NOT NULL,
@@ -87,9 +89,21 @@ export interface SeededFixture {
   directory: string;
   path: string;
   metaPath: string;
+  /** The seal *second* of the recent bucket — `bucket.ts`, not `bucket.id`. */
   recentBucketId: number;
   cleanup(): void;
 }
+
+/**
+ * Bucket ids are surrogates from schema v5 on, and these fixtures pick small ones that could never
+ * be mistaken for a unix second. A read that still filters or groups on `bucket.id` therefore
+ * returns nothing at all rather than the right answer by coincidence.
+ */
+const RECENT_BUCKET = 1;
+const OLD_BUCKET = 2;
+const FUTURE_BUCKET = 3;
+const SECOND_DEVICE_BUCKET = 2;
+const GAMING_BUCKET = 2;
 
 export function createFixture(
   options: { empty?: boolean; schemaVersion?: number; future?: boolean } = {},
@@ -101,7 +115,7 @@ export function createFixture(
   const database = new Database(path, { create: true });
   database.exec(SCHEMA);
   database.query("INSERT INTO meta(key, value) VALUES (?, ?)").run(
-    "schema_version", String(options.schemaVersion ?? 4),
+    "schema_version", String(options.schemaVersion ?? 5),
   );
   database.query("INSERT INTO meta(key, value) VALUES (?, ?)").run("alt_hand_ambiguous", "1");
   database.query("INSERT INTO device(id, name, uniq, first_ts, keymap_kind, keymap_hash) VALUES (1, 'fixture', NULL, ?, 'glove80', 'fixture')")
@@ -117,41 +131,41 @@ export function createFixture(
   if (!options.empty) {
     const oldBucketId = FIXTURE_NOW - 8 * 86_400;
     const insertBucket = database.query(
-      "INSERT INTO bucket(id, device_id, profile_id, span_ms, active_ms, keystrokes, autorepeats) VALUES (?, 1, 1, 10000, 8000, ?, ?)",
+      "INSERT INTO bucket(id, ts, device_id, profile_id, span_ms, active_ms, keystrokes, autorepeats) VALUES (?, ?, 1, 1, 10000, 8000, ?, ?)",
     );
-    insertBucket.run(recentBucketId, 100, 5);
-    insertBucket.run(oldBucketId, 1_000, 50);
+    insertBucket.run(RECENT_BUCKET, recentBucketId, 100, 5);
+    insertBucket.run(OLD_BUCKET, oldBucketId, 1_000, 50);
 
     const insertFinger = database.query(
       "INSERT INTO finger_count(bucket_id, finger_id, presses) VALUES (?, ?, ?)",
     );
     for (const [finger, presses] of [[0, 30], [1, 20], [5, 25], [9, 25]] as const) {
-      insertFinger.run(recentBucketId, finger, presses);
+      insertFinger.run(RECENT_BUCKET, finger, presses);
     }
-    insertFinger.run(oldBucketId, 0, 1_000);
+    insertFinger.run(OLD_BUCKET, 0, 1_000);
 
     const insertRow = database.query(
       "INSERT INTO row_count(bucket_id, hand, row_idx, presses) VALUES (?, ?, ?, ?)",
     );
     for (const [hand, row, presses] of [[0, 1, 20], [0, 2, 30], [1, 1, 10], [1, 3, 40]] as const) {
-      insertRow.run(recentBucketId, hand, row, presses);
+      insertRow.run(RECENT_BUCKET, hand, row, presses);
     }
-    insertRow.run(oldBucketId, 0, 1, 1_000);
+    insertRow.run(OLD_BUCKET, 0, 1, 1_000);
 
     const insertHold = database.query(
       "INSERT INTO hold_hist(bucket_id, finger_id, dur_bucket, n) VALUES (?, ?, ?, ?)",
     );
-    insertHold.run(recentBucketId, 0, 0, 10);
-    insertHold.run(recentBucketId, 0, 20, 2);
-    insertHold.run(recentBucketId, 0, 21, 1);
+    insertHold.run(RECENT_BUCKET, 0, 0, 10);
+    insertHold.run(RECENT_BUCKET, 0, 20, 2);
+    insertHold.run(RECENT_BUCKET, 0, 21, 1);
 
     const insertModHold = database.query(
       "INSERT INTO mod_hold_hist(bucket_id, mod_class, dur_bucket, n) VALUES (?, ?, ?, ?)",
     );
-    insertModHold.run(recentBucketId, 0, 0, 1);
-    insertModHold.run(recentBucketId, 0, 1, 2);
-    insertModHold.run(recentBucketId, 0, 21, 1);
-    insertModHold.run(recentBucketId, 5, 20, 2);
+    insertModHold.run(RECENT_BUCKET, 0, 0, 1);
+    insertModHold.run(RECENT_BUCKET, 0, 1, 2);
+    insertModHold.run(RECENT_BUCKET, 0, 21, 1);
+    insertModHold.run(RECENT_BUCKET, 5, 20, 2);
 
     const insertEvent = database.query(
       "INSERT INTO event_count(bucket_id, kind, subject, n) VALUES (?, ?, ?, ?)",
@@ -159,7 +173,7 @@ export function createFixture(
     for (const [kind, subject, n] of [
       [0, 0, 2], [1, 0, 3], [2, 0, 1], [3, 0, 2], [3, 4, 1], [3, 6, 1],
     ] as const) {
-      insertEvent.run(recentBucketId, kind, subject, n);
+      insertEvent.run(RECENT_BUCKET, kind, subject, n);
     }
 
     const outerLeft = metadata.positions.find(
@@ -238,9 +252,9 @@ export function createFixture(
 
     if (options.future) {
       const futureTs = FIXTURE_NOW + 60;
-      insertBucket.run(futureTs, 77, 0);
-      insertFinger.run(futureTs, 2, 77);
-      insertRow.run(futureTs, 0, 1, 77);
+      insertBucket.run(FUTURE_BUCKET, futureTs, 77, 0);
+      insertFinger.run(FUTURE_BUCKET, 2, 77);
+      insertRow.run(FUTURE_BUCKET, 0, 1, 77);
       insertWindow.run(3, futureTs, futureTs + 30, 88);
       insertPosition.run(3, rightHomeInner.pos, 88);
     }
@@ -266,7 +280,7 @@ export function createMultiDeviceFixture(): SeededFixture {
   const metaPath = resolve(dirname(fileURLToPath(import.meta.url)), "../../../out/keymap-meta.json");
   const database = new Database(path, { create: true });
   database.exec(SCHEMA);
-  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '4')").run();
+  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '5')").run();
   database.query("INSERT INTO meta(key, value) VALUES ('alt_hand_ambiguous', '0')").run();
   database.query(`
     INSERT INTO device(id, name, uniq, first_ts, keymap_kind, keymap_hash) VALUES
@@ -282,16 +296,16 @@ export function createMultiDeviceFixture(): SeededFixture {
 
   const recentBucketId = FIXTURE_NOW - 60;
   const insertBucket = database.query(
-    "INSERT INTO bucket(id, device_id, profile_id, span_ms, active_ms, keystrokes, autorepeats)"
-    + " VALUES (?, ?, 1, 10000, 8000, ?, 0)",
+    "INSERT INTO bucket(id, ts, device_id, profile_id, span_ms, active_ms, keystrokes, autorepeats)"
+    + " VALUES (?, ?, ?, 1, 10000, 8000, ?, 0)",
   );
-  insertBucket.run(recentBucketId, 1, 100);
-  insertBucket.run(recentBucketId + 20, 2, 60);
+  insertBucket.run(RECENT_BUCKET, recentBucketId, 1, 100);
+  insertBucket.run(SECOND_DEVICE_BUCKET, recentBucketId + 20, 2, 60);
   const insertFinger = database.query(
     "INSERT INTO finger_count(bucket_id, finger_id, presses) VALUES (?, ?, ?)",
   );
-  insertFinger.run(recentBucketId, 0, 100);
-  insertFinger.run(recentBucketId + 20, 3, 60);
+  insertFinger.run(RECENT_BUCKET, 0, 100);
+  insertFinger.run(SECOND_DEVICE_BUCKET, 3, 60);
 
   const insertWindow = database.query(
     "INSERT INTO key_window(id, device_id, profile_id, start_ts, end_ts, keystrokes)"
@@ -355,7 +369,7 @@ export function createCorrectionFixture(
   };
   const database = new Database(path, { create: true });
   database.exec(SCHEMA);
-  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '4')").run();
+  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '5')").run();
   database.query("INSERT INTO meta(key, value) VALUES ('alt_hand_ambiguous', '0')").run();
   database.query("INSERT INTO device(id, name, uniq, first_ts, keymap_kind, keymap_hash) VALUES (1, 'fixture', NULL, ?, 'glove80', 'fixture')")
     .run(FIXTURE_NOW - 1_000_000);
@@ -368,14 +382,14 @@ export function createCorrectionFixture(
 
   const recentBucketId = FIXTURE_NOW - 60;
   database.query(
-    "INSERT INTO bucket(id, device_id, profile_id, span_ms, active_ms, keystrokes, autorepeats)"
-    + " VALUES (?, 1, 1, 10000, 8000, 2134, 0)",
-  ).run(recentBucketId);
+    "INSERT INTO bucket(id, ts, device_id, profile_id, span_ms, active_ms, keystrokes, autorepeats)"
+    + " VALUES (?, ?, 1, 1, 10000, 8000, 2134, 0)",
+  ).run(RECENT_BUCKET, recentBucketId);
   const insertFinger = database.query(
     "INSERT INTO finger_count(bucket_id, finger_id, presses) VALUES (?, ?, ?)",
   );
-  insertFinger.run(recentBucketId, 0, 1_067);
-  insertFinger.run(recentBucketId, 5, 1_067);
+  insertFinger.run(RECENT_BUCKET, 0, 1_067);
+  insertFinger.run(RECENT_BUCKET, 5, 1_067);
 
   database.query(
     "INSERT INTO key_window(id, device_id, profile_id, start_ts, end_ts, keystrokes)"
@@ -440,7 +454,7 @@ export function createProfileFixture(): SeededFixture {
   const metaPath = resolve(dirname(fileURLToPath(import.meta.url)), "../../../out/keymap-meta.json");
   const database = new Database(path, { create: true });
   database.exec(SCHEMA);
-  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '4')").run();
+  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '5')").run();
   database.query("INSERT INTO meta(key, value) VALUES ('alt_hand_ambiguous', '0')").run();
   database.query("INSERT INTO device(id, name, uniq, first_ts, keymap_kind, keymap_hash) VALUES (1, 'fixture', NULL, ?, 'glove80', 'fixture')")
     .run(FIXTURE_NOW - 1_000_000);
@@ -453,17 +467,17 @@ export function createProfileFixture(): SeededFixture {
 
   const recentBucketId = FIXTURE_NOW - 60;
   const insertBucket = database.query(
-    "INSERT INTO bucket(id, device_id, profile_id, span_ms, active_ms, keystrokes, autorepeats)"
-    + " VALUES (?, 1, ?, 10000, 8000, ?, 0)",
+    "INSERT INTO bucket(id, ts, device_id, profile_id, span_ms, active_ms, keystrokes, autorepeats)"
+    + " VALUES (?, ?, 1, ?, 10000, 8000, ?, 0)",
   );
-  insertBucket.run(recentBucketId, 1, 100);
-  insertBucket.run(recentBucketId + 20, 2, 40);
+  insertBucket.run(RECENT_BUCKET, recentBucketId, 1, 100);
+  insertBucket.run(GAMING_BUCKET, recentBucketId + 20, 2, 40);
 
   const insertFinger = database.query(
     "INSERT INTO finger_count(bucket_id, finger_id, presses) VALUES (?, ?, ?)",
   );
-  insertFinger.run(recentBucketId, 0, 100);
-  insertFinger.run(recentBucketId + 20, 3, 40);
+  insertFinger.run(RECENT_BUCKET, 0, 100);
+  insertFinger.run(GAMING_BUCKET, 3, 40);
 
   const insertWindow = database.query(
     "INSERT INTO key_window(id, device_id, profile_id, start_ts, end_ts, keystrokes)"

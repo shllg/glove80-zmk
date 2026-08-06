@@ -21,7 +21,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant, SystemTime};
-use store::Store;
+use store::{DuplicateBucketIdentity, Store};
 use tracing::{error, info, warn};
 
 const SILENT_CAPTURE_WARNING_AFTER: Duration = Duration::from_secs(5 * 60);
@@ -118,7 +118,7 @@ fn main() {
     let exit_code = match dispatch() {
         Ok(()) => 0,
         Err(error) => {
-            error!(error = %error, "keylab stopped after a fatal error");
+            error!(error = %format!("{error:#}"), "keylab stopped after a fatal error");
             1
         }
     };
@@ -405,7 +405,7 @@ fn event_loop(
                             .aggregate
                             .tick(next_bucket_id, elapsed_ms, config.tier_a_seal_floor)
                     {
-                        store.seal_tier_a(runtime.device_id, runtime.profile_id, &seal)?;
+                        seal_tier_a_tolerating_duplicates(store, runtime, &seal)?;
                     }
                     runtime.last_tier_a_tick = now;
                 }
@@ -521,6 +521,7 @@ fn discover_devices(
         info!(
             matched_count = scan.matched_count,
             skipped_count = scan.skipped_count,
+            refused_tier_a_seals = store.refused_tier_a_seals(),
             rule_count = config.devices.len(),
             "startup input-device scan complete"
         );
@@ -548,9 +549,28 @@ fn discover_devices(
             }
         }
     } else if added > 0 {
-        info!(count = added, "input devices connected");
+        info!(
+            count = added,
+            refused_tier_a_seals = store.refused_tier_a_seals(),
+            "input devices connected"
+        );
     }
     Ok(())
+}
+
+/// A refused bucket identity costs one device's bucket, which the store has already logged and
+/// counted. Ending the daemon over it would cost every other device's unsealed accumulator, and the
+/// one way it can happen in the field — a wall clock stepped backwards by NTP onto a second that is
+/// already sealed — is not a reason to stop capturing. Every other write failure stays fatal.
+fn seal_tier_a_tolerating_duplicates(
+    store: &mut Store,
+    runtime: &RuntimeDevice,
+    seal: &aggregate::TierASeal,
+) -> Result<()> {
+    match store.seal_tier_a(runtime.device_id, runtime.profile_id, seal) {
+        Err(error) if error.is::<DuplicateBucketIdentity>() => Ok(()),
+        other => other,
+    }
 }
 
 /// Only a genuine device removal ends a capture session. Every other read failure is transient and
@@ -724,7 +744,7 @@ fn seal_or_discard_all_tier_a(
             elapsed_ms,
             config.tier_a_seal_floor,
         ) {
-            store.seal_tier_a(runtime.device_id, runtime.profile_id, &seal)?;
+            seal_tier_a_tolerating_duplicates(store, runtime, &seal)?;
         }
         runtime.last_tier_a_tick = now;
     }

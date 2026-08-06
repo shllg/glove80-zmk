@@ -11,7 +11,7 @@ use std::fs::{self, DirBuilder, OpenOptions};
 use std::io::Write;
 use std::os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt, PermissionsExt};
 use std::path::Path;
-use tracing::info;
+use tracing::{info, warn};
 
 const SCHEMA: &str = r#"
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
@@ -30,14 +30,21 @@ CREATE TABLE IF NOT EXISTS profile (
   name  TEXT NOT NULL UNIQUE
 );
 
+-- `id` is a surrogate: six child tables reference `bucket(id)`, so it has to stay a single opaque
+-- column. The seal second lives in `ts`, and identity is the triple below — one bucket per device
+-- per profile per second. Two keyboards sealing in the same second are two buckets, not a
+-- collision. The UNIQUE constraint's own index leads with `ts`, which is what every range read
+-- filters on, so no separate index on `ts` is warranted.
 CREATE TABLE IF NOT EXISTS bucket (
   id          INTEGER PRIMARY KEY,
+  ts          INTEGER NOT NULL,
   device_id   INTEGER NOT NULL REFERENCES device(id),
   profile_id  INTEGER REFERENCES profile(id),
   span_ms     INTEGER NOT NULL,
   active_ms   INTEGER NOT NULL,
   keystrokes  INTEGER NOT NULL,
-  autorepeats INTEGER NOT NULL
+  autorepeats INTEGER NOT NULL,
+  UNIQUE (ts, device_id, profile_id)
 );
 
 CREATE TABLE IF NOT EXISTS finger_count (
@@ -170,8 +177,34 @@ pub struct LiveControl<'a> {
     pub profiles: &'a [String],
 }
 
+/// A Tier A seal whose `(ts, device_id, profile_id)` identity is already on disk.
+///
+/// It should be impossible: the aggregator seals one bucket per device per tick. But the seal second
+/// comes from the wall clock, and an NTP step backwards can land on a second that is already sealed.
+/// Callers have to tell it apart from a write that genuinely failed, so it costs one bucket rather
+/// than every other device's unsealed accumulator.
+#[derive(Debug, Clone, Copy)]
+pub struct DuplicateBucketIdentity {
+    pub ts: i64,
+    pub device_id: i64,
+    pub profile_id: i64,
+}
+
+impl std::fmt::Display for DuplicateBucketIdentity {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "a Tier A bucket for device {} and profile {} at second {} is already sealed",
+            self.device_id, self.profile_id, self.ts
+        )
+    }
+}
+
+impl std::error::Error for DuplicateBucketIdentity {}
+
 pub struct Store {
     connection: Connection,
+    refused_tier_a_seals: u64,
 }
 
 impl Store {
@@ -194,7 +227,16 @@ impl Store {
             .execute_batch(SCHEMA)
             .context("failed to initialize database schema")?;
         initialize_meta(&connection, keymap, now_ts)?;
-        Ok(Self { connection })
+        Ok(Self {
+            connection,
+            refused_tier_a_seals: 0,
+        })
+    }
+
+    /// Tier A seals refused since this process started, for the operator log lines. A non-zero count
+    /// is a bug worth reporting, not a tuning knob.
+    pub fn refused_tier_a_seals(&self) -> u64 {
+        self.refused_tier_a_seals
     }
 
     /// `keymap_kind` is the device's *position space*. Tier B may only be pooled inside one space,
@@ -266,48 +308,61 @@ impl Store {
         if seal.span_ms < MIN_BUCKET_SECONDS * 1_000 {
             bail!("refusing to persist a Tier A bucket below the privacy time floor");
         }
-        let bucket_exists: bool = self
-            .connection
-            .query_row(
-                "SELECT EXISTS(SELECT 1 FROM bucket WHERE id = ?1)",
-                [seal.bucket_id],
-                |row| row.get(0),
-            )
-            .context("failed to check Tier A bucket identity")?;
-        if bucket_exists {
-            // The verbatim v1 schema has a global bucket-id primary key. If two matching devices
-            // share a start second, discarding the later seal records less; reusing the first row
-            // would mix device marginals, and inventing a timestamp would falsify bucket identity.
-            return Ok(());
-        }
+        // `TierASeal::bucket_id` is the seal second, which v5 stores in `ts`. The row's own id is
+        // whatever SQLite allocates, and it is what every child row points at.
+        let ts = seal.bucket_id;
         let span_ms = to_i64(seal.span_ms, "Tier A span")?;
         let active_ms = to_i64(seal.data.active_ms, "active time")?;
         let transaction = self
             .connection
             .transaction()
             .context("failed to begin Tier A transaction")?;
-        transaction
-            .execute(
-                "INSERT INTO bucket(id, device_id, profile_id, span_ms, active_ms, keystrokes, autorepeats)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                params![
-                    seal.bucket_id,
+        let inserted = transaction.execute(
+            "INSERT INTO bucket(ts, device_id, profile_id, span_ms, active_ms, keystrokes, autorepeats)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![
+                ts,
+                device_id,
+                profile_id,
+                span_ms,
+                active_ms,
+                seal.data.keystrokes,
+                seal.data.autorepeats
+            ],
+        );
+        match inserted {
+            Ok(_) => {}
+            Err(rusqlite::Error::SqliteFailure(failure, _))
+                if failure.code == rusqlite::ErrorCode::ConstraintViolation =>
+            {
+                // Refused, never swallowed. Returning `Ok` here is precisely how the v4 collision
+                // stayed invisible until a second keyboard was configured.
+                drop(transaction);
+                self.refused_tier_a_seals = self.refused_tier_a_seals.saturating_add(1);
+                warn!(
+                    bucket_ts = ts,
                     device_id,
                     profile_id,
-                    span_ms,
-                    active_ms,
-                    seal.data.keystrokes,
-                    seal.data.autorepeats
-                ],
-            )
-            .context("failed to write Tier A bucket")?;
+                    keystrokes = seal.data.keystrokes,
+                    refused_tier_a_seals = self.refused_tier_a_seals,
+                    "refused a Tier A bucket whose identity is already sealed"
+                );
+                return Err(anyhow::Error::new(DuplicateBucketIdentity {
+                    ts,
+                    device_id,
+                    profile_id,
+                }));
+            }
+            Err(error) => return Err(error).context("failed to write Tier A bucket"),
+        }
+        let bucket_id = transaction.last_insert_rowid();
 
-        write_finger_counts(&transaction, seal)?;
-        write_row_counts(&transaction, seal)?;
-        write_hold_histograms(&transaction, seal)?;
-        write_modifier_histograms(&transaction, seal)?;
-        write_gap_histograms(&transaction, seal)?;
-        write_event_counts(&transaction, seal)?;
+        write_finger_counts(&transaction, bucket_id, seal)?;
+        write_row_counts(&transaction, bucket_id, seal)?;
+        write_hold_histograms(&transaction, bucket_id, seal)?;
+        write_modifier_histograms(&transaction, bucket_id, seal)?;
+        write_gap_histograms(&transaction, bucket_id, seal)?;
+        write_event_counts(&transaction, bucket_id, seal)?;
         transaction
             .commit()
             .context("failed to commit Tier A transaction")
@@ -574,22 +629,28 @@ fn initialize_meta(connection: &Connection, keymap: &Keymap, now_ts: i64) -> Res
         .optional()
         .context("failed to read schema version")?;
     match schema_version.as_deref() {
-        None | Some("4") => {}
+        None | Some("5") => {}
         Some("1") => {
             migrate_v1_to_v2(connection)?;
             migrate_v2_to_v3(connection, keymap)?;
             migrate_v3_to_v4(connection)?;
+            migrate_v4_to_v5(connection)?;
         }
         Some("2") => {
             migrate_v2_to_v3(connection, keymap)?;
             migrate_v3_to_v4(connection)?;
+            migrate_v4_to_v5(connection)?;
         }
-        Some("3") => migrate_v3_to_v4(connection)?,
+        Some("3") => {
+            migrate_v3_to_v4(connection)?;
+            migrate_v4_to_v5(connection)?;
+        }
+        Some("4") => migrate_v4_to_v5(connection)?,
         Some(_) => bail!("unsupported database schema version"),
     }
     connection
         .execute(
-            "INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', '4')",
+            "INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', '5')",
             [],
         )
         .context("failed to initialize schema version")?;
@@ -733,6 +794,79 @@ fn migrate_v3_to_v4(connection: &Connection) -> Result<()> {
     Ok(())
 }
 
+/// v4 keys a bucket by its seal second alone, so two devices sealing in the same second produced one
+/// identity and one of them was discarded. v5 demotes the second to a `ts` column and makes identity
+/// `(ts, device_id, profile_id)`.
+///
+/// Existing ids are copied verbatim into the surrogate key. Six child tables reference `bucket(id)`
+/// and none of them is rewritten, so a renumbering here would orphan every finger count, hold
+/// histogram and behavioural counter in the database. `ts = id` is accurate rather than a guess:
+/// under v4 the id *was* the seal second.
+fn migrate_v4_to_v5(connection: &Connection) -> Result<()> {
+    if bucket_has_ts_column(connection)? {
+        // The swap committed and only the stamp is missing, which is the one way an interrupted
+        // attempt can land: everything before the stamp is inside a single transaction.
+        connection
+            .execute_batch("UPDATE meta SET value = '5' WHERE key = 'schema_version';")
+            .context("failed to record the version 5 schema")?;
+        return Ok(());
+    }
+    // Create, copy, drop, rename — SQLite's own table-rebuild procedure, including turning foreign
+    // keys off for the duration. This build enables them by default
+    // (`libsqlite3-sys` compiles with `SQLITE_DEFAULT_FOREIGN_KEYS=1`), and dropping the old table
+    // performs an implicit `DELETE FROM` that every child row would refuse. The references the drop
+    // breaks are exactly the ones the rename restores, because the ids are copied verbatim.
+    //
+    // The pragma is a no-op inside a transaction, so it has to bracket one rather than sit in it.
+    connection
+        .execute_batch("PRAGMA foreign_keys = OFF;")
+        .context("failed to suspend foreign keys for the version 5 rebuild")?;
+    let rebuilt = connection
+        .execute_batch(
+            "BEGIN IMMEDIATE;
+             DROP TABLE IF EXISTS bucket_v5;
+             CREATE TABLE bucket_v5 (
+               id          INTEGER PRIMARY KEY,
+               ts          INTEGER NOT NULL,
+               device_id   INTEGER NOT NULL REFERENCES device(id),
+               profile_id  INTEGER REFERENCES profile(id),
+               span_ms     INTEGER NOT NULL,
+               active_ms   INTEGER NOT NULL,
+               keystrokes  INTEGER NOT NULL,
+               autorepeats INTEGER NOT NULL,
+               UNIQUE (ts, device_id, profile_id)
+             );
+             INSERT INTO bucket_v5(id, ts, device_id, profile_id, span_ms, active_ms, keystrokes,
+                                   autorepeats)
+               SELECT id, id, device_id, profile_id, span_ms, active_ms, keystrokes, autorepeats
+               FROM bucket;
+             DROP TABLE bucket;
+             ALTER TABLE bucket_v5 RENAME TO bucket;
+             UPDATE meta SET value = '5' WHERE key = 'schema_version';
+             COMMIT;",
+        )
+        .context("failed to rebuild the bucket table for the version 5 schema");
+    // Enforcement comes back whether or not the rebuild landed: a failed migration must not leave
+    // the process writing without foreign keys for the rest of its life.
+    let restored = connection
+        .execute_batch("PRAGMA foreign_keys = ON;")
+        .context("failed to restore foreign keys after the version 5 rebuild");
+    rebuilt?;
+    restored?;
+    info!("migrated database schema from version 4 to 5");
+    Ok(())
+}
+
+fn bucket_has_ts_column(connection: &Connection) -> Result<bool> {
+    connection
+        .query_row(
+            "SELECT EXISTS(SELECT 1 FROM pragma_table_info('bucket') WHERE name = 'ts')",
+            [],
+            |row| row.get(0),
+        )
+        .context("failed to inspect the bucket table")
+}
+
 fn append_keymap_history(connection: &Connection, hash: &str, from_ts: i64) -> Result<()> {
     let existing: Option<String> = connection
         .query_row(
@@ -762,13 +896,17 @@ fn append_keymap_history(connection: &Connection, hash: &str, from_ts: i64) -> R
     Ok(())
 }
 
-fn write_finger_counts(transaction: &Transaction<'_>, seal: &TierASeal) -> Result<()> {
+fn write_finger_counts(
+    transaction: &Transaction<'_>,
+    bucket_id: i64,
+    seal: &TierASeal,
+) -> Result<()> {
     for (finger_id, presses) in seal.data.finger_count.iter().copied().enumerate() {
         if presses > 0 {
             transaction
                 .execute(
                     "INSERT INTO finger_count(bucket_id, finger_id, presses) VALUES (?1, ?2, ?3)",
-                    params![seal.bucket_id, finger_id, presses],
+                    params![bucket_id, finger_id, presses],
                 )
                 .context("failed to write finger marginal")?;
         }
@@ -776,7 +914,7 @@ fn write_finger_counts(transaction: &Transaction<'_>, seal: &TierASeal) -> Resul
     Ok(())
 }
 
-fn write_row_counts(transaction: &Transaction<'_>, seal: &TierASeal) -> Result<()> {
+fn write_row_counts(transaction: &Transaction<'_>, bucket_id: i64, seal: &TierASeal) -> Result<()> {
     for (index, presses) in seal.data.row_count.iter().copied().enumerate() {
         if presses > 0 {
             let hand = index / 6;
@@ -784,7 +922,7 @@ fn write_row_counts(transaction: &Transaction<'_>, seal: &TierASeal) -> Result<(
             transaction
                 .execute(
                     "INSERT INTO row_count(bucket_id, hand, row_idx, presses) VALUES (?1, ?2, ?3, ?4)",
-                    params![seal.bucket_id, hand, row_idx, presses],
+                    params![bucket_id, hand, row_idx, presses],
                 )
                 .context("failed to write row marginal")?;
         }
@@ -792,14 +930,18 @@ fn write_row_counts(transaction: &Transaction<'_>, seal: &TierASeal) -> Result<(
     Ok(())
 }
 
-fn write_hold_histograms(transaction: &Transaction<'_>, seal: &TierASeal) -> Result<()> {
+fn write_hold_histograms(
+    transaction: &Transaction<'_>,
+    bucket_id: i64,
+    seal: &TierASeal,
+) -> Result<()> {
     for (finger_id, histogram) in seal.data.hold_hist.iter().enumerate() {
         for (bucket, count) in histogram.iter().copied().enumerate() {
             if count > 0 {
                 transaction
                     .execute(
                         "INSERT INTO hold_hist(bucket_id, finger_id, dur_bucket, n) VALUES (?1, ?2, ?3, ?4)",
-                        params![seal.bucket_id, finger_id, bucket, count],
+                        params![bucket_id, finger_id, bucket, count],
                     )
                     .context("failed to write hold histogram")?;
             }
@@ -808,14 +950,18 @@ fn write_hold_histograms(transaction: &Transaction<'_>, seal: &TierASeal) -> Res
     Ok(())
 }
 
-fn write_modifier_histograms(transaction: &Transaction<'_>, seal: &TierASeal) -> Result<()> {
+fn write_modifier_histograms(
+    transaction: &Transaction<'_>,
+    bucket_id: i64,
+    seal: &TierASeal,
+) -> Result<()> {
     for (mod_class, histogram) in seal.data.mod_hold_hist.iter().enumerate() {
         for (bucket, count) in histogram.iter().copied().enumerate() {
             if count > 0 {
                 transaction
                     .execute(
                         "INSERT INTO mod_hold_hist(bucket_id, mod_class, dur_bucket, n) VALUES (?1, ?2, ?3, ?4)",
-                        params![seal.bucket_id, mod_class, bucket, count],
+                        params![bucket_id, mod_class, bucket, count],
                     )
                     .context("failed to write modifier hold histogram")?;
             }
@@ -824,14 +970,18 @@ fn write_modifier_histograms(transaction: &Transaction<'_>, seal: &TierASeal) ->
     Ok(())
 }
 
-fn write_gap_histograms(transaction: &Transaction<'_>, seal: &TierASeal) -> Result<()> {
+fn write_gap_histograms(
+    transaction: &Transaction<'_>,
+    bucket_id: i64,
+    seal: &TierASeal,
+) -> Result<()> {
     for (hand, histogram) in seal.data.gap_hist.iter().enumerate() {
         for (bucket, count) in histogram.iter().copied().enumerate() {
             if count > 0 {
                 transaction
                     .execute(
                         "INSERT INTO gap_hist(bucket_id, hand, gap_bucket, n) VALUES (?1, ?2, ?3, ?4)",
-                        params![seal.bucket_id, hand, bucket, count],
+                        params![bucket_id, hand, bucket, count],
                     )
                     .context("failed to write gap histogram")?;
             }
@@ -840,14 +990,18 @@ fn write_gap_histograms(transaction: &Transaction<'_>, seal: &TierASeal) -> Resu
     Ok(())
 }
 
-fn write_event_counts(transaction: &Transaction<'_>, seal: &TierASeal) -> Result<()> {
+fn write_event_counts(
+    transaction: &Transaction<'_>,
+    bucket_id: i64,
+    seal: &TierASeal,
+) -> Result<()> {
     for (kind, subjects) in seal.data.event_count.iter().enumerate() {
         for (subject, count) in subjects.iter().copied().enumerate() {
             if count > 0 {
                 transaction
                     .execute(
                         "INSERT INTO event_count(bucket_id, kind, subject, n) VALUES (?1, ?2, ?3, ?4)",
-                        params![seal.bucket_id, kind, subject, count],
+                        params![bucket_id, kind, subject, count],
                     )
                     .context("failed to write behavioral counter")?;
             }
@@ -973,6 +1127,215 @@ mod tests {
         }
     }
 
+    /// A seal with a row in every child table, so a migration that orphaned any of them shows up as
+    /// a failed join rather than as a total that happens to still add up.
+    fn populated_tier_a_seal(bucket_id: i64) -> TierASeal {
+        let mut data = TierAAccumulator {
+            keystrokes: 30,
+            active_ms: 1_000,
+            autorepeats: 2,
+            ..TierAAccumulator::default()
+        };
+        data.finger_count[0] = 20;
+        data.finger_count[5] = 10;
+        data.row_count[1] = 30;
+        data.hold_hist[0][2] = 30;
+        data.mod_hold_hist[0][3] = 4;
+        data.gap_hist[0][1] = 29;
+        data.event_count[0][0] = 2;
+        TierASeal {
+            bucket_id,
+            span_ms: 10_000,
+            data,
+        }
+    }
+
+    /// Rebuilds `bucket` in its v4 shape — the seal second as the primary key and no `ts` column —
+    /// so a migration test starts from what a real pre-v5 database actually holds.
+    fn downgrade_bucket_to_v4(connection: &Connection) {
+        connection
+            .execute_batch(
+                "PRAGMA foreign_keys = OFF;
+                 CREATE TABLE bucket_v4 (
+                   id          INTEGER PRIMARY KEY,
+                   device_id   INTEGER NOT NULL REFERENCES device(id),
+                   profile_id  INTEGER REFERENCES profile(id),
+                   span_ms     INTEGER NOT NULL,
+                   active_ms   INTEGER NOT NULL,
+                   keystrokes  INTEGER NOT NULL,
+                   autorepeats INTEGER NOT NULL
+                 );
+                 INSERT INTO bucket_v4
+                   SELECT id, device_id, profile_id, span_ms, active_ms, keystrokes, autorepeats
+                   FROM bucket;
+                 DROP TABLE bucket;
+                 ALTER TABLE bucket_v4 RENAME TO bucket;
+                 PRAGMA foreign_keys = ON;",
+            )
+            .unwrap_or_else(|error| panic!("{error}"));
+    }
+
+    fn bucket_totals(connection: &Connection) -> (i64, i64, i64, i64) {
+        connection
+            .query_row(
+                "SELECT COUNT(*), COALESCE(SUM(keystrokes), 0), COALESCE(SUM(autorepeats), 0),
+                        COALESCE(SUM(active_ms), 0)
+                 FROM bucket",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+            )
+            .unwrap_or_else(|error| panic!("{error}"))
+    }
+
+    #[test]
+    fn v4_migrates_in_place_with_identical_totals() {
+        let (_temp, path, mut store, device_id) = open_store();
+        let profile_id = store
+            .register_profile("gaming")
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        store
+            .seal_tier_a(device_id, profile_id, &populated_tier_a_seal(1_000))
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        store
+            .seal_tier_a(device_id, 1, &populated_tier_a_seal(2_000))
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        let before = bucket_totals(store.connection());
+        // v4 ids are the seal seconds, which is exactly what the migration has to preserve.
+        downgrade_bucket_to_v4(store.connection());
+        store
+            .connection()
+            .execute_batch("UPDATE meta SET value = '4' WHERE key = 'schema_version';")
+            .unwrap_or_else(|error| panic!("{error}"));
+        let ids: Vec<i64> = collect_ids(store.connection());
+        store.close().unwrap_or_else(|error| panic!("{error:#}"));
+
+        let reopened =
+            Store::open(&path, &keymap(), 3_000).unwrap_or_else(|error| panic!("{error:#}"));
+        assert_eq!(schema_version(reopened.connection()), "5");
+        assert_eq!(bucket_totals(reopened.connection()), before);
+        assert_eq!(collect_ids(reopened.connection()), ids);
+        let drifted: i64 = reopened
+            .connection()
+            .query_row("SELECT COUNT(*) FROM bucket WHERE ts <> id", [], |row| {
+                row.get(0)
+            })
+            .unwrap_or_else(|error| panic!("{error}"));
+        assert_eq!(
+            drifted, 0,
+            "v4 ids were the seal second, so ts must equal id"
+        );
+    }
+
+    #[test]
+    fn child_rows_still_join_after_the_migration() {
+        let (_temp, path, mut store, device_id) = open_store();
+        store
+            .seal_tier_a(device_id, 1, &populated_tier_a_seal(1_000))
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        downgrade_bucket_to_v4(store.connection());
+        store
+            .connection()
+            .execute_batch("UPDATE meta SET value = '4' WHERE key = 'schema_version';")
+            .unwrap_or_else(|error| panic!("{error}"));
+        store.close().unwrap_or_else(|error| panic!("{error:#}"));
+
+        let reopened =
+            Store::open(&path, &keymap(), 3_000).unwrap_or_else(|error| panic!("{error:#}"));
+        for (table, column, expected) in [
+            ("finger_count", "presses", 30),
+            ("row_count", "presses", 30),
+            ("hold_hist", "n", 30),
+            ("mod_hold_hist", "n", 4),
+            ("gap_hist", "n", 29),
+            ("event_count", "n", 2),
+        ] {
+            let joined = scalar(
+                reopened.connection(),
+                &format!(
+                    "SELECT COALESCE(SUM(c.{column}), 0) FROM {table} c
+                     JOIN bucket b ON b.id = c.bucket_id"
+                ),
+            );
+            assert_eq!(joined, expected, "{table} lost its parent");
+            let orphaned = scalar(
+                reopened.connection(),
+                &format!(
+                    "SELECT COUNT(*) FROM {table} c
+                     WHERE NOT EXISTS (SELECT 1 FROM bucket b WHERE b.id = c.bucket_id)"
+                ),
+            );
+            assert_eq!(orphaned, 0, "{table} holds orphaned rows");
+        }
+        // The swap runs with foreign keys suspended, so SQLite's own check is what proves the
+        // references it broke are the ones the rename restored — and that they came back on.
+        let violations: i64 = reopened
+            .connection()
+            .query_row("SELECT COUNT(*) FROM pragma_foreign_key_check", [], |row| {
+                row.get(0)
+            })
+            .unwrap_or_else(|error| panic!("{error}"));
+        assert_eq!(violations, 0);
+        let enforced: i64 = reopened
+            .connection()
+            .query_row("PRAGMA foreign_keys", [], |row| row.get(0))
+            .unwrap_or_else(|error| panic!("{error}"));
+        assert_eq!(enforced, 1);
+    }
+
+    #[test]
+    fn an_interrupted_migration_leaves_a_readable_database() {
+        let (_temp, path, mut store, device_id) = open_store();
+        store
+            .seal_tier_a(device_id, 1, &populated_tier_a_seal(1_000))
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        let before = bucket_totals(store.connection());
+
+        // An attempt that died before the swap can leave the scratch table behind.
+        downgrade_bucket_to_v4(store.connection());
+        store
+            .connection()
+            .execute_batch(
+                "CREATE TABLE bucket_v5 (id INTEGER PRIMARY KEY, ts INTEGER NOT NULL);
+                 INSERT INTO bucket_v5(id, ts) VALUES (999, 999);
+                 UPDATE meta SET value = '4' WHERE key = 'schema_version';",
+            )
+            .unwrap_or_else(|error| panic!("{error}"));
+        store.close().unwrap_or_else(|error| panic!("{error:#}"));
+
+        let reopened =
+            Store::open(&path, &keymap(), 3_000).unwrap_or_else(|error| panic!("{error:#}"));
+        assert_eq!(schema_version(reopened.connection()), "5");
+        assert_eq!(bucket_totals(reopened.connection()), before);
+        reopened.close().unwrap_or_else(|error| panic!("{error:#}"));
+
+        // An attempt that died after the swap but before the stamp leaves a v5 table stamped v4.
+        let stamped_back =
+            Store::open(&path, &keymap(), 4_000).unwrap_or_else(|error| panic!("{error:#}"));
+        stamped_back
+            .connection()
+            .execute_batch("UPDATE meta SET value = '4' WHERE key = 'schema_version';")
+            .unwrap_or_else(|error| panic!("{error}"));
+        stamped_back
+            .close()
+            .unwrap_or_else(|error| panic!("{error:#}"));
+
+        let again =
+            Store::open(&path, &keymap(), 5_000).unwrap_or_else(|error| panic!("{error:#}"));
+        assert_eq!(schema_version(again.connection()), "5");
+        assert_eq!(bucket_totals(again.connection()), before);
+    }
+
+    fn collect_ids(connection: &Connection) -> Vec<i64> {
+        connection
+            .prepare("SELECT id FROM bucket ORDER BY id")
+            .and_then(|mut statement| {
+                statement
+                    .query_map([], |row| row.get(0))?
+                    .collect::<Result<Vec<i64>, _>>()
+            })
+            .unwrap_or_else(|error| panic!("{error}"))
+    }
+
     #[test]
     fn registering_a_profile_twice_reuses_the_row() {
         let (_temp, _path, mut store, _device_id) = open_store();
@@ -1002,7 +1365,7 @@ mod tests {
     }
 
     #[test]
-    fn migrates_v1_all_the_way_to_v4() {
+    fn migrates_v1_all_the_way_to_v5() {
         let (_temp, path, mut store, device_id) = open_store();
         let profile_id = store
             .register_profile("gaming")
@@ -1011,6 +1374,7 @@ mod tests {
             .seal_tier_a(device_id, profile_id, &sample_tier_a_seal())
             .unwrap_or_else(|error| panic!("{error:#}"));
         // Simulate a database written before any of the migrations existed.
+        downgrade_bucket_to_v4(store.connection());
         store
             .connection()
             .execute_batch(
@@ -1035,15 +1399,19 @@ mod tests {
             )
             .unwrap_or_else(|error| panic!("{error}"));
         assert_eq!(orphaned, 0);
-        assert_eq!(schema_version(reopened.connection()), "4");
+        assert_eq!(schema_version(reopened.connection()), "5");
         assert_eq!(correction_context_tables(reopened.connection()), 3);
+        assert!(
+            bucket_has_ts_column(reopened.connection()).unwrap_or_else(|error| panic!("{error:#}"))
+        );
     }
 
     /// A v3 database predates Tier C entirely: the migration is pure table creation, and running it
     /// twice must be as safe as running it once.
     #[test]
-    fn migrates_v3_to_v4() {
+    fn migrates_v3_to_v5() {
         let (_temp, path, store, _device_id) = open_store();
+        downgrade_bucket_to_v4(store.connection());
         store
             .connection()
             .execute_batch(
@@ -1057,13 +1425,13 @@ mod tests {
 
         let reopened =
             Store::open(&path, &keymap(), 3_000).unwrap_or_else(|error| panic!("{error:#}"));
-        assert_eq!(schema_version(reopened.connection()), "4");
+        assert_eq!(schema_version(reopened.connection()), "5");
         assert_eq!(correction_context_tables(reopened.connection()), 3);
         reopened.close().unwrap_or_else(|error| panic!("{error:#}"));
 
         let again =
             Store::open(&path, &keymap(), 4_000).unwrap_or_else(|error| panic!("{error:#}"));
-        assert_eq!(schema_version(again.connection()), "4");
+        assert_eq!(schema_version(again.connection()), "5");
         assert_eq!(correction_context_tables(again.connection()), 3);
     }
 
@@ -1129,6 +1497,7 @@ mod tests {
     fn migrating_a_v2_database_backfills_the_default_keymap_kind() {
         let (_temp, path, store, _device_id) = open_store();
         // Simulate a database written before multi-device support existed.
+        downgrade_bucket_to_v4(store.connection());
         store
             .connection()
             .execute_batch(
@@ -1159,7 +1528,7 @@ mod tests {
             })
             .unwrap_or_else(|error| panic!("{error}"));
         assert_eq!(kind, crate::config::DEFAULT_KEYMAP_KIND);
-        assert_eq!(schema_version(reopened.connection()), "4");
+        assert_eq!(schema_version(reopened.connection()), "5");
         assert_eq!(correction_context_tables(reopened.connection()), 3);
     }
 
@@ -1203,7 +1572,7 @@ mod tests {
                 |row| row.get(0),
             )
             .unwrap();
-        assert_eq!(schema_version, "4");
+        assert_eq!(schema_version, "5");
         let initial: Value = serde_json::from_str(&initial_history).unwrap();
         assert_eq!(initial.as_array().map(Vec::len), Some(1));
         store.close().unwrap();
@@ -1429,27 +1798,96 @@ mod tests {
     }
 
     #[test]
-    fn same_second_multi_device_tier_a_collision_records_less() {
+    fn two_devices_sealing_in_the_same_second_both_persist() {
         let (_temp, _path, mut store, first_device_id) = open_store();
         let second_device_id = store
             .register_device("fixture-2", None, 1_000, &fixture_keymap())
             .unwrap();
-        let data = TierAAccumulator {
-            keystrokes: 25,
-            ..TierAAccumulator::default()
-        };
-        let seal = TierASeal {
-            bucket_id: 1_000,
-            span_ms: 10_000,
-            data,
-        };
-        store.seal_tier_a(first_device_id, 1, &seal).unwrap();
-        store.seal_tier_a(second_device_id, 1, &seal).unwrap();
-        assert_eq!(table_count(store.connection(), "bucket"), 1);
+        store
+            .seal_tier_a(first_device_id, 1, &populated_tier_a_seal(1_000))
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        store
+            .seal_tier_a(second_device_id, 1, &populated_tier_a_seal(1_000))
+            .unwrap_or_else(|error| panic!("{error:#}"));
+
+        assert_eq!(table_count(store.connection(), "bucket"), 2);
+        assert_eq!(store.refused_tier_a_seals(), 0);
         assert_eq!(
-            scalar(store.connection(), "SELECT device_id FROM bucket"),
-            first_device_id
+            scalar(
+                store.connection(),
+                "SELECT COUNT(DISTINCT device_id) FROM bucket WHERE ts = 1000"
+            ),
+            2
         );
+        // The whole bucket travels, not just the header: each device keeps its own child rows.
+        assert_eq!(
+            scalar(store.connection(), "SELECT SUM(presses) FROM finger_count"),
+            60
+        );
+        assert_eq!(
+            scalar(store.connection(), "SELECT SUM(n) FROM gap_hist"),
+            58
+        );
+        assert_eq!(
+            scalar(
+                store.connection(),
+                "SELECT COUNT(DISTINCT bucket_id) FROM finger_count"
+            ),
+            2
+        );
+    }
+
+    /// One device sealing the same second twice cannot happen — the aggregator seals one bucket per
+    /// device per tick — but a wall clock stepped backwards can produce it, and it must cost one
+    /// bucket loudly rather than a whole daemon or a silent `Ok`.
+    #[test]
+    fn a_duplicate_seal_for_one_device_is_refused_and_counted() {
+        let (_temp, _path, mut store, device_id) = open_store();
+        store
+            .seal_tier_a(device_id, 1, &populated_tier_a_seal(1_000))
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        let error = store
+            .seal_tier_a(device_id, 1, &populated_tier_a_seal(1_000))
+            .expect_err("a second seal for one device, profile and second must be refused");
+
+        assert!(error.is::<DuplicateBucketIdentity>(), "{error:#}");
+        assert_eq!(store.refused_tier_a_seals(), 1);
+        assert_eq!(table_count(store.connection(), "bucket"), 1);
+        // The refusal rolls back whole: no half-written child rows behind the refused header.
+        assert_eq!(table_count(store.connection(), "finger_count"), 2);
+        assert_eq!(
+            scalar(store.connection(), "SELECT SUM(presses) FROM finger_count"),
+            30
+        );
+
+        // The same second under a different profile is a different bucket, not a duplicate.
+        let profile_id = store
+            .register_profile("gaming")
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        store
+            .seal_tier_a(device_id, profile_id, &populated_tier_a_seal(1_000))
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        assert_eq!(table_count(store.connection(), "bucket"), 2);
+        assert_eq!(store.refused_tier_a_seals(), 1);
+    }
+
+    /// The floors are checked before the insert, and the insert changed. A floor that moved behind
+    /// it would write a sub-floor bucket and only fail afterwards.
+    #[test]
+    fn sealing_still_refuses_a_bucket_below_either_privacy_floor() {
+        let (_temp, _path, mut store, device_id) = open_store();
+        let mut too_few = populated_tier_a_seal(1_000);
+        too_few.data.keystrokes = MIN_TIER_A_SEAL_FLOOR - 1;
+        assert!(store.seal_tier_a(device_id, 1, &too_few).is_err());
+
+        let mut too_short = populated_tier_a_seal(2_000);
+        too_short.span_ms = MIN_BUCKET_SECONDS * 1_000 - 1;
+        assert!(store.seal_tier_a(device_id, 1, &too_short).is_err());
+
+        assert_eq!(table_count(store.connection(), "bucket"), 0);
+        assert_eq!(table_count(store.connection(), "finger_count"), 0);
+        // A floor breach is not an identity collision, and must not be counted as one.
+        assert_eq!(store.refused_tier_a_seals(), 0);
     }
 
     #[test]

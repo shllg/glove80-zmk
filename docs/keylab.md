@@ -232,17 +232,22 @@ SELECT updated_at, json FROM live_snapshot;
 SELECT p.name, SUM(b.keystrokes) FROM bucket b JOIN profile p ON p.id = b.profile_id GROUP BY 1;
 ```
 
-The schema is at version 4 and is migrated in place the first time the new daemon opens an older database:
+The schema is at version 5 and is migrated in place the first time the new daemon opens an older database:
 
 | from | adds | backfill |
 |---|---|---|
 | v1 → v2 | `bucket.profile_id`, `key_window.profile_id` | every existing row to `default` |
 | v2 → v3 | `device.keymap_kind`, `device.keymap_hash` | every existing device to `glove80` |
 | v3 → v4 | `ngram_window`, `ngram`, `ngram_finger` | none — new tables |
+| v4 → v5 | `bucket.ts`, `UNIQUE (ts, device_id, profile_id)` | `ts = id` for every existing row |
 
-The first two backfills are accurate rather than guesses: every pre-v3 row was captured on the Glove80 through evsieve during ordinary use, before profiles or multi-device support existed. v3 → v4 has nothing to backfill, because correction context that was never captured cannot be reconstructed.
+The first two backfills are accurate rather than guesses: every pre-v3 row was captured on the Glove80 through evsieve during ordinary use, before profiles or multi-device support existed. v3 → v4 has nothing to backfill, because correction context that was never captured cannot be reconstructed. v4 → v5's backfill is accurate for the same kind of reason: under v4 the bucket id *was* the seal second, so copying it into `ts` restates what the row already meant.
 
-`packages/analysis`, `packages/viewer` and `packages/trainer` all open the database through `openKeylabDatabase`, which pins schema version 4. An older database is refused with a message that points at the daemon, which migrates it in place on its next start.
+**A bucket is identified by device and second, not by second alone.** Up to v4, `bucket.id` was the seal second and the whole primary key, so one second held one bucket for the entire machine. `id` is now a surrogate — the six child tables reference it and it is copied verbatim through the migration, so nothing is renumbered — and the seal second lives in `ts`. The unique index behind `(ts, device_id, profile_id)` leads with `ts`, which is what every range read filters on, so no separate index on `ts` is warranted.
+
+**What that cost before the fix.** On a machine with two keyboards, whenever both sealed a Tier A bucket in the same second, one of them was discarded: `seal_tier_a` found the id present and returned success having written nothing. The whole bucket went — keystrokes, per-finger counts, hold, gap and modifier histograms — with no log line, no counter, and no visible difference in any number that would let you notice. Those buckets are not recoverable, and the loss leaves no trace in the stored data. A single-keyboard installation never reached it. From v5 the two buckets are two rows; a genuine duplicate for one device, profile and second is refused loudly, logged with the device and the second, and counted into `refused_tier_a_seals` on the daemon's device-scan log lines.
+
+`packages/analysis`, `packages/viewer` and `packages/trainer` all open the database through `openKeylabDatabase`, which pins schema version 5. An older database is refused with a message that points at the daemon, which migrates it in place on its next start.
 
 `pnpm analysis report` renders Tier C as a *correction context* block under "Correction tax": the top ordered trigrams with their base-layer characters, the fumble / ambiguous / edit split, the finger-transition rollup for whatever degraded, and the degraded and dropped shares. A trigram position renders as `?` when it is unattributed or has no base-layer binding and as `·` when the slot held no key at all — the two are never conflated. Ordered trigrams are geometric, so the read refuses to pool across position spaces exactly as Tier B does; select one device with `--device ID`. The block states when it is empty and why, because a silently absent section would read as "no corrections".
 

@@ -186,7 +186,9 @@ fn device_liveness(db_path: &Path) -> Vec<String> {
     };
     let rows = connection
         .prepare(
-            "SELECT d.name, COALESCE(MAX(b.id), 0) AS last_bucket
+            // `b.ts` is the seal second. `b.id` stopped being it at schema v5, where it became a
+            // surrogate key so two devices can seal in the same second.
+            "SELECT d.name, COALESCE(MAX(b.ts), 0) AS last_bucket
              FROM device d LEFT JOIN bucket b ON b.device_id = d.id
              GROUP BY d.id ORDER BY last_bucket DESC, d.id DESC",
         )
