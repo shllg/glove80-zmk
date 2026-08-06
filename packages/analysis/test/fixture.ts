@@ -331,6 +331,106 @@ export function createMultiDeviceFixture(): SeededFixture {
 }
 
 /**
+ * Tier C shaped for the correction *rate*: `V` and `M` are pressed 1000 times each and corrected 60
+ * times each, `P` is pressed 100 times and corrected 50. Counting corrections ranks `V` and `M`
+ * first — which is just the frequency heatmap again — while the rate ranks `P` first, which is the
+ * whole point of the layer. `M`'s corrections are all edits and `V`'s all fumbles, so the same pair
+ * also separates a mistyped key from a rewritten one. `Z` is corrected 3 times in 4 presses: the
+ * highest rate in the fixture and far too little data to draw.
+ *
+ * With `fingerOnly` the window holds nothing but degraded finger rows, so a reader that attributes
+ * them to positions has no position rows to hide behind.
+ */
+export function createCorrectionFixture(
+  options: { fingerOnly?: boolean } = {},
+): SeededFixture {
+  const directory = mkdtempSync(join(tmpdir(), "keylab-corrections-"));
+  const path = join(directory, "keylab.db");
+  const metaPath = resolve(dirname(fileURLToPath(import.meta.url)), "../../../out/keymap-meta.json");
+  const metadata = JSON.parse(readFileSync(metaPath, "utf8")) as { positions: MetaPosition[] };
+  const positionOf = (keycode: string): number => {
+    const position = metadata.positions.find((entry) => entry.baseKeycode === keycode);
+    if (!position) throw new Error(`Fixture could not find keymap position for ${keycode}`);
+    return position.pos;
+  };
+  const database = new Database(path, { create: true });
+  database.exec(SCHEMA);
+  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '4')").run();
+  database.query("INSERT INTO meta(key, value) VALUES ('alt_hand_ambiguous', '0')").run();
+  database.query("INSERT INTO device(id, name, uniq, first_ts, keymap_kind, keymap_hash) VALUES (1, 'fixture', NULL, ?, 'glove80', 'fixture')")
+    .run(FIXTURE_NOW - 1_000_000);
+  database.query("INSERT INTO profile(id, name) VALUES (1, 'default')").run();
+  database.query("INSERT INTO live_snapshot(id, updated_at, json) VALUES (1, ?, ?)")
+    .run(FIXTURE_NOW, JSON.stringify({
+      finger_count: Array(10).fill(0), keystrokes_per_minute: 0,
+      paused: false, profile: "default", profiles: ["default"],
+    }));
+
+  const recentBucketId = FIXTURE_NOW - 60;
+  database.query(
+    "INSERT INTO bucket(id, device_id, profile_id, span_ms, active_ms, keystrokes, autorepeats)"
+    + " VALUES (?, 1, 1, 10000, 8000, 2134, 0)",
+  ).run(recentBucketId);
+  const insertFinger = database.query(
+    "INSERT INTO finger_count(bucket_id, finger_id, presses) VALUES (?, ?, ?)",
+  );
+  insertFinger.run(recentBucketId, 0, 1_067);
+  insertFinger.run(recentBucketId, 5, 1_067);
+
+  database.query(
+    "INSERT INTO key_window(id, device_id, profile_id, start_ts, end_ts, keystrokes)"
+    + " VALUES (1, 1, 1, ?, ?, 2134)",
+  ).run(recentBucketId, recentBucketId + 30);
+  const insertPosition = database.query(
+    "INSERT INTO pos_count(window_id, pos, presses) VALUES (1, ?, ?)",
+  );
+  for (const [keycode, presses] of [
+    ["KEY_V", 1_000], ["KEY_M", 1_000], ["KEY_P", 100], ["KEY_Z", 4],
+  ] as const) {
+    insertPosition.run(positionOf(keycode), presses);
+  }
+  insertPosition.run(-1, 30);
+
+  const positional = options.fingerOnly ? 0 : 180;
+  database.query(
+    "INSERT INTO ngram_window(id, device_id, profile_id, start_ts, end_ts, corrections, degraded, dropped)"
+    + " VALUES (1, 1, 1, ?, ?, ?, 20, ?)",
+  ).run(recentBucketId, recentBucketId + 30, positional + 20 + (options.fingerOnly ? 0 : 5),
+    options.fingerOnly ? 0 : 5);
+
+  if (!options.fingerOnly) {
+    const [t, h, r, e, q, w] = (["KEY_T", "KEY_H", "KEY_R", "KEY_E", "KEY_Q", "KEY_W"] as const)
+      .map(positionOf) as [number, number, number, number, number, number];
+    const insertNgram = database.query(
+      "INSERT INTO ngram(window_id, pos_a, pos_b, pos_c, mod_mask, latency_bucket, run_bucket, n)"
+      + " VALUES (1, ?, ?, ?, 0, ?, 0, ?)",
+    );
+    // latency 0 and 1 are fumbles, 3 is an edit: M and V differ only in that column.
+    insertNgram.run(t, h, positionOf("KEY_P"), 0, 50);
+    insertNgram.run(r, e, positionOf("KEY_V"), 0, 60);
+    insertNgram.run(r, e, positionOf("KEY_M"), 3, 60);
+    insertNgram.run(q, w, positionOf("KEY_Z"), 1, 3);
+    insertNgram.run(t, h, -1, 0, 7);
+  }
+
+  const insertNgramFinger = database.query(
+    "INSERT INTO ngram_finger(window_id, finger_a, finger_b, finger_c, mod_mask, latency_bucket, run_bucket, n)"
+    + " VALUES (1, ?, ?, ?, 0, ?, 0, ?)",
+  );
+  insertNgramFinger.run(0, 1, 5, 0, 12);
+  insertNgramFinger.run(3, -1, 3, 2, 8);
+  database.close();
+
+  return {
+    directory,
+    path,
+    metaPath,
+    recentBucketId,
+    cleanup: () => rmSync(directory, { recursive: true, force: true }),
+  };
+}
+
+/**
  * 100 keystrokes on the `default` profile and 40 on `gaming`, so a filtered read, an unfiltered
  * read, and a pooled read all produce visibly different totals.
  */

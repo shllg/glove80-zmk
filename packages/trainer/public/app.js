@@ -120,9 +120,13 @@ async function loadWeakness() {
   node.replaceChildren();
   try {
     const model = await (await fetch("/api/weakness")).json();
+    // Each regime gets its own sentence: a drill weighted by frequency must never read like one
+    // weighted by measured error, and one weighted by real-use corrections is neither of those.
     confidence.textContent = model.confidence === "trainer"
       ? `Trainer-derived from ${model.sessionCount} sessions.`
-      : "Bootstrapped from keylab; no trainer history yet.";
+      : model.confidence === "keylab-tier-c"
+        ? "No trainer history yet; weighted by the keys keylab saw you correct in real work."
+        : "Bootstrapped from keylab position frequency; no trainer history, no corrections yet.";
     for (const mechanic of model.mechanics.slice(0, 4)) {
       const row = element("div", "weak-row");
       row.append(element("strong", "", mechanic.label), element("span", "", mechanic.detail));
@@ -130,9 +134,11 @@ async function loadWeakness() {
     }
     for (const position of model.positions.slice(0, 6)) {
       const row = element("div", "weak-row");
-      const measured = position.errorRate === null
-        ? `${position.presses} presses (frequency only)`
-        : `${(position.errorRate * 100).toFixed(1)}% errors over ${position.attempts}`;
+      const measured = position.errorRate !== null
+        ? `${(position.errorRate * 100).toFixed(1)}% errors over ${position.attempts}`
+        : position.correctionRate !== null
+          ? `${(position.correctionRate * 100).toFixed(2)}% fumble-weighted corrections per press`
+          : `${position.presses} presses (frequency only)`;
       row.append(element("strong", "", position.label), element("span", "", measured));
       node.append(row);
     }

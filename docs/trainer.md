@@ -49,8 +49,8 @@ The German pool is umlaut-dense on purpose. It will show a brutal WPM against En
 
 Four families:
 
-- **position** — words weighted toward the positions the weakness model ranks worst. Still real words: drilling letter salad trains a motion you never actually make.
-- **bigram / transition** — the slowest transitions your own history recorded, or, before any history exists, the same-finger bigrams this keymap admits.
+- **position** — words weighted toward the positions the weakness model ranks worst, which once keylab has correction data means the keys you actually delete, per press rather than in total. Still real words: drilling letter salad trains a motion you never actually make.
+- **bigram / transition** — the transitions your corrections landed after, the slowest transitions your own history recorded, or, before either exists, the same-finger bigrams this keymap admits. A degraded Tier C row names two fingers and no keys, so what it contributes is whatever pairs this keymap puts on those fingers.
 - **mechanic** — hold/tap discrimination, layer-hold accuracy, thumb clusters, `LONELY_MOD` misfire rate. **This is the family nothing else can do.** The measured `R_GUI` hold — median ~750 ms, p95 ≥ 1000 ms, against 160–240 ms for every other modifier — is not a typing-accuracy problem, and no word-list drill will ever surface it. These are the mechanics of *this* firmware.
 - **language** — umlaut macro sequences, German compounds, and code identifiers, which are a third language with their own shape.
 
@@ -78,15 +78,22 @@ A correction whose character is a space belongs to the word that just ended — 
 
 ## Weakness model
 
-Three sources, three genuinely different weaknesses:
+Four sources, four genuinely different weaknesses:
 
-| source | measures | sharpness |
-|---|---|---|
-| trainer history | per-position error rate, substitutions, digraph latency | ground truth, best |
-| keylab Tier B | position frequency | frequency is not weakness; only useful combined |
-| keylab Tier A | finger imbalance, hold outliers, correction runs, mod misfires | real-use friction |
+| source | measures | sharpness | confidence label |
+|---|---|---|---|
+| trainer history | per-position error rate, substitutions, digraph latency | ground truth, best | `trainer` |
+| keylab Tier C | which key you corrected in real work, and how quickly | real-use *error*, but no ground truth about intent | `keylab-tier-c` |
+| keylab Tier B | position frequency | frequency is not weakness; only useful combined | `bootstrap` |
+| keylab Tier A | finger imbalance, hold outliers, correction runs, mod misfires | real-use friction | `bootstrap` |
 
 Day one there is no trainer history, so the model bootstraps off keylab and switches to trainer-derived scoring once enough attempts accumulate. `confidence` reports which regime produced a given entry, so a drill built on frequency alone is never mistaken for one built on error data. The trainer reads keylab **read-only**; the two instruments cannot corrupt each other.
+
+Tier C is its own source and not a second opinion about frequency. Tier B says a key is pressed often; Tier C says a key is *deleted* often, which is evidence of error that frequency can never be. It is still weaker than trainer history, because keylab never sees the text and so cannot know what the hand meant to type. The scoring says exactly that: frequency alone reaches at most 0.4, Tier C 0.8, and only measured error against generated text reaches 1. Frequency's weight falls as better evidence arrives — otherwise the most-pressed key tops every ranking whatever it measures.
+
+Like the viewer's layer, Tier C enters as a **rate**, weighted by latency class: fumbles count fully, ambiguous corrections half, and edits over a second not at all, because a deliberate rewrite is not a mistyped key. A key needs 50 presses in range before it is rated at all; below that its `correctionRate` is `null` rather than a number built from four presses. Degraded finger rows are used for transition weakness and are **never** attributed to a position — they identify a motion and no key.
+
+**None of this reaches the benchmark corpus.** Correction data steers which drill words are picked; it never widens where they come from, and a corrected trigram that happens to appear in a benchmark word cannot pull that word into a drill pool. The pools stay disjoint, and the test at `packages/trainer/test/trainer.test.ts` enforces it — the moment weakness data reaches the benchmark, the trend line stops meaning anything.
 
 ## Own material
 

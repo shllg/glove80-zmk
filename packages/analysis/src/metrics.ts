@@ -180,6 +180,17 @@ export interface FingerNgramEntry {
   modLabels: string[];
 }
 
+/**
+ * One position's share of the `pos_c` marginal: how often it was the last key pressed before a
+ * correction. `pos_c` is the key immediately before the backspace, which is the one a heatmap wants;
+ * `pos_a` and `pos_b` are the run-up to it.
+ */
+export interface CorrectedPosition {
+  pos: number;
+  corrections: number;
+  byLatency: Record<LatencyClass, number>;
+}
+
 export interface CorrectionContext {
   windowCount: number;
   corrections: number;
@@ -193,6 +204,17 @@ export interface CorrectionContext {
   byFinger: FingerNgramEntry[];
   /** Totals over every correction that kept its latency, so these sum to `corrections - dropped`. */
   byLatency: Record<LatencyClass, number>;
+  /**
+   * The `pos_c` marginal over every n-gram row in range, not only the `topNgrams` shown. Real
+   * positions only, worst first.
+   */
+  byPosition: CorrectedPosition[];
+  /**
+   * The two sentinels, kept out of `byPosition` because neither has geometry: `-1` is a key with no
+   * base-layer position, `-2` a correction with no key before it at all. A drawing excludes them; a
+   * total that hides them would not add up.
+   */
+  withoutPosition: { unattributed: CorrectedPosition; absent: CorrectedPosition };
 }
 
 export interface RangeMetrics {
@@ -816,6 +838,10 @@ function modLabels(mask: number): string[] {
   return MOD_CLASS_LABELS.filter((_, modClass) => (mask & (1 << modClass)) !== 0);
 }
 
+function emptyCorrectedPosition(pos: number): CorrectedPosition {
+  return { pos, corrections: 0, byLatency: { fumble: 0, ambiguous: 0, edit: 0 } };
+}
+
 /**
  * Tier C: the ordered trigrams that preceded a correction, summed across every window in range.
  *
@@ -867,6 +893,17 @@ export function getCorrectionContext(
     byLatency[latencyClass(Number(row.latency_bucket))] += Number(row.n);
   }
 
+  // The `pos_c` marginal, taken over every row rather than the truncated `topNgrams`: a per-key
+  // total assembled from the top 20 rows would quietly omit the long tail it is meant to sum.
+  const marginal = new Map<number, CorrectedPosition>();
+  for (const row of ngramRows) {
+    const pos = Number(row.c);
+    const entry = marginal.get(pos) ?? emptyCorrectedPosition(pos);
+    entry.corrections += Number(row.n);
+    entry.byLatency[latencyClass(Number(row.latency_bucket))] += Number(row.n);
+    marginal.set(pos, entry);
+  }
+
   const corrections = Number(totals.corrections ?? 0);
   const degraded = Number(totals.degraded ?? 0);
   const dropped = Number(totals.dropped ?? 0);
@@ -908,6 +945,14 @@ export function getCorrectionContext(
       };
     }),
     byLatency,
+    byPosition: [...marginal.values()]
+      .filter((entry) => entry.pos !== POSITION_UNATTRIBUTED && entry.pos !== POSITION_ABSENT)
+      .sort((left, right) => right.corrections - left.corrections || left.pos - right.pos),
+    withoutPosition: {
+      unattributed: marginal.get(POSITION_UNATTRIBUTED)
+        ?? emptyCorrectedPosition(POSITION_UNATTRIBUTED),
+      absent: marginal.get(POSITION_ABSENT) ?? emptyCorrectedPosition(POSITION_ABSENT),
+    },
   };
 }
 

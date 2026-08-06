@@ -6,7 +6,12 @@ import { Database } from "bun:sqlite";
 import { openKeylabDatabase } from "../../analysis/src/db";
 import { loadAnalysisMeta } from "../../analysis/src/meta";
 import { calculateMetrics, parseSince } from "../../analysis/src/metrics";
-import { createFixture, FIXTURE_NOW, type SeededFixture } from "../../analysis/test/fixture";
+import {
+  createCorrectionFixture,
+  createFixture,
+  FIXTURE_NOW,
+  type SeededFixture,
+} from "../../analysis/test/fixture";
 import {
   BENCHMARK_CORPUS_VERSION,
   corpus,
@@ -67,6 +72,17 @@ function trainerStore() {
 
 function keylabContext() {
   const fixture = createFixture();
+  fixtures.push(fixture);
+  const database = openKeylabDatabase(fixture.path);
+  const meta = loadAnalysisMeta(database, fixture.metaPath);
+  const metrics = calculateMetrics(database, meta, parseSince("all", FIXTURE_NOW));
+  database.close();
+  return { fixture, meta, metrics };
+}
+
+/** Tier C shaped so a rate and a count rank the keys differently. See the fixture's own comment. */
+function correctionContext(options: { fingerOnly?: boolean } = {}) {
+  const fixture = createCorrectionFixture(options);
   fixtures.push(fixture);
   const database = openKeylabDatabase(fixture.path);
   const meta = loadAnalysisMeta(database, fixture.metaPath);
@@ -230,6 +246,68 @@ describe("weakness model", () => {
     expect(model.mechanics.every((mechanic) => mechanic.score >= 0 && mechanic.score <= 1)).toBe(true);
   });
 
+  test("Tier C entries carry their own confidence label", () => {
+    const { store } = trainerStore();
+    const { meta, metrics } = correctionContext();
+    const model = buildWeaknessModel(store.database, meta, metrics);
+    // Real-use corrections are neither frequency nor measured error, so they get their own label
+    // rather than being merged into a regime that means something else.
+    expect(model.confidence).toBe("keylab-tier-c");
+    const p = model.positions.find((position) => position.label === "P");
+    expect(p?.sources).toContain("keylab-tier-c");
+    expect(p?.sources).not.toContain("trainer");
+    expect(p?.corrections).toBe(50);
+    expect(p?.correctionRate).toBeCloseTo(0.5, 10);
+    // P is corrected less often than V in absolute terms and far more often per press. Ranking it
+    // first is the difference between "keys I use" and "keys I get wrong".
+    expect(model.positions[0]?.label).toBe("P");
+  });
+
+  test("edits are weighted below fumbles", () => {
+    const { store } = trainerStore();
+    const { meta, metrics } = correctionContext();
+    const model = buildWeaknessModel(store.database, meta, metrics);
+    const v = model.positions.find((position) => position.label === "V");
+    const m = model.positions.find((position) => position.label === "M");
+    // Same presses, same corrections. Only the latency bucket differs, and a deletion a second
+    // after the last keystroke is a rewrite rather than a mistyped key.
+    expect(v?.presses).toBe(m?.presses as number);
+    expect(v?.corrections).toBe(m?.corrections as number);
+    expect(v?.correctionRate).toBeCloseTo(0.06, 10);
+    expect(m?.correctionRate).toBe(0);
+    expect(v?.score).toBeGreaterThan(m?.score as number);
+    // An editorial rewrite must not reach the transition list either.
+    expect(model.correctedTransitions.map((entry) => entry.letters)).not.toContain("em");
+  });
+
+  test("a position with too few presses is no data rather than the worst key on the board", () => {
+    const { store } = trainerStore();
+    const { meta, metrics } = correctionContext();
+    const model = buildWeaknessModel(store.database, meta, metrics);
+    const z = model.positions.find((position) => position.label === "Z");
+    // 3 corrections in 4 presses is the highest raw rate in the fixture and four presses of data.
+    expect(z).toMatchObject({ presses: 4, corrections: 3, correctionRate: null });
+    expect(z?.sources).not.toContain("keylab-tier-c");
+    expect(model.positions[0]?.label).not.toBe("Z");
+  });
+
+  test("degraded finger rows never produce position entries", () => {
+    const { store } = trainerStore();
+    const { meta, metrics } = correctionContext({ fingerOnly: true });
+    const model = buildWeaknessModel(store.database, meta, metrics);
+    expect(metrics.correctionTax.context.byFinger.length).toBeGreaterThan(0);
+    expect(metrics.correctionTax.context.byPosition).toEqual([]);
+    // A finger triple identifies a motion and no key at all, so nothing may land on a position.
+    expect(model.positions.every((position) => position.corrections === 0)).toBe(true);
+    expect(model.positions.every((position) =>
+      !position.sources.includes("keylab-tier-c"))).toBe(true);
+    expect(model.confidence).toBe("bootstrap");
+    // The motion still survives, as a transition that names fingers and no letters.
+    const degraded = model.correctedTransitions.filter((entry) => entry.degraded);
+    expect(degraded.length).toBeGreaterThan(0);
+    expect(degraded.every((entry) => entry.letters === null && entry.fingers !== null)).toBe(true);
+  });
+
   test("maps browser physical keys onto keymap key names", () => {
     expect(browserCodeToKeyName("KeyA")).toBe("KEY_A");
     expect(browserCodeToKeyName("Digit4")).toBe("KEY_4");
@@ -284,6 +362,52 @@ describe("drills", () => {
       for (const word of drill.text.split(" ")) {
         expect(benchmarkWords.has(word)).toBe(false);
       }
+    }
+  });
+
+  test("position drills weight toward corrected keys", () => {
+    const { store } = trainerStore();
+    const { meta, metrics } = correctionContext();
+    const weakness = buildWeaknessModel(store.database, meta, metrics);
+    // The control is the same model with its ranking removed, so the only variable is the weighting.
+    const unweighted = { ...weakness, positions: [] };
+    const letters = (text: string, letter: string) =>
+      [...text].filter((character) => character === letter).length;
+    const drill = generatePositionDrill(weakness, 7, { wordCount: 200 });
+    const flat = generatePositionDrill(unweighted, 7, { wordCount: 200 });
+    expect(letters(drill.text, "p")).toBeGreaterThan(letters(flat.text, "p"));
+    expect(drill.rationale).toContain("correct");
+  });
+
+  test("transition drills weight toward corrected transitions", () => {
+    const { store } = trainerStore();
+    const { meta, metrics } = correctionContext();
+    const weakness = buildWeaknessModel(store.database, meta, metrics);
+    const drill = generateBigramDrill(weakness, meta, 11, { repetitions: 60 });
+    const groups = (pair: string) =>
+      drill.text.split(" ").filter((group) => group.startsWith(pair)).length;
+    // "e v" preceded 60 fumbles and "w z" three, so the pool leans the same way.
+    expect(groups("ev")).toBeGreaterThan(0);
+    expect(groups("ev")).toBeGreaterThan(groups("wz"));
+    expect(drill.rationale).toContain("corrections");
+  });
+
+  test("a corrected trigram never pulls a benchmark word into a drill", () => {
+    const { store } = trainerStore();
+    const { meta, metrics } = correctionContext();
+    const weakness = buildWeaknessModel(store.database, meta, metrics);
+    const benchmarkWords = new Set(
+      listCorpora().filter((entry) => entry.family === "benchmark").flatMap((entry) => [...entry.words]),
+    );
+    const drillWords = new Set(corpus("en-drill").words);
+    // Correction data may steer which drill words are picked; it may never widen where they come
+    // from, or the benchmark would be measuring text the drills had just practised.
+    for (const word of generatePositionDrill(weakness, 5, { wordCount: 60 }).text.split(" ")) {
+      expect(drillWords.has(word)).toBe(true);
+      expect(benchmarkWords.has(word)).toBe(false);
+    }
+    for (const group of generateBigramDrill(weakness, meta, 5, { repetitions: 20 }).text.split(" ")) {
+      expect(benchmarkWords.has(group)).toBe(false);
     }
   });
 

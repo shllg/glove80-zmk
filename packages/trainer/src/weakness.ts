@@ -1,22 +1,44 @@
 import type { Database } from "bun:sqlite";
 import type { AnalysisMeta } from "@glove80/analysis/meta";
-import type { AnalysisMetrics } from "@glove80/analysis/metrics";
+import {
+  FINGER_ABSENT,
+  FINGER_LABELS,
+  type AnalysisMetrics,
+  type CorrectionContext,
+  type LatencyClass,
+} from "@glove80/analysis/metrics";
 
 /**
- * Three sources, three genuinely different weaknesses:
+ * Four sources, four genuinely different weaknesses:
  *
  * | source          | measures                                              | sharpness       |
  * |-----------------|-------------------------------------------------------|-----------------|
  * | trainer history | per-position error rate, substitutions, digraph latency | ground truth, best |
+ * | keylab Tier C   | which key was corrected in real work, and how quickly | real-use error; no ground truth about intent |
  * | keylab Tier B   | position frequency                                    | frequency is not weakness; only useful combined |
  * | keylab Tier A   | finger imbalance, hold outliers, correction runs, mod misfires | real-use friction |
+ *
+ * Tier C sits between the two: it is evidence of *error*, which frequency is not, but it never sees
+ * the text and so cannot know what the hand meant to type. It is therefore scored above frequency
+ * and below trainer history, and it is never folded into either — a new source gets its own label
+ * or a drill built on one kind of evidence gets read as though it were built on another.
  *
  * Day one there is no trainer history, so the model bootstraps off keylab and switches to
  * trainer-derived scoring as sessions accumulate. `confidence` reports which regime produced a
  * given entry so a drill built on frequency alone is never mistaken for one built on error data.
  */
 
-export type WeaknessSource = "trainer" | "keylab-tier-a" | "keylab-tier-b";
+export type WeaknessSource = "trainer" | "keylab-tier-a" | "keylab-tier-b" | "keylab-tier-c";
+
+/**
+ * Tier C latency weights. A fumble is a mistyped key; a deletion a second or more after the last
+ * keystroke is a rewrite, and weighting the two the same would drag the model toward the keys you
+ * change your mind about rather than the keys you get wrong. Ambiguous sits between and counts half.
+ */
+const LATENCY_WEIGHTS: Record<LatencyClass, number> = { fumble: 1, ambiguous: 0.5, edit: 0 };
+
+/** A key deleted after one press in ten is as bad as this model needs to be able to say. */
+const CORRECTION_RATE_FULL_SCALE = 0.1;
 
 export interface PositionWeakness {
   pos: number;
@@ -27,7 +49,29 @@ export interface PositionWeakness {
   errorRate: number | null;
   attempts: number;
   presses: number;
+  /** Tier C: every correction that ended on this key, whatever its latency class. */
+  corrections: number;
+  /**
+   * Latency-weighted corrections per press, or `null` when the key has too few presses in range for
+   * a rate to mean anything — no data, which is not the same as a clean key.
+   */
+  correctionRate: number | null;
   sources: WeaknessSource[];
+}
+
+/** A transition that preceded corrections, from Tier C's ordered trigrams or their finger rollup. */
+export interface TransitionWeakness {
+  label: string;
+  /** The two base-layer letters when both keys have one; a drill needs text it can render. */
+  letters: string | null;
+  /** Finger labels instead, when the row degraded and lost its position identity. */
+  fingers: [string, string] | null;
+  /** Corrections after this transition, every latency class. */
+  corrections: number;
+  /** The same corrections after latency weighting; this is what the ranking uses. */
+  weight: number;
+  degraded: boolean;
+  sameFinger: boolean;
 }
 
 export interface BigramWeakness {
@@ -49,10 +93,11 @@ export interface MechanicWeakness {
 }
 
 export interface WeaknessModel {
-  confidence: "bootstrap" | "trainer";
+  confidence: "bootstrap" | "keylab-tier-c" | "trainer";
   sessionCount: number;
   positions: PositionWeakness[];
   bigrams: BigramWeakness[];
+  correctedTransitions: TransitionWeakness[];
   mechanics: MechanicWeakness[];
 }
 
@@ -169,9 +214,94 @@ function mechanicsFromTierA(metrics: AnalysisMetrics): MechanicWeakness[] {
   return mechanics.sort((left, right) => right.score - left.score);
 }
 
+function weightedCorrections(byLatency: Record<LatencyClass, number>): number {
+  return byLatency.fumble * LATENCY_WEIGHTS.fumble
+    + byLatency.ambiguous * LATENCY_WEIGHTS.ambiguous
+    + byLatency.edit * LATENCY_WEIGHTS.edit;
+}
+
+function keyLabel(keycode: string | null, pos: number): string {
+  return keycode?.replace(/^KEY_/, "") ?? String(pos);
+}
+
+/**
+ * Tier C transitions: the pair immediately before each correction, from the ordered trigrams and
+ * from the finger rollup that rare trigrams degrade into.
+ *
+ * The position rows come from `topNgrams`, which the analysis package truncates to its display
+ * limit — the per-key marginal is complete, but a *pair* only exists in the rows themselves. That
+ * cap is stated here rather than hidden: it takes the most frequent transitions and misses a long
+ * tail of rare ones.
+ *
+ * A degraded row names two fingers and no positions. It is real evidence about a motion and it is
+ * kept, but it is never attributed to a position, because it no longer identifies one.
+ */
+function correctedTransitions(
+  meta: AnalysisMeta,
+  context: CorrectionContext,
+  limit: number,
+): TransitionWeakness[] {
+  const byPair = new Map<string, TransitionWeakness>();
+  const accumulate = (key: string, entry: TransitionWeakness) => {
+    const existing = byPair.get(key);
+    if (!existing) {
+      byPair.set(key, entry);
+      return;
+    }
+    existing.corrections += entry.corrections;
+    existing.weight += entry.weight;
+  };
+
+  for (const ngram of context.topNgrams) {
+    const [, from, to] = ngram.positions;
+    const fromMeta = meta.position(from);
+    const toMeta = meta.position(to);
+    // A sentinel slot has no position, so it names no transition at all.
+    if (!fromMeta || !toMeta) continue;
+    const letters = /^KEY_[A-Z]$/.test(fromMeta.baseKeycode ?? "")
+      && /^KEY_[A-Z]$/.test(toMeta.baseKeycode ?? "")
+      ? `${fromMeta.baseKeycode?.slice(4)}${toMeta.baseKeycode?.slice(4)}`.toLowerCase()
+      : null;
+    accumulate(`p:${from}:${to}`, {
+      label: `${keyLabel(fromMeta.baseKeycode, from)} → ${keyLabel(toMeta.baseKeycode, to)}`,
+      letters,
+      fingers: null,
+      corrections: ngram.count,
+      weight: ngram.count * LATENCY_WEIGHTS[ngram.latencyClass],
+      degraded: false,
+      sameFinger: fromMeta.finger === toMeta.finger,
+    });
+  }
+
+  for (const entry of context.byFinger) {
+    const [, from, to] = entry.fingers;
+    if (from === FINGER_ABSENT || to === FINGER_ABSENT) continue;
+    const fromLabel = FINGER_LABELS[from];
+    const toLabel = FINGER_LABELS[to];
+    if (!fromLabel || !toLabel) continue;
+    accumulate(`f:${from}:${to}`, {
+      label: `${fromLabel} → ${toLabel}`,
+      letters: null,
+      fingers: [fromLabel, toLabel],
+      corrections: entry.count,
+      weight: entry.count * LATENCY_WEIGHTS[entry.latencyClass],
+      degraded: true,
+      sameFinger: from === to,
+    });
+  }
+
+  return [...byPair.values()]
+    // A transition corrected only after a second of thought is a rewrite, not a weakness.
+    .filter((entry) => entry.weight > 0)
+    .sort((left, right) => right.weight - left.weight || left.label.localeCompare(right.label))
+    .slice(0, limit);
+}
+
 export interface WeaknessOptions {
   /** Ignore positions with fewer attempts than this; below it an error rate is noise. */
   minimumAttempts?: number;
+  /** Ignore Tier C on positions with fewer presses than this; below it a rate is noise. */
+  minimumPresses?: number;
   limit?: number;
 }
 
@@ -182,6 +312,9 @@ export function buildWeaknessModel(
   options: WeaknessOptions = {},
 ): WeaknessModel {
   const minimumAttempts = options.minimumAttempts ?? 20;
+  // The same floor the viewer's correction layer draws with, and for the same reason: one
+  // correction in two presses is not the worst key on the board, it is two samples.
+  const minimumPresses = options.minimumPresses ?? 50;
   const limit = options.limit ?? 12;
   const byName = positionsByKeyName(meta);
 
@@ -202,7 +335,12 @@ export function buildWeaknessModel(
   // press badly — so it only ever breaks ties and only ever contributes a minority of the score.
   const maximumPresses = Math.max(1, ...metrics.positionLoad.map((position) => position.presses));
 
-  const positions: PositionWeakness[] = metrics.positionLoad
+  // Tier C, as a rate rather than a count: the keys corrected most in absolute terms are simply the
+  // keys pressed most, and scoring that would be scoring frequency twice under a different name.
+  const context = metrics.correctionTax.context;
+  const correctedByPosition = new Map(context.byPosition.map((entry) => [entry.pos, entry]));
+
+  const scored: PositionWeakness[] = metrics.positionLoad
     .filter((position) => position.baseKeycode !== null)
     .map((position) => {
       const row = position.baseKeycode ? trainerByName.get(position.baseKeycode) : undefined;
@@ -211,12 +349,26 @@ export function buildWeaknessModel(
         ? Number(row.errors) / attempts
         : null;
       const frequency = position.presses / maximumPresses;
+      const corrected = correctedByPosition.get(position.pos);
+      const correctionRate = corrected && position.presses >= minimumPresses
+        ? weightedCorrections(corrected.byLatency) / position.presses
+        : null;
+      const correctionScore = correctionRate === null
+        ? 0
+        : clamp01(correctionRate / CORRECTION_RATE_FULL_SCALE);
       const sources: WeaknessSource[] = [];
       if (errorRate !== null) sources.push("trainer");
+      if (correctionRate !== null) sources.push("keylab-tier-c");
       if (position.presses > 0) sources.push("keylab-tier-b");
+      // The ceilings are the ordering: frequency alone reaches 0.4, real-use corrections 0.8, and
+      // only measured error against known text reaches 1. Frequency's weight falls as better
+      // evidence arrives, or the most-pressed key would top every ranking whatever it measured —
+      // which is the same mistake as drawing correction counts instead of correction rates.
       const score = errorRate !== null
-        ? clamp01(errorRate * 0.8 + frequency * 0.2)
-        : clamp01(frequency * 0.4);
+        ? clamp01(errorRate * 0.7 + correctionScore * 0.2 + frequency * 0.1)
+        : correctionRate !== null
+          ? clamp01(correctionScore * 0.6 + frequency * 0.2)
+          : clamp01(frequency * 0.4);
       return {
         pos: position.pos,
         label: position.baseKeycode?.replace(/^KEY_/, "") ?? String(position.pos),
@@ -225,9 +377,15 @@ export function buildWeaknessModel(
         errorRate,
         attempts,
         presses: position.presses,
+        corrections: corrected?.corrections ?? 0,
+        correctionRate,
         sources,
       };
-    })
+    });
+
+  const usableCorrectionData = scored.some((position) =>
+    position.sources.includes("keylab-tier-c"));
+  const positions = scored
     .filter((position) => position.score > 0)
     .sort((left, right) => right.score - left.score)
     .slice(0, limit);
@@ -269,10 +427,13 @@ export function buildWeaknessModel(
     .slice(0, limit);
 
   return {
-    confidence: usableTrainerData ? "trainer" : "bootstrap",
+    confidence: usableTrainerData
+      ? "trainer"
+      : usableCorrectionData ? "keylab-tier-c" : "bootstrap",
     sessionCount,
     positions,
     bigrams,
+    correctedTransitions: correctedTransitions(meta, context, limit),
     mechanics: mechanicsFromTierA(metrics),
   };
 }

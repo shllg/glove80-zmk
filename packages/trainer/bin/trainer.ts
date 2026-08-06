@@ -93,12 +93,33 @@ export function runCli(args: string[]): void {
       }
       process.stdout.write("\nPositions\n");
       for (const position of model.positions) {
-        const measured = position.errorRate === null
-          ? `${position.presses} presses (frequency only)`
-          : `${(position.errorRate * 100).toFixed(1)}% errors over ${position.attempts}`;
+        const measured = position.errorRate !== null
+          ? `${(position.errorRate * 100).toFixed(1)}% errors over ${position.attempts}`
+          : position.correctionRate !== null
+            ? `${position.presses} presses (corrections, no trainer history)`
+            : `${position.presses} presses (frequency only)`;
+        // A correction count without its press count is a frequency ranking wearing a disguise.
+        const corrected = position.correctionRate !== null
+          ? `  ${position.corrections} corrections, `
+            + `${(position.correctionRate * 100).toFixed(2)}% fumble-weighted per press`
+          : position.corrections > 0
+            ? `  ${position.corrections} corrections (too few presses to rate)`
+            : "";
         process.stdout.write(
-          `  ${position.label.padEnd(6)} ${position.finger.padEnd(10)} ${measured}\n`,
+          `  ${position.label.padEnd(6)} ${position.finger.padEnd(10)} ${measured}${corrected}\n`,
         );
+      }
+      if (model.correctedTransitions.length > 0) {
+        process.stdout.write("\nCorrected transitions (keylab Tier C)\n");
+        for (const transition of model.correctedTransitions) {
+          process.stdout.write(
+            `  ${transition.label.padEnd(24)} ${String(transition.corrections).padStart(5)}`
+            + " corrections"
+            + (transition.degraded ? "  (finger-level, no position identity)" : "")
+            + (transition.sameFinger ? "  same finger" : "")
+            + "\n",
+          );
+        }
       }
       if (model.bigrams.length > 0) {
         process.stdout.write("\nSlowest transitions\n");

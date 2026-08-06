@@ -26,9 +26,9 @@ The viewer shows a correction layer with a fumble/edit toggle; `pnpm trainer wea
 
 In `packages/viewer/src/server.ts` and `geometry.ts`.
 
-- [ ] Add a correction-intensity read: the marginal of `ngram.pos_c` — the key immediately before the correction — summed per position across windows in range, scoped to one device.
-- [ ] Add a layer toggle to the existing heatmap alongside the current press-frequency view.
-- [ ] Add a fumble/edit filter driven by `latency_bucket`.
+- [x] Add a correction-intensity read: the marginal of `ngram.pos_c` — the key immediately before the correction — summed per position across windows in range, scoped to one device.
+- [x] Add a layer toggle to the existing heatmap alongside the current press-frequency view.
+- [x] Add a fumble/edit filter driven by `latency_bucket`.
 
 **Requirements**
 - Intensity is a *rate*, not a raw count: corrections at a position divided by presses at that position from `pos_count`. A raw count would simply redraw the frequency heatmap, since the most-pressed keys are also the most-corrected in absolute terms. This is the difference between "keys I use" and "keys I get wrong", and it is the entire point of the layer.
@@ -36,17 +36,17 @@ In `packages/viewer/src/server.ts` and `geometry.ts`.
 - `-1` (unattributed) and `-2` (absent) have no geometry. Exclude them from the drawing and report their share as a footnote.
 
 **Tests**
-- [ ] `correction_intensity_is_a_rate_not_a_count`
-- [ ] `positions_below_the_press_floor_render_as_no_data`
-- [ ] `refuses_to_draw_across_position_spaces`
+- [x] `correction_intensity_is_a_rate_not_a_count`
+- [x] `positions_below_the_press_floor_render_as_no_data`
+- [x] `refuses_to_draw_across_position_spaces`
 
 ## Task 2 — weakness model source
 
 In `packages/trainer/src/weakness.ts`.
 
-- [ ] Add Tier C as a fourth source alongside trainer history, keylab Tier B and keylab Tier A.
-- [ ] Add a distinct confidence label for entries derived from it.
-- [ ] Weight Tier C between Tier A/B frequency and trainer ground truth: it is real-use evidence of error, which frequency is not, but it lacks the trainer's certainty about intent.
+- [x] Add Tier C as a fourth source alongside trainer history, keylab Tier B and keylab Tier A.
+- [x] Add a distinct confidence label for entries derived from it.
+- [x] Weight Tier C between Tier A/B frequency and trainer ground truth: it is real-use evidence of error, which frequency is not, but it lacks the trainer's certainty about intent.
 
 **Requirements**
 - Real-use correction data is genuinely different from the three existing sources: Tier B measures frequency, Tier A measures friction, trainer history measures error on generated text. Tier C measures error on real work. Do not fold it into an existing source's score.
@@ -54,28 +54,28 @@ In `packages/trainer/src/weakness.ts`.
 - The finger-level degraded rows are usable for transition weakness but carry no position identity. Do not attribute them to positions.
 
 **Tests**
-- [ ] `tier_c_entries_carry_their_own_confidence_label`
-- [ ] `edits_are_weighted_below_fumbles`
-- [ ] `degraded_finger_rows_never_produce_position_entries`
-- [ ] The existing `benchmark and drill pools are disjoint` test (`packages/trainer/test/trainer.test.ts:125`) must still pass — verify explicitly rather than assuming.
+- [x] `tier_c_entries_carry_their_own_confidence_label`
+- [x] `edits_are_weighted_below_fumbles`
+- [x] `degraded_finger_rows_never_produce_position_entries`
+- [x] The existing `benchmark and drill pools are disjoint` test (`packages/trainer/test/trainer.test.ts:125`) must still pass — verify explicitly rather than assuming.
 
 ## Task 3 — drill generation
 
 In `packages/trainer/src/drills.ts`.
 
-- [ ] Let the `position` family weight toward Tier C corrected keys.
-- [ ] Let the `bigram`/`transition` family weight toward corrected transitions, from both `ngram` and the degraded `ngram_finger` rows.
+- [x] Let the `position` family weight toward Tier C corrected keys.
+- [x] Let the `bigram`/`transition` family weight toward corrected transitions, from both `ngram` and the degraded `ngram_finger` rows.
 
 **Requirements**
 - Drill words stay real words. `docs/trainer.md` is explicit: drilling letter salad trains a motion you never actually make.
 - The disjointness rule applies here, not only in the weakness model — a corrected trigram that happens to appear in a benchmark word must not pull that word into a drill pool.
 
 **Tests**
-- [ ] `position_drills_weight_toward_corrected_keys`
-- [ ] `transition_drills_weight_toward_corrected_transitions`
-- [ ] `a_corrected_trigram_never_pulls_a_benchmark_word_into_a_drill`
+- [x] `position_drills_weight_toward_corrected_keys`
+- [x] `transition_drills_weight_toward_corrected_transitions`
+- [x] `a_corrected_trigram_never_pulls_a_benchmark_word_into_a_drill`
 
 ## Task 4 — documentation
 
-- [ ] `docs/keylab.md`: document the viewer's correction layer and its press floor.
-- [ ] `docs/trainer.md`: add Tier C to the weakness-model source table with its sharpness and confidence label, and restate the benchmark-corpus rule in that context.
+- [x] `docs/keylab.md`: document the viewer's correction layer and its press floor.
+- [x] `docs/trainer.md`: add Tier C to the weakness-model source table with its sharpness and confidence label, and restate the benchmark-corpus rule in that context.

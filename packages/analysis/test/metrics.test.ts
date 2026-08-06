@@ -386,6 +386,28 @@ describe("Tier C correction context", () => {
     }
   });
 
+  test("marginalises pos_c over every row rather than over the rows it displays", () => {
+    const { database, metrics } = seededMetrics();
+    try {
+      const context = metrics.correctionTax.context;
+      const keycode = (pos: number) =>
+        metrics.positionLoad.find((position) => position.pos === pos)?.baseKeycode;
+      // "t h e" in both windows, "t h e" again at a second latency, the sentinel trigram and
+      // "q w e" all end on E; only "a s d" ends anywhere else.
+      expect(context.byPosition.map((entry) => [keycode(entry.pos), entry.corrections]))
+        .toEqual([["KEY_E", 370], ["KEY_D", 60]]);
+      expect(context.byPosition[0]?.byLatency).toEqual({ fumble: 230, ambiguous: 0, edit: 140 });
+      // Every correction that kept a position is in the marginal exactly once, so it reconciles
+      // against the window totals rather than against the truncated display list.
+      const marginal = context.byPosition.reduce((sum, entry) => sum + entry.corrections, 0)
+        + context.withoutPosition.unattributed.corrections
+        + context.withoutPosition.absent.corrections;
+      expect(marginal).toBe(context.corrections - context.degraded - context.dropped);
+    } finally {
+      database.close();
+    }
+  });
+
   test("renders unattributed and absent positions distinctly", () => {
     const { database, metrics } = seededMetrics();
     try {
@@ -460,6 +482,11 @@ describe("Tier C correction context", () => {
         topNgrams: [],
         byFinger: [],
         byLatency: { fumble: 0, ambiguous: 0, edit: 0 },
+        byPosition: [],
+        withoutPosition: {
+          unattributed: { pos: -1, corrections: 0, byLatency: { fumble: 0, ambiguous: 0, edit: 0 } },
+          absent: { pos: -2, corrections: 0, byLatency: { fumble: 0, ambiguous: 0, edit: 0 } },
+        },
       });
       expect(() => renderReport(metrics)).not.toThrow();
     } finally {

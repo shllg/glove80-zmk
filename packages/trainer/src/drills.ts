@@ -1,6 +1,6 @@
 import type { AnalysisMeta } from "@glove80/analysis/meta";
 import { corpus, DRILL_CORPUS_VERSION, seededRandom } from "./corpus";
-import type { WeaknessModel } from "./weakness";
+import type { TransitionWeakness, WeaknessModel } from "./weakness";
 
 /**
  * Four drill families. The first two are what any typing trainer does; the third is the one nothing
@@ -72,16 +72,81 @@ export function generatePositionDrill(
     language: pool.language,
     seed,
     text: words.join(" "),
-    rationale: weakness.confidence === "trainer"
-      ? `Weighted toward positions with the highest measured error rate: ${targets || "none yet"}.`
-      : `No trainer history yet, so weighting is bootstrapped from keylab position frequency: ${targets || "none yet"}.`,
+    rationale: positionRationale(weakness.confidence, targets || "none yet"),
   };
 }
 
+/** The confidence label is the whole point: a drill built on frequency must not read like one built
+ *  on measured error, and one built on real-use corrections is neither. */
+function positionRationale(confidence: WeaknessModel["confidence"], targets: string): string {
+  if (confidence === "trainer") {
+    return `Weighted toward positions with the highest measured error rate: ${targets}.`;
+  }
+  if (confidence === "keylab-tier-c") {
+    return "No trainer history yet, so weighting comes from the keys keylab saw you correct in "
+      + `real work, per press rather than in total: ${targets}.`;
+  }
+  return "No trainer history yet, so weighting is bootstrapped from keylab position frequency: "
+    + `${targets}.`;
+}
+
 /**
- * Bigram drill: the slowest observed transitions, plus every same-finger bigram the keymap admits.
- * Same-finger bigrams are a property of the layout, so they are worth drilling before any history
- * exists.
+ * A degraded Tier C row names two fingers and no positions, so the only pairs it can drill are
+ * whatever this keymap happens to put on those fingers. Bounded and ordered by position, because a
+ * finger pair can otherwise expand into dozens of letter pairs and swamp the pool.
+ */
+function fingerPairs(meta: AnalysisMeta, fingers: [string, string], limit: number): string[] {
+  const letters = (finger: string) => meta.positions
+    .filter((position) => position.finger === finger
+      && /^KEY_[A-Z]$/.test(position.baseKeycode ?? ""))
+    .sort((left, right) => left.pos - right.pos)
+    .map((position) => (position.baseKeycode as string).slice(4).toLowerCase());
+  const [fromFinger, toFinger] = fingers;
+  const pairs: string[] = [];
+  for (const from of letters(fromFinger)) {
+    for (const to of letters(toFinger)) {
+      if (from === to) continue;
+      pairs.push(`${from}${to}`);
+      if (pairs.length >= limit) return pairs;
+    }
+  }
+  return pairs;
+}
+
+/**
+ * The pool a bigram drill draws from, weighted so a transition you had to *delete* after outranks
+ * one you are merely slow at. Tier C is real-use evidence of error; the trainer's own latencies are
+ * evidence of hesitation, and both belong in the pool.
+ */
+function transitionPool(weakness: WeaknessModel, meta: AnalysisMeta):
+Array<{ item: string; weight: number }> {
+  const weights = new Map<string, number>();
+  const add = (pair: string, weight: number) => weights.set(pair, (weights.get(pair) ?? 0) + weight);
+  const worst = Math.max(1, ...weakness.correctedTransitions.map((entry) => entry.weight));
+  for (const transition of weakness.correctedTransitions) {
+    const relative = transition.weight / worst;
+    if (transition.letters !== null) {
+      add(transition.letters, 1 + relative * 3);
+    } else if (transition.fingers !== null) {
+      for (const pair of fingerPairs(meta, transition.fingers, 2)) add(pair, 1 + relative);
+    }
+  }
+  for (const bigram of weakness.bigrams
+    .filter((entry) => entry.sameFinger || entry.medianLatencyMs > 0)
+    .slice(0, 8)) {
+    const letters = bigramLetters(bigram.from, bigram.to);
+    if (letters) add(letters, 1);
+  }
+  if (weights.size === 0) {
+    for (const pair of sameFingerBigrams(meta).slice(0, 8)) add(pair, 1);
+  }
+  return [...weights].map(([item, weight]) => ({ item, weight }));
+}
+
+/**
+ * Bigram drill: the transitions your own corrections landed after, the slowest transitions the
+ * trainer measured, and — before either exists — every same-finger bigram the keymap admits, which
+ * is a property of the layout and worth drilling on day one.
  */
 export function generateBigramDrill(
   weakness: WeaknessModel,
@@ -90,17 +155,14 @@ export function generateBigramDrill(
   options: { repetitions?: number } = {},
 ): Drill {
   const repetitions = options.repetitions ?? 12;
-  const measured = weakness.bigrams
-    .filter((bigram) => bigram.sameFinger || bigram.medianLatencyMs > 0)
-    .slice(0, 8)
-    .map((bigram) => bigramLetters(bigram.from, bigram.to))
-    .filter((pair): pair is string => pair !== null);
-  const pairs = measured.length > 0 ? measured : sameFingerBigrams(meta).slice(0, 8);
+  const pool = transitionPool(weakness, meta);
   const random = seededRandom(seed);
   const groups = Array.from({ length: repetitions }, () => {
-    const pair = pairs[Math.floor(random() * pairs.length)] as string;
+    const pair = weightedPick(pool, random);
     return `${pair}${pair}${pair}`;
   });
+  const corrected = weakness.correctedTransitions.length > 0;
+  const measured = weakness.bigrams.some((bigram) => bigram.sameFinger || bigram.medianLatencyMs > 0);
   return {
     family: "bigram",
     corpusId: "generated-bigram",
@@ -108,9 +170,12 @@ export function generateBigramDrill(
     language: "en",
     seed,
     text: groups.join(" "),
-    rationale: measured.length > 0
-      ? "The slowest transitions actually measured in your own trainer history."
-      : "No measured transitions yet, so these are the same-finger bigrams this keymap admits.",
+    rationale: corrected
+      ? "Weighted toward the transitions keylab saw your corrections land after"
+        + (measured ? ", plus the slowest transitions your trainer history measured." : ".")
+      : measured
+        ? "The slowest transitions actually measured in your own trainer history."
+        : "No measured transitions yet, so these are the same-finger bigrams this keymap admits.",
   };
 }
 
