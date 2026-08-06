@@ -52,6 +52,11 @@ pub const FINGER_ABSENT: u8 = 10;
 
 /// Time from the last keydown to the start of a backspace run. Separates a fumble from an edit;
 /// without it the table mixes mistyping with ordinary rewriting.
+///
+/// **Pinned to `packages/trainer/src/corrections.ts`.** The trainer splits its own corrections on
+/// the same boundaries so the two instruments mean the same thing by "fumble". Rust and TypeScript
+/// cannot share a constant, so both sides carry a test asserting these four boundaries; change one
+/// and the other's test fails rather than the comparison silently drifting.
 pub const fn latency_bucket(ms: u64) -> u8 {
     if ms < 150 {
         0

@@ -11,6 +11,7 @@ import {
   generateMechanicDrill,
   generatePositionDrill,
 } from "../src/drills";
+import { attributeCorrections } from "../src/corrections";
 import { benchmarkHistory, runTrainer } from "../src/server";
 import { defaultTrainerPath, openTrainerStore } from "../src/store";
 import { buildWeaknessModel } from "../src/weakness";
@@ -20,6 +21,7 @@ const USAGE = "Usage: trainer serve [--port N]\n"
   + "       trainer benchmark [--corpus ID] [--seed N] [--words N]\n"
   + "       trainer drill [--family position|bigram|mechanic|language] [--language en|de|code]\n"
   + "       trainer history [--trainer PATH]\n"
+  + "       trainer corrections [--trainer PATH] [--session N]\n"
   + "       trainer corpora";
 
 function flag(args: string[], name: string): string | undefined {
@@ -156,6 +158,72 @@ export function runCli(args: string[]): void {
         process.stdout.write(
           `${language}: ${runs.length} runs, rolling median `
           + `${(medians[medians.length - 1] ?? 0).toFixed(1)} WPM\n`,
+        );
+      }
+    } finally {
+      store.close();
+    }
+    return;
+  }
+
+  if (command === "corrections") {
+    const only = flag(rest, "--session");
+    // A digraph containing a space is unreadable raw; the analysis report uses the same glyph.
+    const visible = (text: string) => text.replaceAll(" ", "␣");
+    const store = openTrainerStore(trainerPath);
+    try {
+      let printed = 0;
+      let unattributable = 0;
+      for (const session of store.sessions()) {
+        if (only !== undefined && session.id !== Number(only)) continue;
+        const corrections = store.corrections(session.id);
+        if (corrections.length === 0) continue;
+        if (session.text === null) {
+          // Pre-v2 sessions never stored their prompt, so there is no ground truth to attribute
+          // against. Counting them silently as zero would read as clean practice.
+          unattributable += 1;
+          continue;
+        }
+        const attribution = attributeCorrections(
+          session.text,
+          corrections,
+          store.keystrokes(session.id),
+        );
+        const { fumble, ambiguous, edit } = attribution.byLatency;
+        printed += 1;
+        process.stdout.write(
+          `\nsession ${session.id}  ${session.mode}  ${session.language}  ${session.corpusId}\n`
+          + `  ${attribution.corrections} corrections, `
+          + `${attribution.charactersRemoved} characters removed`
+          + `  (fumble ${fumble}, ambiguous ${ambiguous}, edit ${edit})\n`,
+        );
+        if (attribution.unattributed > 0) {
+          process.stdout.write(
+            `  ${attribution.unattributed} past the end of the prompt, not attributed to a word\n`,
+          );
+        }
+        for (const word of attribution.words.slice(0, 10)) {
+          const offsets = word.offsets
+            .map((entry) => `${entry.offset}×${entry.count}`)
+            .join(" ");
+          process.stdout.write(
+            `    ${word.word.padEnd(20)} ${String(word.corrections).padStart(4)} in `
+            + `${String(word.occurrences).padStart(3)}  offsets ${offsets}\n`,
+          );
+        }
+        if (attribution.transitions.length > 0) {
+          process.stdout.write(
+            `    transitions  ${attribution.transitions.slice(0, 10)
+              .map((entry) => `${visible(entry.transition)} ${entry.corrections}`)
+              .join("  ")}\n`,
+          );
+        }
+      }
+      if (printed === 0) process.stdout.write("no corrections recorded yet\n");
+      if (unattributable > 0) {
+        process.stdout.write(
+          `\n${unattributable} session(s) recorded corrections before schema v2 stored the prompt `
+          + "text; they cannot be attributed to words.\n",
         );
       }
     } finally {

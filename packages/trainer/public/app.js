@@ -1,3 +1,5 @@
+import { applyInput, createTypingSession, noteKeydown } from "/typing-session.js";
+
 const modeSelect = document.querySelector("#mode");
 const familySelect = document.querySelector("#family");
 const languageSelect = document.querySelector("#language");
@@ -8,8 +10,6 @@ const status = document.querySelector("#status");
 const rationale = document.querySelector("#rationale");
 const ibusNote = document.querySelector("#ibus-note");
 
-const COMPOSED_CODE = "Composed";
-
 let session = null;
 
 function element(tag, className, text) {
@@ -19,25 +19,6 @@ function element(tag, className, text) {
   return node;
 }
 
-/**
- * Maps a target character back to the physical key a plain US layout would use. It is deliberately
- * incomplete: a German umlaut has no single physical key on this keymap, and saying so honestly
- * (null) is better than inventing an attribution keylab would contradict.
- */
-function expectedCodeFor(character) {
-  if (/^[a-z]$/.test(character)) return `Key${character.toUpperCase()}`;
-  if (/^[A-Z]$/.test(character)) return `Key${character}`;
-  if (/^[0-9]$/.test(character)) return `Digit${character}`;
-  const named = {
-    " ": "Space", "-": "Minus", "=": "Equal", "[": "BracketLeft", "]": "BracketRight",
-    "\\": "Backslash", ";": "Semicolon", "'": "Quote", "`": "Backquote", ",": "Comma",
-    ".": "Period", "/": "Slash", "_": "Minus",
-  };
-  return named[character] ?? null;
-}
-
-// `wrongIndices` is a set rather than the current index: an error the eye has already passed must
-// keep showing as an error, otherwise the display disagrees with the score being recorded.
 function renderPrompt(text, typedLength, wrongIndices) {
   promptNode.replaceChildren();
   [...text].forEach((character, index) => {
@@ -63,6 +44,53 @@ function renderScore(score) {
     ibusNote.textContent = `${score.unattributedCharacters} characters arrived with no keydown `
       + "(input-method composition). The browser cannot attribute those physically — keylab's "
       + "evdev capture is the only measure of what they actually cost your hands.";
+  }
+  renderCorrections(score.corrections);
+}
+
+/**
+ * Corrections sit beside the score, never inside it: a backspace is not a keystroke, so counting
+ * one would move the WPM and accuracy denominators every past run was measured against.
+ */
+function renderCorrections(attribution) {
+  const node = document.querySelector("#corrections");
+  node.replaceChildren();
+  const total = attribution?.corrections ?? 0;
+  document.querySelector("#correction-count").textContent = String(total);
+  if (!attribution || total === 0) {
+    node.append(element("p", "hint", "No corrections in this session."));
+    return;
+  }
+  const { fumble, ambiguous, edit } = attribution.byLatency;
+  node.append(element(
+    "p",
+    "hint",
+    `${attribution.charactersRemoved} characters removed · ${fumble} fumble, `
+    + `${ambiguous} ambiguous, ${edit} edit`
+    + (attribution.unattributed > 0
+      ? ` · ${attribution.unattributed} past the end of the prompt, unattributed`
+      : ""),
+  ));
+  for (const word of attribution.words.slice(0, 6)) {
+    const offsets = word.offsets
+      .map((entry) => `offset ${entry.offset}×${entry.count}`)
+      .join(", ");
+    const row = element("div", "weak-row");
+    row.append(
+      element("strong", "", word.word),
+      element("span", "", `${word.corrections} in ${word.occurrences} · ${offsets}`),
+    );
+    node.append(row);
+  }
+  if (attribution.transitions.length > 0) {
+    node.append(element(
+      "p",
+      "hint",
+      // A digraph containing a space is unreadable raw; the same glyph the analysis report uses.
+      `Transitions before the deletion: ${attribution.transitions.slice(0, 6)
+        .map((entry) => `${entry.transition.replaceAll(" ", "␣")} ${entry.corrections}`)
+        .join("  ")}`,
+    ));
   }
 }
 
@@ -118,7 +146,11 @@ async function finish() {
   const response = await fetch("/api/session/finish", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ sessionId: session.id, keystrokes: session.keystrokes }),
+    body: JSON.stringify({
+      sessionId: session.id,
+      keystrokes: session.keystrokes,
+      corrections: session.corrections,
+    }),
   });
   if (!response.ok) {
     status.textContent = `Could not save the session (${response.status}).`;
@@ -133,35 +165,19 @@ async function finish() {
 
 // keydown carries the physical key; `input` carries what the application actually received. When a
 // character appears with no keydown behind it the input method composed it, and that gap is the
-// measurement — see the note rendered above.
+// measurement — see the note rendered above. The decision itself lives in `typing-session.js` so a
+// test can drive it without a DOM.
 entry.addEventListener("keydown", (event) => {
-  if (!session || event.key.length !== 1) return;
-  session.pendingCode = event.code;
+  if (!session) return;
+  noteKeydown(session, event);
 });
 
 entry.addEventListener("input", () => {
   if (!session) return;
   const typed = entry.value;
-  const index = typed.length - 1;
-  if (index < 0 || index >= session.text.length) {
-    if (typed.length >= session.text.length) finish();
-    return;
-  }
-  const expectedCharacter = session.text[index];
-  const actualCharacter = typed[index];
-  const correct = actualCharacter === expectedCharacter;
-  const code = session.pendingCode ?? COMPOSED_CODE;
-  session.pendingCode = null;
-  session.keystrokes.push({
-    tsMs: performance.now(),
-    code,
-    expectedCode: expectedCodeFor(expectedCharacter),
-    correct,
-  });
-  if (correct) session.wrongIndices.delete(index);
-  else session.wrongIndices.add(index);
-  renderPrompt(session.text, typed.length, session.wrongIndices);
-  if (typed.length >= session.text.length) finish();
+  const outcome = applyInput(session, typed, performance.now());
+  if (outcome.kind !== "outside") renderPrompt(session.text, typed.length, session.wrongIndices);
+  if (outcome.complete) finish();
 });
 
 startButton.addEventListener("click", async () => {
@@ -181,13 +197,7 @@ startButton.addEventListener("click", async () => {
     return;
   }
   const started = await response.json();
-  session = {
-    id: started.sessionId,
-    text: started.text,
-    keystrokes: [],
-    pendingCode: null,
-    wrongIndices: new Set(),
-  };
+  session = createTypingSession(started.sessionId, started.text);
   entry.disabled = false;
   entry.value = "";
   entry.focus();

@@ -54,6 +54,7 @@
         <article><span>WPM</span><strong id="wpm">0</strong></article>
         <article><span>Accuracy</span><strong id="accuracy">0.0%</strong></article>
         <article><span>Keystrokes</span><strong id="keystrokes">0</strong></article>
+        <article><span>Corrections</span><strong id="correction-count">0</strong></article>
         <article id="composed-card"><span>Composed (no keydown)</span><strong id="composed">0</strong></article>
       </section>
       <p id="ibus-note" class="warning" hidden></p>
@@ -63,6 +64,11 @@
           <div class="panel-heading"><h2>Benchmark trend</h2></div>
           <p class="hint">Rolling median over the last 5 runs, per language. Drills are never plotted.</p>
           <div id="history"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-heading"><h2>Corrections</h2></div>
+          <p class="hint">Backspaces attributed to the word being typed. Never counted as keystrokes.</p>
+          <div id="corrections"></div>
         </section>
         <section class="panel">
           <div class="panel-heading"><h2>Weakness model</h2></div>

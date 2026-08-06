@@ -31,10 +31,10 @@ Two defects in `packages/trainer/public/app.js`, both currently silent.
 
 **Bug 2 — deletions are recorded as composed characters.** The `input` handler (`app.js:142-165`) does not distinguish insertion from deletion. On a deletion `typed.length` shrinks, `index = typed.length - 1` points at a character that was already recorded, and a *second* keystroke row is written for it with `pendingCode === null`, so it falls back to `COMPOSED_CODE` (`app.js:153`). Every correction therefore inflates `unattributedCharacters` — the IBus-composition metric that `renderScore` reports as a measurement (`app.js:59-66`). The metric is currently wrong in exactly the sessions where the user made mistakes.
 
-- [ ] Track `session.lastLength` alongside `session.text`.
-- [ ] In the `keydown` handler, capture `event.key === "Backspace"` into `session.pendingDelete = true` before the length check.
-- [ ] In the `input` handler, branch on `typed.length < session.lastLength` first: record a **correction**, not a keystroke, and return without touching the keystroke array.
-- [ ] Update `session.lastLength` on every `input` event, in both branches.
+- [x] Track `session.lastLength` alongside `session.text`.
+- [x] In the `keydown` handler, capture `event.key === "Backspace"` into `session.pendingDelete = true` before the length check.
+- [x] In the `input` handler, branch on `typed.length < session.lastLength` first: record a **correction**, not a keystroke, and return without touching the keystroke array.
+- [x] Update `session.lastLength` on every `input` event, in both branches.
 
 **Requirements**
 - A deletion must never append to `session.keystrokes`. That array feeds `scoring.ts`, whose accuracy and WPM denominators are `keystrokes.length` (`packages/trainer/src/scoring.ts:28-37`).
@@ -42,15 +42,15 @@ Two defects in `packages/trainer/public/app.js`, both currently silent.
 - `renderPrompt` and `wrongIndices` behaviour must not regress: indices at or beyond the new `typed.length` are no longer "wrong", they are pending again.
 
 **Tests** (`packages/trainer/test/`)
-- [ ] `a_deletion_does_not_count_as_a_composed_character` — the regression test for bug 2; assert `unattributedCharacters` is unchanged across a delete
-- [ ] `a_deletion_does_not_change_the_keystroke_count`
-- [ ] `a_multi_character_deletion_records_its_run_length`
+- [x] `a_deletion_does_not_count_as_a_composed_character` — the regression test for bug 2; assert `unattributedCharacters` is unchanged across a delete
+- [x] `a_deletion_does_not_change_the_keystroke_count`
+- [x] `a_multi_character_deletion_records_its_run_length`
 
 ## Task 2 — correction storage
 
 In `packages/trainer/src/store.ts`.
 
-- [ ] Add to `SCHEMA`:
+- [x] Add to `SCHEMA`:
 
 ```sql
 CREATE TABLE IF NOT EXISTS correction (
@@ -64,8 +64,8 @@ CREATE TABLE IF NOT EXISTS correction (
 ) WITHOUT ROWID;
 ```
 
-- [ ] Add `CorrectionRecord` and `recordCorrections(sessionId, corrections)`, mirroring `recordKeystrokes` (`store.ts:144-156`).
-- [ ] Bump `SUPPORTED_TRAINER_SCHEMA_VERSION` (`store.ts:6`) to 2 and add the migration.
+- [x] Add `CorrectionRecord` and `recordCorrections(sessionId, corrections)`, mirroring `recordKeystrokes` (`store.ts:144-156`).
+- [x] Bump `SUPPORTED_TRAINER_SCHEMA_VERSION` (`store.ts:6`) to 2 and add the migration.
 
 **Requirements**
 - A separate table, not a `kind` column on `keystroke`. Adding backspace rows to `keystroke` would silently change the WPM and accuracy denominators for every historical comparison.
@@ -73,34 +73,34 @@ CREATE TABLE IF NOT EXISTS correction (
 - `seq` is independent of `keystroke.seq` — corrections have their own sequence within a session.
 
 **Tests**
-- [ ] `records_and_reads_back_corrections`
-- [ ] `migrates_a_v1_trainer_database`
+- [x] `records_and_reads_back_corrections`
+- [x] `migrates_a_v1_trainer_database`
 
 ## Task 3 — server endpoint
 
 In `packages/trainer/src/server.ts`.
 
-- [ ] Accept a `corrections` array in the session-finish payload, validated the same way keystrokes are at `server.ts:85-88`.
-- [ ] Persist via `recordCorrections`.
-- [ ] Extend the session read query (`server.ts:310-316`) with a corrections read.
+- [x] Accept a `corrections` array in the session-finish payload, validated the same way keystrokes are at `server.ts:85-88`.
+- [x] Persist via `recordCorrections`.
+- [x] Extend the session read query (`server.ts:310-316`) with a corrections read.
 
 **Requirements**
 - Validate defensively and reject malformed entries rather than coercing them, matching the existing style.
 
 **Tests**
-- [ ] `rejects_a_malformed_correction_payload`
-- [ ] `a_finished_session_returns_its_corrections`
+- [x] `rejects_a_malformed_correction_payload`
+- [x] `a_finished_session_returns_its_corrections`
 
 ## Task 4 — word-level attribution
 
 New module `packages/trainer/src/corrections.ts`.
 
-- [ ] `attributeCorrections(text, corrections, keystrokes)` returning per-word and per-transition aggregates:
+- [x] `attributeCorrections(text, corrections, keystrokes)` returning per-word and per-transition aggregates:
   - word, occurrence count, correction count, correction rate
   - character offset within the word, so "always the third letter" is visible
   - the preceding character transition (the digraph before the deleted character)
   - the fumble/edit split, using the same latency thresholds as Tier C so the two instruments agree: `<150`, `150-400`, `400-1000`, `>1000` ms since the previous keystroke
-- [ ] Add a `pnpm trainer corrections` CLI subcommand alongside `weakness` and `history`.
+- [x] Add a `pnpm trainer corrections` CLI subcommand alongside `weakness` and `history`.
 
 **Requirements**
 - The latency thresholds are shared with keylab's Tier C, and Rust and TypeScript cannot share a constant. Define them once here as a named export, and pin both sides: a comment on `latency_bucket` in `crates/keylab/src/encode.rs` naming this file, and a test on each side asserting the four boundaries. If the two ever disagree, the fumble/edit split means different things in the two instruments and every cross-instrument comparison is silently wrong.
@@ -108,16 +108,16 @@ New module `packages/trainer/src/corrections.ts`.
 - A correction whose `char_index` falls on a space belongs to the word that just ended.
 
 **Tests**
-- [ ] `attributes_a_correction_to_the_word_being_typed`
-- [ ] `attributes_a_correction_at_a_word_boundary_to_the_preceding_word`
-- [ ] `separates_fumbles_from_edits_by_latency`
-- [ ] `reports_the_character_offset_within_the_word`
-- [ ] `a_session_with_no_corrections_produces_empty_aggregates_not_a_crash`
+- [x] `attributes_a_correction_to_the_word_being_typed`
+- [x] `attributes_a_correction_at_a_word_boundary_to_the_preceding_word`
+- [x] `separates_fumbles_from_edits_by_latency`
+- [x] `reports_the_character_offset_within_the_word`
+- [x] `a_session_with_no_corrections_produces_empty_aggregates_not_a_crash`
 
 ## Task 5 — UI and documentation
 
-- [ ] Show a corrections count and the top corrected words in the session summary in `public/app.js` and `public/index.html`.
-- [ ] `docs/trainer.md`: document correction capture, the `corrections` subcommand, and the storage schema change. Note the two fixed bugs in the storage/hygiene section, since historical `Composed` counts in existing databases are inflated and are not retroactively correctable.
+- [x] Show a corrections count and the top corrected words in the session summary in `public/app.js` and `public/index.html`.
+- [x] `docs/trainer.md`: document correction capture, the `corrections` subcommand, and the storage schema change. Note the two fixed bugs in the storage/hygiene section, since historical `Composed` counts in existing databases are inflated and are not retroactively correctable.
 
 **Requirements**
 - State plainly that pre-fix sessions have inflated `unattributedCharacters`. Silently changing the metric's meaning between sessions would corrupt the trend the metric exists to show.

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { openKeylabDatabase } from "@glove80/analysis/db";
 import { loadAnalysisMeta } from "@glove80/analysis/meta";
 import { calculateMetrics, parseSince } from "@glove80/analysis/metrics";
+import { attributeCorrections, type CorrectionAttribution } from "./corrections";
 import { generateBenchmark, listCorpora } from "./corpus";
 import {
   generateBigramDrill,
@@ -14,7 +15,13 @@ import {
   generatePositionDrill,
 } from "./drills";
 import { rollingMedian, scoreSession } from "./scoring";
-import { defaultTrainerPath, openTrainerStore, type KeystrokeRecord, type TrainerStore } from "./store";
+import {
+  defaultTrainerPath,
+  openTrainerStore,
+  type CorrectionRecord,
+  type KeystrokeRecord,
+  type TrainerStore,
+} from "./store";
 import { buildWeaknessModel } from "./weakness";
 
 const HOST = "127.0.0.1";
@@ -72,6 +79,7 @@ interface StartRequest {
 interface FinishRequest {
   sessionId?: unknown;
   keystrokes?: unknown;
+  corrections?: unknown;
 }
 
 function parseKeystrokes(value: unknown): KeystrokeRecord[] {
@@ -87,6 +95,34 @@ function parseKeystrokes(value: unknown): KeystrokeRecord[] {
       code: record.code,
       expectedCode: typeof record.expectedCode === "string" ? record.expectedCode : null,
       correct: record.correct === true,
+    };
+  });
+}
+
+/**
+ * Rejects a malformed correction rather than coercing it. A coerced `charIndex` would attribute a
+ * correction to whatever word happens to sit at index 0, which reads exactly like a real finding.
+ */
+function parseCorrections(value: unknown): CorrectionRecord[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) throw new Error("corrections must be an array");
+  return value.map((entry, index) => {
+    const record = entry as Record<string, unknown>;
+    if (typeof record.tsMs !== "number" || !Number.isFinite(record.tsMs)) {
+      throw new Error(`correction ${index} is missing tsMs`);
+    }
+    if (!Number.isInteger(record.charIndex) || (record.charIndex as number) < 0) {
+      throw new Error(`correction ${index} has no non-negative integer charIndex`);
+    }
+    if (!Number.isInteger(record.runLength) || (record.runLength as number) < 1) {
+      throw new Error(`correction ${index} has no positive integer runLength`);
+    }
+    return {
+      seq: index,
+      tsMs: Math.round(record.tsMs),
+      charIndex: record.charIndex as number,
+      runLength: record.runLength as number,
+      expectedCode: typeof record.expectedCode === "string" ? record.expectedCode : null,
     };
   });
 }
@@ -145,6 +181,9 @@ export function createTrainerServer(options: TrainerServerOptions): TrainerApp {
           if (url.pathname === "/") return staticResponse("index.html", "text/html; charset=utf-8");
           if (url.pathname === "/styles.css") return staticResponse("styles.css", "text/css; charset=utf-8");
           if (url.pathname === "/app.js") return staticResponse("app.js", "text/javascript; charset=utf-8");
+          if (url.pathname === "/typing-session.js") {
+            return staticResponse("typing-session.js", "text/javascript; charset=utf-8");
+          }
 
           if (url.pathname === "/api/corpora" && request.method === "GET") {
             return Response.json(
@@ -179,11 +218,20 @@ export function createTrainerServer(options: TrainerServerOptions): TrainerApp {
             const sessionId = Number(body.sessionId);
             if (!Number.isInteger(sessionId)) return textResponse("sessionId is required", 400);
             const keystrokes = parseKeystrokes(body.keystrokes);
+            const corrections = parseCorrections(body.corrections);
             store.recordKeystrokes(sessionId, keystrokes);
+            store.recordCorrections(sessionId, corrections);
             store.finishSession(sessionId, now());
-            return Response.json(scoreSession(keystrokes), {
-              headers: responseHeaders("application/json; charset=utf-8"),
-            });
+            // Attribution happens here, against the text stored with the session, so the browser
+            // never has to hold a second copy of the tokenisation rules.
+            const text = store.session(sessionId)?.text ?? "";
+            return Response.json(
+              {
+                ...scoreSession(keystrokes),
+                corrections: attributeCorrections(text, corrections, keystrokes),
+              },
+              { headers: responseHeaders("application/json; charset=utf-8") },
+            );
           }
 
           return textResponse("Not found", 404);
@@ -277,6 +325,7 @@ function startSession(
     keylabProfile: mode === "benchmark"
       ? (resolvedLanguage === "de" ? "training-de" : "training-en")
       : null,
+    text,
   });
 
   return Response.json(
@@ -294,6 +343,11 @@ export interface BenchmarkPoint {
   wpm: number;
   accuracy: number;
   unattributedCharacters: number;
+  /**
+   * Corrections are reported beside the score, never inside it: they are not keystrokes, so they
+   * must not move the WPM or accuracy denominators a past run was measured against.
+   */
+  corrections: CorrectionAttribution;
 }
 
 export interface BenchmarkHistory {
@@ -306,16 +360,9 @@ export function benchmarkHistory(store: TrainerStore): BenchmarkHistory {
   const points: BenchmarkPoint[] = [];
   for (const session of store.sessions("benchmark")) {
     if (session.endedTs === null) continue;
-    const rows = store.database
-      .query("SELECT seq, ts_ms, code, expected_code, correct FROM keystroke WHERE session_id = ? ORDER BY seq")
-      .all(session.id) as Array<Record<string, unknown>>;
-    const score = scoreSession(rows.map((row) => ({
-      seq: Number(row.seq),
-      tsMs: Number(row.ts_ms),
-      code: String(row.code),
-      expectedCode: row.expected_code === null ? null : String(row.expected_code),
-      correct: Number(row.correct) === 1,
-    })));
+    const keystrokes = store.keystrokes(session.id);
+    const corrections = store.corrections(session.id);
+    const score = scoreSession(keystrokes);
     points.push({
       sessionId: session.id,
       startedTs: session.startedTs,
@@ -325,6 +372,7 @@ export function benchmarkHistory(store: TrainerStore): BenchmarkHistory {
       wpm: score.wpm,
       accuracy: score.accuracy,
       unattributedCharacters: score.unattributedCharacters,
+      corrections: attributeCorrections(session.text ?? "", corrections, keystrokes),
     });
   }
   const rollingMedianWpm: Record<string, number[]> = {};
