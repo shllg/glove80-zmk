@@ -19,8 +19,12 @@
           <button id="pause-toggle" type="button" class="chip-button">Pause</button>
         </div>
         <label class="range-control">
-          <span>Activity profile</span>
+          <span>Capture as</span>
           <select id="profile"></select>
+        </label>
+        <label class="range-control">
+          <span>View profile</span>
+          <select id="view-profile"></select>
         </label>
         <label class="range-control">
           <span>Keyboard</span>
@@ -51,12 +55,30 @@
       <section class="panel heatmap-panel">
         <div class="panel-heading">
           <div>
-            <p class="eyebrow">Tier B · unordered counts</p>
-            <h2>Physical key load</h2>
+            <p class="eyebrow" id="heatmap-source">Tier B · unordered counts</p>
+            <h2 id="heatmap-title">Physical key load</h2>
           </div>
-          <span>low <i class="legend"></i> high</span>
+          <div class="layer-controls">
+            <label class="range-control">
+              <span>Layer</span>
+              <select id="layer">
+                <option value="presses">Key presses</option>
+                <option value="corrections">Correction rate</option>
+              </select>
+            </label>
+            <label class="range-control" id="latency-control" hidden>
+              <span>Correction kind</span>
+              <select id="correction-latency">
+                <option value="all">All</option>
+                <option value="fumble">Fumble · under 400 ms</option>
+                <option value="edit">Edit · over 1 s</option>
+              </select>
+            </label>
+            <span>low <i class="legend"></i> high</span>
+          </div>
         </div>
         <div id="heatmap" class="heatmap" aria-label="Glove80 per-key heatmap"></div>
+        <p id="correction-note" class="hint" hidden></p>
       </section>
 
       <div class="columns">

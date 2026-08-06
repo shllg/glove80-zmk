@@ -4,10 +4,18 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { openKeylabDatabase } from "../../analysis/src/db";
 import { loadAnalysisMeta } from "../../analysis/src/meta";
-import { calculateMetrics, parseViewerRange } from "../../analysis/src/metrics";
 import {
+  calculateMetrics,
+  getCorrectionContext,
+  parseViewerRange,
+  resolveDeviceScope,
+  resolveProfileScope,
+} from "../../analysis/src/metrics";
+import {
+  createCorrectionFixture,
   createFixture,
   createMultiDeviceFixture,
+  createProfileFixture,
   FIXTURE_NOW,
   type SeededFixture,
 } from "../../analysis/test/fixture";
@@ -19,6 +27,7 @@ import {
 } from "../src/geometry";
 import { createRefreshScheduler } from "../public/refresh-scheduler.js";
 import {
+  CORRECTION_PRESS_FLOOR,
   createViewerServer,
   parseViewerArgs,
   type ViewerApp,
@@ -68,12 +77,17 @@ describe("viewer API", () => {
     const { fixture, app } = startViewer();
     const response = await fetch(`${app.url}/api/summary?range=7d`);
     expect(response.status).toBe(200);
-    const actual = await response.json();
+    // The correction layer is the viewer's own derivation; everything else must still be exactly
+    // what the analysis package computed, with no viewer-side reinterpretation in between.
+    const { correctionLayer, ...actual } = await response.json();
+    expect(correctionLayer.pressFloor).toBe(CORRECTION_PRESS_FLOOR);
 
     const database = openKeylabDatabase(fixture.path);
     try {
       const meta = loadAnalysisMeta(database, fixture.metaPath);
-      const expected = calculateMetrics(database, meta, parseViewerRange("7d", FIXTURE_NOW));
+      const expected = calculateMetrics(database, meta, parseViewerRange("7d", FIXTURE_NOW), {
+        profile: "*",
+      });
       expect(actual).toEqual(expected);
     } finally {
       database.close();
@@ -120,6 +134,39 @@ describe("viewer API", () => {
   });
 });
 
+describe("profile scope", () => {
+  function startProfileViewer() {
+    const fixture = createProfileFixture();
+    fixtures.push(fixture);
+    const app = createViewerServer(testOptions(fixture));
+    apps.push(app);
+    return { fixture, app };
+  }
+
+  const total = (summary: { header: { totalKeystrokes: number } }) => summary.header.totalKeystrokes;
+
+  test("pools every profile unless one is named", async () => {
+    const { app } = startProfileViewer();
+    // The analysis default is the `default` profile, which is right for a report that names its
+    // scope and wrong here: a dashboard scoped to one profile drops everything typed under the
+    // others while its totals still read as the whole picture.
+    const pooled = await (await fetch(`${app.url}/api/summary?range=all`)).json();
+    expect(total(pooled)).toBe(140);
+    expect(pooled.header.profile).toBe("* (all profiles)");
+  });
+
+  test("scopes to one profile when asked, and says which", async () => {
+    const { app } = startProfileViewer();
+    const gaming = await (await fetch(`${app.url}/api/summary?range=all&profile=gaming`)).json();
+    expect(total(gaming)).toBe(40);
+    expect(gaming.header.profile).toBe("gaming");
+
+    const standard = await (await fetch(`${app.url}/api/summary?range=all&profile=default`)).json();
+    expect(total(standard)).toBe(100);
+    expect(total(standard) + total(gaming)).toBe(140);
+  });
+});
+
 describe("multi-device viewer", () => {
   function startMultiDeviceViewer() {
     const fixture = createMultiDeviceFixture();
@@ -129,12 +176,20 @@ describe("multi-device viewer", () => {
     return { fixture, app };
   }
 
-  test("lists every device that has data, with its position space", async () => {
+  test("lists every device that has data, with what tells two rows of one keyboard apart", async () => {
     const { app } = startMultiDeviceViewer();
     const devices = await (await fetch(`${app.url}/api/devices`)).json();
+    // Name and position space alone are identical for two rows of the same keyboard, which an
+    // older daemon minted on every reconnect. The counts and first-seen time are what separate them.
     expect(devices).toEqual([
-      { id: 1, name: "Evsieve Virtual Device", positionSpace: "glove80" },
-      { id: 2, name: "AT Translated Set 2 keyboard", positionSpace: "qwerty-ansi" },
+      {
+        id: 1, name: "Evsieve Virtual Device", positionSpace: "glove80",
+        firstTs: FIXTURE_NOW - 1_000_000, keystrokes: 100, tierBWindows: 1,
+      },
+      {
+        id: 2, name: "AT Translated Set 2 keyboard", positionSpace: "qwerty-ansi",
+        firstTs: FIXTURE_NOW - 1_000_000, keystrokes: 60, tierBWindows: 1,
+      },
     ]);
   });
 
@@ -165,6 +220,96 @@ describe("multi-device viewer", () => {
     ];
     expect(orderForPositionSpace("qwerty-ansi", positions).map((cell) => cell.pos))
       .toEqual([1, 2, 4, 5]);
+  });
+});
+
+describe("correction layer", () => {
+  function startCorrectionViewer() {
+    const fixture = createCorrectionFixture();
+    fixtures.push(fixture);
+    const app = createViewerServer(testOptions(fixture));
+    apps.push(app);
+    return { fixture, app };
+  }
+
+  async function loadLayer(app: ViewerApp, latency = "all") {
+    const summary = await (await fetch(
+      `${app.url}/api/summary?range=all&device=1&corrections=${latency}`,
+    )).json();
+    const positionOf = (keycode: string) => summary.positionLoad
+      .find((position: { baseKeycode: string | null }) => position.baseKeycode === keycode).pos;
+    return {
+      layer: summary.correctionLayer,
+      key: (keycode: string) => summary.correctionLayer.positions
+        .find((entry: { pos: number }) => entry.pos === positionOf(keycode)),
+    };
+  }
+
+  test("correction intensity is a rate, not a count", async () => {
+    const { app } = startCorrectionViewer();
+    const { key } = await loadLayer(app);
+    // V is corrected more often than P in absolute terms, because V is pressed ten times as often.
+    // Drawing the count would simply redraw the frequency heatmap; the rate says P is the problem.
+    expect(key("KEY_V").corrections).toBeGreaterThan(key("KEY_P").corrections);
+    expect(key("KEY_P").rate).toBeGreaterThan(key("KEY_V").rate);
+    expect(key("KEY_P").rate).toBeCloseTo(0.5, 10);
+    expect(key("KEY_V").rate).toBeCloseTo(0.06, 10);
+  });
+
+  test("positions below the press floor render as no data", async () => {
+    const { app } = startCorrectionViewer();
+    const { layer, key } = await loadLayer(app);
+    // Z has the highest raw rate in the fixture — 3 corrections in 4 presses — and four presses is
+    // not a measurement. It must not be drawn, and it must not set the scale for everything else.
+    expect(key("KEY_Z")).toMatchObject({ corrections: 3, presses: 4, rate: null });
+    expect(layer.pressFloor).toBe(CORRECTION_PRESS_FLOOR);
+    expect(layer.belowFloor).toBe(1);
+    expect(layer.maximumRate).toBeCloseTo(0.5, 10);
+    // A key with presses but no corrections is a measured zero, not missing data.
+    expect(key("KEY_M").rate).toBeCloseTo(0.06, 10);
+  });
+
+  test("the fumble filter separates a mistyped key from a rewritten one", async () => {
+    const { app } = startCorrectionViewer();
+    const fumbles = await loadLayer(app, "fumble");
+    const edits = await loadLayer(app, "edit");
+    // M and V are pressed and corrected identically; only the latency bucket differs.
+    expect(fumbles.key("KEY_V").rate).toBeCloseTo(0.06, 10);
+    expect(fumbles.key("KEY_M").rate).toBe(0);
+    expect(edits.key("KEY_M").rate).toBeCloseTo(0.06, 10);
+    expect(edits.key("KEY_V").rate).toBe(0);
+  });
+
+  test("reports the corrections that have no position to draw", async () => {
+    const { app } = startCorrectionViewer();
+    const { layer } = await loadLayer(app);
+    expect(layer.corrections).toBe(173);
+    expect(layer.withoutPosition).toMatchObject({ unattributed: 7, absent: 0 });
+    expect(layer.withoutPosition.share).toBeCloseTo(7 / 180, 10);
+  });
+
+  test("refuses to draw across position spaces", async () => {
+    const fixture = createMultiDeviceFixture();
+    fixtures.push(fixture);
+    const app = createViewerServer(testOptions(fixture));
+    apps.push(app);
+    expect((await fetch(`${app.url}/api/summary?range=all&device=*`)).status).toBe(500);
+
+    // And the n-gram read carries its own guard rather than relying on Tier B failing first: an
+    // ordered trigram means nothing once two keyboards' geometries are summed into it.
+    const database = openKeylabDatabase(fixture.path);
+    try {
+      const meta = loadAnalysisMeta(database, fixture.metaPath);
+      expect(() => getCorrectionContext(
+        database,
+        meta,
+        parseViewerRange("all", FIXTURE_NOW),
+        resolveProfileScope(database),
+        resolveDeviceScope(database),
+      )).toThrow("Refusing to pool Tier C");
+    } finally {
+      database.close();
+    }
   });
 });
 
@@ -210,6 +355,21 @@ describe("control endpoint", () => {
       profile: "default",
       profiles: ["default", "training-de", "training-en", "gaming"],
     });
+  });
+
+  test("accepts a control POST from the localhost spelling of its own origin", async () => {
+    const { app } = startViewer();
+    // The page is reachable as both 127.0.0.1 and localhost, and the browser sends the origin it
+    // was loaded from. Accepting only one spelling 403s every switch made from the other.
+    const response = await fetch(`${app.url}/api/control`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        origin: `http://localhost:${new URL(app.url).port}`,
+      },
+      body: JSON.stringify({ profile: "gaming" }),
+    });
+    expect(response.status).toBe(204);
   });
 
   test("rejects a control POST from a foreign origin", async () => {

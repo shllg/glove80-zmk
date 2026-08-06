@@ -113,6 +113,7 @@ Rules that matter:
 - **Tier B and Tier C are preserved across a switch, per profile.** Switching profiles never discards positional or correction progress. It also means a profile you rarely use may take weeks to reach the 2000-keystroke or 500-correction floor and seal a window — correct behaviour, not a fault. A Tier C seal clears only the sealing profile's accumulator.
 - **Tier A is sealed or discarded at the boundary.** A bucket that clears both floors (25 keystrokes, 10 seconds) is sealed under the outgoing profile; anything below is discarded. A switch therefore smears at most one bucket.
 - **Idle auto-revert.** After `auto_revert_idle_seconds` (default 900) with no keystrokes on any device, the daemon rewrites `control.json` back to `default`, so a forgotten `gaming` profile cannot silently poison a working day. Set it to `0` to disable.
+- **Capturing and viewing are two different axes.** The viewer's *Capture as* control tells the daemon which label to record under; *View profile* chooses which labels to show, and defaults to **all** of them. Scoping the view to one profile is a filter you can see; a hidden default of `default` would drop everything typed under any other label while the totals still read as the whole picture. `pnpm analysis report` keeps its own default of `--profile default`, because it prints the scope it used at the top of the report.
 
 Check the split:
 
@@ -244,6 +245,12 @@ The first two backfills are accurate rather than guesses: every pre-v3 row was c
 `packages/analysis`, `packages/viewer` and `packages/trainer` all open the database through `openKeylabDatabase`, which pins schema version 4. An older database is refused with a message that points at the daemon, which migrates it in place on its next start.
 
 `pnpm analysis report` renders Tier C as a *correction context* block under "Correction tax": the top ordered trigrams with their base-layer characters, the fumble / ambiguous / edit split, the finger-transition rollup for whatever degraded, and the degraded and dropped shares. A trigram position renders as `?` when it is unattributed or has no base-layer binding and as `·` when the slot held no key at all — the two are never conflated. Ordered trigrams are geometric, so the read refuses to pool across position spaces exactly as Tier B does; select one device with `--device ID`. The block states when it is empty and why, because a silently absent section would read as "no corrections".
+
+`pnpm viewer` draws the same data on the keyboard. The heatmap has two layers: **key presses**, the Tier B frequency map it always had, and **correction rate**, the marginal of Tier C's `pos_c` — the key immediately before each backspace — divided by that key's presses in range.
+
+The division is the point. Corrections counted raw simply redraw the frequency map, because the keys pressed most are corrected most in absolute terms; the rate is the difference between "keys I use" and "keys I get wrong". A **press floor of 50 presses in range** goes with it: below that a key is drawn as no data rather than as a rate, because three corrections in four presses is the highest number on the board and four presses of evidence. The footnote says how many keys that hid.
+
+A correction-kind filter switches between all corrections, fumbles (under 400 ms since the last keystroke) and edits (over a second), on keylab's own latency buckets. Ambiguous corrections — 400 to 1000 ms — count only under *all*, since they are neither. `-1` and `-2` have no geometry to draw on, so their share is footnoted rather than dropped, and the layer refuses to pool across position spaces exactly as the report does.
 
 Tier C's on-disk position encoding extends `pos_count`'s convention: `0..79` is a physical position, `-1` is unattributed (deliberately the same value `pos_count` uses), and `-2` is *absent* — fewer than three keys preceded that correction, for example at the very start of a window. Finger columns use `0..9` and `-1` for absent, since a key with no base-layer position has no finger either.
 

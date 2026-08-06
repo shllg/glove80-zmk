@@ -178,6 +178,17 @@ select {
 .heat-8 { background: color-mix(in srgb, var(--accent-soft) 20%, var(--accent) 80%); }
 .heat-9 { background: color-mix(in srgb, var(--accent-soft) 10%, var(--accent) 90%); }
 .heat-10 { background: var(--accent); color: #071a15; }
+/* Too few presses to rate. Deliberately unlike every heat step: no data is not a low rate. */
+.key-cell.no-data {
+  border-style: dashed;
+  background: repeating-linear-gradient(
+    45deg, var(--surface), var(--surface) 4px, var(--bg) 4px, var(--bg) 8px
+  );
+  color: var(--muted);
+}
+
+.layer-controls { display: flex; align-items: center; gap: 14px; }
+.hint { margin: 14px 2px 0; color: var(--muted); font-size: .72rem; line-height: 1.5; }
 
 .columns { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 14px; margin: 14px 0 40px; }
 .bar-chart { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
