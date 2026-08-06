@@ -1,4 +1,5 @@
-import type { AnalysisMetrics, PositionalContext } from "./metrics";
+import type { AnalysisMetrics, CorrectionContext, PositionalContext } from "./metrics";
+import { TOP_NGRAM_LIMIT } from "./metrics";
 
 function percent(value: number): string {
   return `${(value * 100).toFixed(2)}%`;
@@ -14,6 +15,65 @@ function positionalLine(context: PositionalContext): string {
   return context.unreliable
     ? `${base} — WARNING: >25%; POSITIONAL METRICS ARE UNRELIABLE`
     : base;
+}
+
+function shownOf(shown: number, distinct: number): string {
+  return `${Math.min(shown, TOP_NGRAM_LIMIT)} of ${distinct} distinct`;
+}
+
+/**
+ * Tier C. The degraded and dropped counts are printed next to the trigrams rather than below them:
+ * a table of the corrections that kept their position identity, with no note of the ones that did
+ * not, reads as the whole picture of how the corrections were made.
+ */
+function correctionContextLines(context: CorrectionContext): string[] {
+  if (context.windowCount === 0) {
+    return [
+      "  Correction context (Tier C): none in range.",
+      "    A window seals only once 500 corrections have accumulated, so this is empty when no",
+      "    window has sealed yet, when ngram_capture is off, or when the range excludes the",
+      "    sealed windows. It does not mean no corrections were made.",
+    ];
+  }
+
+  const lines = [
+    `  Correction context (Tier C; ${context.windowCount} windows, `
+    + `${context.corrections} corrections)`,
+    `    ${(["fumble", "ambiguous", "edit"] as const)
+      .map((klass) => `${klass} ${context.byLatency[klass]} `
+        + `(${percent(context.byLatency[klass] / (context.corrections || 1))})`)
+      .join("  ")}`,
+    `    Degraded to finger level: ${context.degraded} (${percent(context.degradedShare)})  `
+    + `Dropped entirely: ${context.dropped} (${percent(context.droppedShare)})`,
+  ];
+
+  lines.push(`    Top trigrams (${shownOf(context.topNgrams.length, context.distinctNgrams)})`);
+  if (context.topNgrams.length === 0) {
+    lines.push("      none — every trigram in range degraded below the position threshold");
+  }
+  for (const entry of context.topNgrams) {
+    lines.push((
+      `      ${String(entry.count).padStart(7)}  ${entry.characters.padEnd(18)}`
+      + `${entry.latencyClass.padEnd(10)}run ${entry.runLabel.padEnd(6)}`
+      + entry.modLabels.join("+")
+    ).trimEnd());
+  }
+
+  lines.push(
+    `    Finger transitions after degradation `
+    + `(${shownOf(context.byFinger.length, context.distinctFingerNgrams)})`,
+  );
+  if (context.byFinger.length === 0) {
+    lines.push("      none — no trigram in range degraded");
+  }
+  for (const entry of context.byFinger) {
+    lines.push((
+      `      ${String(entry.count).padStart(7)}  ${entry.labels.padEnd(28)}`
+      + `${entry.latencyClass.padEnd(10)}run ${entry.runLabel.padEnd(6)}`
+      + entry.modLabels.join("+")
+    ).trimEnd());
+  }
+  return lines;
 }
 
 export function renderReport(metrics: AnalysisMetrics): string {
@@ -86,6 +146,8 @@ export function renderReport(metrics: AnalysisMetrics): string {
       + `${number(correction.burstEstimatedBackspacePresses)} presses `
       + `(${percent(correction.burstShare)})`,
     `  ${positionalLine(correction.positional)}`,
+    "",
+    ...correctionContextLines(correction.context),
   );
 
   lines.push(

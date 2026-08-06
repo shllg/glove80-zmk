@@ -15,6 +15,32 @@ export const EVENT_KIND_LABELS = [
   "LONELY_MOD", "MOD_DURING_ALPHA", "BSP_BURST_AFTER_MOD",
 ] as const;
 
+/**
+ * Tier C latency buckets, measured from the last non-backspace keydown to the start of the backspace
+ * run. The split is what separates mistyping from ordinary rewriting; without it the table mixes the
+ * two and the answer is polluted. Bucket 3 also carries "no preceding key", which reads as an edit.
+ */
+export const LATENCY_CLASS_LABELS = ["fumble", "fumble", "ambiguous", "edit"] as const;
+
+export type LatencyClass = (typeof LATENCY_CLASS_LABELS)[number];
+
+/** Backspace run buckets, as `encode.rs::run_bucket` cuts them. Bucket 6 is open-ended. */
+export const RUN_BUCKET_LABELS = ["1", "2", "3", "4", "5-8", "9-16", "17+"] as const;
+
+/** Tier C position sentinels, matching the daemon's on-disk encoding. */
+export const POSITION_UNATTRIBUTED = -1;
+export const POSITION_ABSENT = -2;
+
+/** Tier C finger sentinel. Fingers are `0..9`; `-1` means the slot held no key at all. */
+export const FINGER_ABSENT = -1;
+
+/**
+ * How many aggregated rows `getCorrectionContext` returns. The full distinct-row counts ride along
+ * so a caller can say how much it is not showing — a truncated list that reads as complete would
+ * make a long tail of rare fumbles look like it does not exist.
+ */
+export const TOP_NGRAM_LIMIT = 20;
+
 export type SinceValue = "30m" | "24h" | "7d" | "all";
 export type ViewerRangeValue = "live" | "today" | "7d" | "all";
 
@@ -38,12 +64,12 @@ export interface MetricsOptions {
 }
 
 /** `null` means "no profile clause at all", which is how pooling is expressed. */
-interface ProfileScope {
+export interface ProfileScope {
   id: number | null;
   label: string;
 }
 
-interface DeviceScope {
+export interface DeviceScope {
   id: number | null;
   label: string;
 }
@@ -126,6 +152,49 @@ export interface PositionLoad {
   presses: number;
 }
 
+/** One aggregated ordered trigram of physical positions that preceded a correction. */
+export interface NgramEntry {
+  positions: [number, number, number];
+  /** The three base-layer bindings, in typing order. `?` is unknown, `·` is absent. */
+  characters: string;
+  count: number;
+  latencyBucket: number;
+  latencyClass: LatencyClass;
+  runBucket: number;
+  runLabel: string;
+  modMask: number;
+  modLabels: string[];
+}
+
+/** The finger-level projection a trigram degrades to when it was too rare to keep its positions. */
+export interface FingerNgramEntry {
+  fingers: [number, number, number];
+  /** The three finger labels, in typing order. `·` is absent. */
+  labels: string;
+  count: number;
+  latencyBucket: number;
+  latencyClass: LatencyClass;
+  runBucket: number;
+  runLabel: string;
+  modMask: number;
+  modLabels: string[];
+}
+
+export interface CorrectionContext {
+  windowCount: number;
+  corrections: number;
+  degraded: number;
+  dropped: number;
+  degradedShare: number;
+  droppedShare: number;
+  distinctNgrams: number;
+  distinctFingerNgrams: number;
+  topNgrams: NgramEntry[];
+  byFinger: FingerNgramEntry[];
+  /** Totals over every correction that kept its latency, so these sum to `corrections - dropped`. */
+  byLatency: Record<LatencyClass, number>;
+}
+
 export interface RangeMetrics {
   range: TimeRange;
   header: {
@@ -166,6 +235,7 @@ export interface RangeMetrics {
     burstEstimateOpenEnded: boolean;
     runHistogram: Array<{ bucket: number; midpoint: number; count: number; openEnded: boolean }>;
     positional: PositionalContext;
+    context: CorrectionContext;
   };
   dailyDose: {
     days: DailyDoseEntry[];
@@ -227,6 +297,23 @@ interface DayHistRow {
   date: string;
   bucket: number;
   n: number;
+}
+
+interface NgramRow {
+  a: number;
+  b: number;
+  c: number;
+  mod_mask: number;
+  latency_bucket: number;
+  run_bucket: number;
+  n: number;
+}
+
+interface NgramWindowRow {
+  windows: number;
+  corrections: number | null;
+  degraded: number | null;
+  dropped: number | null;
 }
 
 const DURATION_BUCKETS = Array.from({ length: 22 }, (_, bucket) => bucket);
@@ -338,6 +425,18 @@ export function resolveDeviceScope(database: Database, device?: number | string)
 }
 
 /**
+ * The window table each positional tier seals into, keyed by the tier name the guard prints. Keeping
+ * it a closed map rather than a free table argument means no caller can splice a table name into the
+ * guard's SQL, and the error always names the read that actually failed.
+ */
+const POSITION_SPACE_SOURCES = {
+  "Tier B": { table: "key_window", subject: "positional data" },
+  "Tier C": { table: "ngram_window", subject: "correction-context n-grams" },
+} as const;
+
+export type PositionSpaceTier = keyof typeof POSITION_SPACE_SOURCES;
+
+/**
  * **Tier A is semantic and crosses keyboards.** `finger_id`, `hand`, `row_idx`, hold and gap
  * histograms mean the same thing on any board, so pooling them answers "am I slower and more
  * pinky-loaded on the laptop?".
@@ -345,6 +444,9 @@ export function resolveDeviceScope(database: Database, device?: number | string)
  * **Tier B is geometric and must never be pooled across position spaces.** `pos` only means
  * something inside one keyboard's geometry: position 35 is `A` on the Glove80 and something else
  * entirely on a row-staggered board. Summing them produces a heatmap of nothing.
+ *
+ * **Tier C is geometric too.** An ordered position trigram is meaningless once two keyboards'
+ * geometries are mixed into it, so the same guard runs over `ngram_window`.
  *
  * This is the invariant most likely to be violated silently, so it throws rather than returning a
  * plausible-looking number.
@@ -354,7 +456,9 @@ export function assertSinglePositionSpace(
   device: DeviceScope,
   profile: ProfileScope,
   range: TimeRange,
+  tier: PositionSpaceTier = "Tier B",
 ): string | null {
+  const source = POSITION_SPACE_SOURCES[tier];
   const clauses = ["kw.start_ts <= ?"];
   const params: Array<number | string> = [range.nowTs];
   if (range.sinceTs !== null) {
@@ -371,13 +475,13 @@ export function assertSinglePositionSpace(
   }
   const spaces = database.query(`
     SELECT DISTINCT COALESCE(d.keymap_kind, 'unknown') AS kind
-    FROM key_window kw JOIN device d ON d.id = kw.device_id
+    FROM ${source.table} kw JOIN device d ON d.id = kw.device_id
     WHERE ${clauses.join(" AND ")}
     ORDER BY kind
   `).all(...params) as Array<{ kind: string }>;
   if (spaces.length > 1) {
     throw new Error(
-      "Refusing to pool Tier B positional data across "
+      `Refusing to pool ${tier} ${source.subject} across `
       + `${spaces.length} position spaces (${spaces.map((space) => space.kind).join(", ")}). `
       + "Position identity only means something inside one keyboard's geometry; "
       + "select a single device with the device option.",
@@ -660,6 +764,150 @@ function getCorrectionTax(
     burstEstimateOpenEnded: (runHistogram[6]?.count ?? 0) > 0,
     runHistogram,
     positional,
+    context: getCorrectionContext(database, meta, range, profile, device, hour),
+  };
+}
+
+/**
+ * Keys whose base binding is a character but whose keycode name is not. Everything else falls back
+ * to the keycode name in angle brackets, which is never mistaken for a character the user typed.
+ */
+const KEYCODE_CHARACTERS: Record<string, string> = {
+  KEY_GRAVE: "`", KEY_MINUS: "-", KEY_EQUAL: "=",
+  KEY_LEFTBRACE: "[", KEY_RIGHTBRACE: "]", KEY_BACKSLASH: "\\",
+  KEY_SEMICOLON: ";", KEY_APOSTROPHE: "'",
+  KEY_COMMA: ",", KEY_DOT: ".", KEY_SLASH: "/",
+  KEY_SPACE: "␣", KEY_TAB: "⇥", KEY_ENTER: "⏎",
+  KEY_BACKSPACE: "⌫", KEY_DELETE: "⌦", KEY_ESC: "⎋",
+};
+
+function renderKeycode(keycode: string): string {
+  const glyph = KEYCODE_CHARACTERS[keycode];
+  if (glyph !== undefined) return glyph;
+  const name = keycode.startsWith("KEY_") ? keycode.slice(4) : keycode;
+  return /^[A-Z0-9]$/.test(name) ? name.toLowerCase() : `<${name.toLowerCase()}>`;
+}
+
+/**
+ * A position renders to whatever its base layer binds, never to a guess. `-1` is a key the daemon
+ * could not attribute to a base-layer position, `-2` is a slot that held no key at all, and a
+ * position with no base binding is as unknown as `-1` — all three would be lies if rendered as text.
+ */
+function renderPosition(meta: AnalysisMeta, pos: number): string {
+  if (pos === POSITION_ABSENT) return "·";
+  if (pos === POSITION_UNATTRIBUTED) return "?";
+  const keycode = meta.position(pos)?.baseKeycode;
+  return keycode ? renderKeycode(keycode) : "?";
+}
+
+function renderFinger(finger: number): string {
+  return finger === FINGER_ABSENT ? "·" : FINGER_LABELS[finger] ?? "·";
+}
+
+function latencyClass(bucket: number): LatencyClass {
+  return LATENCY_CLASS_LABELS[bucket] ?? "edit";
+}
+
+function runLabel(bucket: number): string {
+  return RUN_BUCKET_LABELS[bucket] ?? String(bucket);
+}
+
+function modLabels(mask: number): string[] {
+  return MOD_CLASS_LABELS.filter((_, modClass) => (mask & (1 << modClass)) !== 0);
+}
+
+/**
+ * Tier C: the ordered trigrams that preceded a correction, summed across every window in range.
+ *
+ * Windows are independent samples of the same behaviour, so their counts add; averaging them would
+ * weight a short window as heavily as a long one. The degraded and dropped totals travel with the
+ * result because a correction table that hides them reads as full coverage of the corrections made.
+ */
+export function getCorrectionContext(
+  database: Database,
+  meta: AnalysisMeta,
+  range: TimeRange,
+  profile: ProfileScope,
+  device: DeviceScope,
+  hour?: number,
+): CorrectionContext {
+  // Runs before the n-gram reads: an ordered trigram means nothing once two keyboards' geometries
+  // are summed into it, so a pooled read has to fail rather than answer.
+  assertSinglePositionSpace(database, device, profile, range, "Tier C");
+
+  const filter = timestampFilter("nw.start_ts", range, hour, profile, device);
+  const totals = database.query(`
+    SELECT COUNT(*) AS windows,
+           COALESCE(SUM(nw.corrections), 0) AS corrections,
+           COALESCE(SUM(nw.degraded), 0) AS degraded,
+           COALESCE(SUM(nw.dropped), 0) AS dropped
+    FROM ngram_window nw WHERE ${filter.sql}
+  `).get(...filter.params) as NgramWindowRow;
+
+  const ngramRows = database.query(`
+    SELECT g.pos_a AS a, g.pos_b AS b, g.pos_c AS c,
+           g.mod_mask, g.latency_bucket, g.run_bucket, SUM(g.n) AS n
+    FROM ngram g JOIN ngram_window nw ON nw.id = g.window_id
+    WHERE ${filter.sql}
+    GROUP BY g.pos_a, g.pos_b, g.pos_c, g.mod_mask, g.latency_bucket, g.run_bucket
+    ORDER BY n DESC, g.pos_a, g.pos_b, g.pos_c, g.mod_mask, g.latency_bucket, g.run_bucket
+  `).all(...filter.params) as NgramRow[];
+
+  const fingerRows = database.query(`
+    SELECT g.finger_a AS a, g.finger_b AS b, g.finger_c AS c,
+           g.mod_mask, g.latency_bucket, g.run_bucket, SUM(g.n) AS n
+    FROM ngram_finger g JOIN ngram_window nw ON nw.id = g.window_id
+    WHERE ${filter.sql}
+    GROUP BY g.finger_a, g.finger_b, g.finger_c, g.mod_mask, g.latency_bucket, g.run_bucket
+    ORDER BY n DESC, g.finger_a, g.finger_b, g.finger_c, g.mod_mask, g.latency_bucket, g.run_bucket
+  `).all(...filter.params) as NgramRow[];
+
+  const byLatency: Record<LatencyClass, number> = { fumble: 0, ambiguous: 0, edit: 0 };
+  for (const row of [...ngramRows, ...fingerRows]) {
+    byLatency[latencyClass(Number(row.latency_bucket))] += Number(row.n);
+  }
+
+  const corrections = Number(totals.corrections ?? 0);
+  const degraded = Number(totals.degraded ?? 0);
+  const dropped = Number(totals.dropped ?? 0);
+  return {
+    windowCount: Number(totals.windows),
+    corrections,
+    degraded,
+    dropped,
+    degradedShare: safeDivide(degraded, corrections),
+    droppedShare: safeDivide(dropped, corrections),
+    distinctNgrams: ngramRows.length,
+    distinctFingerNgrams: fingerRows.length,
+    topNgrams: ngramRows.slice(0, TOP_NGRAM_LIMIT).map((row) => {
+      const positions: [number, number, number] = [Number(row.a), Number(row.b), Number(row.c)];
+      return {
+        positions,
+        characters: positions.map((pos) => renderPosition(meta, pos)).join(" "),
+        count: Number(row.n),
+        latencyBucket: Number(row.latency_bucket),
+        latencyClass: latencyClass(Number(row.latency_bucket)),
+        runBucket: Number(row.run_bucket),
+        runLabel: runLabel(Number(row.run_bucket)),
+        modMask: Number(row.mod_mask),
+        modLabels: modLabels(Number(row.mod_mask)),
+      };
+    }),
+    byFinger: fingerRows.slice(0, TOP_NGRAM_LIMIT).map((row) => {
+      const fingers: [number, number, number] = [Number(row.a), Number(row.b), Number(row.c)];
+      return {
+        fingers,
+        labels: fingers.map(renderFinger).join(" "),
+        count: Number(row.n),
+        latencyBucket: Number(row.latency_bucket),
+        latencyClass: latencyClass(Number(row.latency_bucket)),
+        runBucket: Number(row.run_bucket),
+        runLabel: runLabel(Number(row.run_bucket)),
+        modMask: Number(row.mod_mask),
+        modLabels: modLabels(Number(row.mod_mask)),
+      };
+    }),
+    byLatency,
   };
 }
 

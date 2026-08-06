@@ -4,8 +4,11 @@ import { openKeylabDatabase } from "../src/db";
 import { loadAnalysisMeta } from "../src/meta";
 import {
   calculateMetrics,
+  getCorrectionContext,
   histogramPercentile,
   parseSince,
+  resolveDeviceScope,
+  resolveProfileScope,
 } from "../src/metrics";
 import { renderReport } from "../src/report";
 import {
@@ -357,6 +360,151 @@ describe("analysis metrics", () => {
   });
 });
 
+describe("Tier C correction context", () => {
+  test("sums n-gram counts across windows instead of averaging them", () => {
+    const { database, metrics } = seededMetrics();
+    try {
+      const context = metrics.correctionTax.context;
+      expect(context.windowCount).toBe(2);
+      expect(context.corrections).toBe(500);
+      expect(context.distinctNgrams).toBe(5);
+      // "t h e" at latency 0, run 0 appears in both windows: 120 + 80, not their mean.
+      const top = context.topNgrams[0];
+      expect(top).toBeDefined();
+      expect(top?.characters).toBe("t h e");
+      expect(top?.count).toBe(200);
+      expect(top?.latencyClass).toBe("fumble");
+      expect(top?.runLabel).toBe("1");
+      expect(top?.modLabels).toEqual([]);
+      expect(context.topNgrams.map((entry) => entry.count)).toEqual([200, 100, 60, 40, 30]);
+      // Every counted correction is accounted for exactly once.
+      const positional = context.topNgrams.reduce((sum, entry) => sum + entry.count, 0);
+      const degraded = context.byFinger.reduce((sum, entry) => sum + entry.count, 0);
+      expect(positional + degraded + context.dropped).toBe(context.corrections);
+    } finally {
+      database.close();
+    }
+  });
+
+  test("renders unattributed and absent positions distinctly", () => {
+    const { database, metrics } = seededMetrics();
+    try {
+      const sentinel = metrics.correctionTax.context.topNgrams
+        .find((entry) => entry.count === 30);
+      expect(sentinel).toBeDefined();
+      expect(sentinel?.positions).toEqual([-2, -1, expect.any(Number)]);
+      // "·" is a slot that held no key, "?" is a key with no base-layer position. Never the same.
+      expect(sentinel?.characters).toBe("· ? e");
+
+      const degraded = metrics.correctionTax.context.byFinger
+        .find((entry) => entry.count === 10);
+      expect(degraded?.fingers).toEqual([3, -1, 3]);
+      expect(degraded?.labels).toBe("L_pinky · L_pinky");
+    } finally {
+      database.close();
+    }
+  });
+
+  test("splits corrections into fumbles, ambiguous cases and edits", () => {
+    const { database, metrics } = seededMetrics();
+    try {
+      const context = metrics.correctionTax.context;
+      expect(context.byLatency).toEqual({ fumble: 270, ambiguous: 70, edit: 140 });
+      // Everything that kept a latency bucket, positional or degraded, is classified.
+      const classified = context.byLatency.fumble + context.byLatency.ambiguous
+        + context.byLatency.edit;
+      expect(classified).toBe(context.corrections - context.dropped);
+
+      const shifted = context.topNgrams.find((entry) => entry.modMask === 8);
+      expect(shifted?.characters).toBe("a s d");
+      expect(shifted?.latencyClass).toBe("ambiguous");
+      expect(shifted?.runLabel).toBe("3");
+      expect(shifted?.modLabels).toEqual(["L_SHIFT"]);
+    } finally {
+      database.close();
+    }
+  });
+
+  test("reports the degraded and dropped shares rather than hiding them", () => {
+    const { database, metrics } = seededMetrics();
+    try {
+      const context = metrics.correctionTax.context;
+      expect(context.degraded).toBe(50);
+      expect(context.dropped).toBe(20);
+      expect(context.degradedShare).toBe(0.1);
+      expect(context.droppedShare).toBe(0.04);
+      expect(context.distinctFingerNgrams).toBe(2);
+      expect(context.byFinger[0]).toMatchObject({
+        fingers: [0, 1, 5],
+        labels: "L_index L_middle R_index",
+        count: 40,
+        latencyClass: "fumble",
+      });
+    } finally {
+      database.close();
+    }
+  });
+
+  test("an empty Tier C produces zeroes, not a crash", () => {
+    const { database, metrics } = seededMetrics({ empty: true });
+    try {
+      expect(metrics.correctionTax.context).toEqual({
+        windowCount: 0,
+        corrections: 0,
+        degraded: 0,
+        dropped: 0,
+        degradedShare: 0,
+        droppedShare: 0,
+        distinctNgrams: 0,
+        distinctFingerNgrams: 0,
+        topNgrams: [],
+        byFinger: [],
+        byLatency: { fumble: 0, ambiguous: 0, edit: 0 },
+      });
+      expect(() => renderReport(metrics)).not.toThrow();
+    } finally {
+      database.close();
+    }
+  });
+
+  test("prints a correction-context section", () => {
+    const { database, metrics } = seededMetrics();
+    try {
+      const report = renderReport(metrics);
+      expect(report).toContain("Correction context (Tier C; 2 windows, 500 corrections)");
+      expect(report).toContain("fumble 270 (54.00%)");
+      expect(report).toContain("ambiguous 70 (14.00%)");
+      expect(report).toContain("edit 140 (28.00%)");
+      expect(report).toContain("Degraded to finger level: 50 (10.00%)");
+      expect(report).toContain("Dropped entirely: 20 (4.00%)");
+      expect(report).toContain("Top trigrams (5 of 5 distinct)");
+      expect(report).toContain("t h e");
+      expect(report).toContain("· ? e");
+      expect(report).toContain("L_SHIFT");
+      expect(report).toContain("Finger transitions after degradation (2 of 2 distinct)");
+      expect(report).toContain("L_index L_middle R_index");
+      // The pre-Tier-C signals stay: they are all the older windows ever recorded.
+      expect(report).toContain("Tier B position-derived backspaces: 8");
+      expect(report).toContain("Tier A BSP_BURST estimate: >=25.5 presses");
+    } finally {
+      database.close();
+    }
+  });
+
+  test("says so, and why, when no n-gram window exists", () => {
+    const { database, metrics } = seededMetrics({ empty: true });
+    try {
+      const report = renderReport(metrics);
+      expect(report).toContain("Correction context (Tier C): none in range.");
+      expect(report).toContain("500 corrections");
+      expect(report).toContain("ngram_capture is off");
+      expect(report).toContain("It does not mean no corrections were made.");
+    } finally {
+      database.close();
+    }
+  });
+});
+
 describe("profile filtering", () => {
   function profileMetrics(options?: { profile?: string }) {
     const fixture = createProfileFixture();
@@ -471,6 +619,43 @@ describe("multi-device position spaces", () => {
     }
   });
 
+  test("refuses to pool n-grams across position spaces, and says Tier C when it does", () => {
+    const { database, meta } = multiDevice();
+    try {
+      const range = parseSince("all", FIXTURE_NOW);
+      const profile = resolveProfileScope(database, undefined);
+      const pooled = resolveDeviceScope(database, "*");
+      // Called directly, because through calculateMetrics the Tier B guard fires first — and an
+      // operator reading the message has to learn which read actually refused.
+      expect(() => getCorrectionContext(database, meta, range, profile, pooled))
+        .toThrow("Refusing to pool Tier C correction-context n-grams across 2 position spaces");
+      expect(() => getCorrectionContext(database, meta, range, profile, pooled))
+        .toThrow("glove80, qwerty-ansi");
+    } finally {
+      database.close();
+    }
+  });
+
+  test("a single-device n-gram read succeeds", () => {
+    const { database, meta } = multiDevice();
+    try {
+      const range = parseSince("all", FIXTURE_NOW);
+      const profile = resolveProfileScope(database, undefined);
+      for (const id of [1, 2]) {
+        const context = getCorrectionContext(
+          database, meta, range, profile, resolveDeviceScope(database, id),
+        );
+        expect(context.windowCount).toBe(1);
+        expect(context.corrections).toBe(500);
+        expect(context.topNgrams[0]?.count).toBe(500);
+      }
+      expect(calculateMetrics(database, meta, range, { device: 1 }).correctionTax.context.corrections)
+        .toBe(500);
+    } finally {
+      database.close();
+    }
+  });
+
   test("rejects a device id the database does not hold", () => {
     const { database, meta } = multiDevice();
     try {
@@ -484,13 +669,23 @@ describe("multi-device position spaces", () => {
 
 describe("database opener", () => {
   test("rejects a future schema_version clearly", () => {
-    const fixture = createFixture({ schemaVersion: 4 });
+    const fixture = createFixture({ schemaVersion: 5 });
     fixtures.push(fixture);
-    expect(() => openKeylabDatabase(fixture.path)).toThrow("schema_version \"4\"; expected 3");
+    expect(() => openKeylabDatabase(fixture.path)).toThrow("schema_version \"5\"; expected 4");
+  });
+
+  test("rejects a v3 database with an actionable message", () => {
+    const fixture = createFixture({ schemaVersion: 3 });
+    fixtures.push(fixture);
+    // v3 predates Tier C. The daemon's v3 -> v4 migration is the fix, and the message has to say so.
+    expect(() => openKeylabDatabase(fixture.path))
+      .toThrow("Unsupported keylab schema_version \"3\"; expected 4");
+    expect(() => openKeylabDatabase(fixture.path))
+      .toThrow("Restart keylab.service once; the daemon migrates older schemas in place.");
   });
 
   test("points an unmigrated older database at the daemon", () => {
-    for (const version of [1, 2]) {
+    for (const version of [1, 2, 3]) {
       const fixture = createFixture({ schemaVersion: version });
       fixtures.push(fixture);
       expect(() => openKeylabDatabase(fixture.path))

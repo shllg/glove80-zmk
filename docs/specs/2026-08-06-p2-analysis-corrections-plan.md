@@ -23,35 +23,35 @@ Design: `docs/specs/2026-08-06-correction-context-design.md`
 
 ## Task 1 — schema gate
 
-- [ ] `packages/analysis/src/db.ts:3`: `SUPPORTED_SCHEMA_VERSION` → 4.
-- [ ] Verify the existing mismatch message (`db.ts:25-28`) still names the correct fix for a v3 database. It tells the user to run the newer daemon; confirm that wording covers the v3→v4 case.
+- [x] `packages/analysis/src/db.ts:3`: `SUPPORTED_SCHEMA_VERSION` → 4.
+- [x] Verify the existing mismatch message (`db.ts:25-28`) still names the correct fix for a v3 database. It tells the user to run the newer daemon; confirm that wording covers the v3→v4 case.
 
 **Tests**
-- [ ] `rejects_a_v3_database_with_an_actionable_message`
+- [x] `rejects_a_v3_database_with_an_actionable_message`
 
 ## Task 2 — position-space guard for Tier C
 
-- [ ] Generalise `assertSinglePositionSpace` (`metrics.ts:352`) to accept the window table name, or add a Tier C sibling. It currently hard-codes `key_window kw`.
-- [ ] Call it from every Tier C read path.
+- [x] Generalise `assertSinglePositionSpace` (`metrics.ts:352`) to accept the window table name, or add a Tier C sibling. It currently hard-codes `key_window kw`.
+- [x] Call it from every Tier C read path.
 
 **Requirements**
 - The error message must name Tier C rather than Tier B when it fires for an n-gram read — an operator following the message needs to know which read failed.
 - Do not weaken the existing Tier B guard while generalising it. Its test must still pass unchanged.
 
 **Tests**
-- [ ] `refuses_to_pool_ngrams_across_position_spaces`
-- [ ] `a_single_device_ngram_read_succeeds`
+- [x] `refuses_to_pool_ngrams_across_position_spaces`
+- [x] `a_single_device_ngram_read_succeeds`
 
 ## Task 3 — metrics
 
 In `packages/analysis/src/metrics.ts`.
 
-- [ ] Add `getCorrectionContext(database, meta, range, profile, device)` returning:
+- [x] Add `getCorrectionContext(database, meta, range, profile, device)` returning:
   - `topNgrams`: trigram, rendered characters, count, latency class, run bucket, mod mask
   - `byLatency`: fumble / ambiguous / edit totals
   - `byFinger`: the degraded finger-triple aggregates
   - `corrections`, `degraded`, `dropped`, `degradedShare`, `droppedShare`
-- [ ] Extend `RangeMetrics["correctionTax"]` (`metrics.ts:161`, built at `metrics.ts:621`) with the new block, rather than adding a parallel top-level key.
+- [x] Extend `RangeMetrics["correctionTax"]` (`metrics.ts:161`, built at `metrics.ts:621`) with the new block, rather than adding a parallel top-level key.
 
 **Requirements**
 - Render positions to characters through `AnalysisMeta.positions` — the same source `getCorrectionTax` already uses for `baseKeycode` at `metrics.ts:633-635`. `-1` renders as `?` (unattributed), `-2` renders as `·` (absent).
@@ -59,23 +59,23 @@ In `packages/analysis/src/metrics.ts`.
 - Aggregate across windows by summing `n` per key. Windows are independent samples; do not average.
 
 **Tests** (extend `packages/analysis/test/metrics.test.ts` and `fixture.ts`)
-- [ ] `sums_ngram_counts_across_windows`
-- [ ] `renders_unattributed_and_absent_positions_distinctly`
-- [ ] `splits_corrections_into_fumbles_and_edits`
-- [ ] `reports_the_degraded_and_dropped_shares`
-- [ ] `an_empty_tier_c_produces_zeroes_not_a_crash`
+- [x] `sums_ngram_counts_across_windows`
+- [x] `renders_unattributed_and_absent_positions_distinctly`
+- [x] `splits_corrections_into_fumbles_and_edits`
+- [x] `reports_the_degraded_and_dropped_shares`
+- [x] `an_empty_tier_c_produces_zeroes_not_a_crash`
 
 ## Task 4 — report
 
 In `packages/analysis/src/report.ts`, extending the existing "Correction tax" block (`report.ts:79-88`).
 
-- [ ] Add a correction-context section: top corrected trigrams with counts and fumble/edit class, the finger-transition rollup, and the degraded/dropped shares.
-- [ ] Keep the existing `BSP_BURST` and Tier B lines. They remain the only correction signal for windows sealed before Tier C existed.
+- [x] Add a correction-context section: top corrected trigrams with counts and fumble/edit class, the finger-transition rollup, and the degraded/dropped shares.
+- [x] Keep the existing `BSP_BURST` and Tier B lines. They remain the only correction signal for windows sealed before Tier C existed.
 
 **Requirements**
 - The section must state when it is empty, and why — no sealed Tier C window yet, capture disabled, or the range excludes them. A silently absent section reads as "no corrections".
 - Follow the existing column-formatting helpers (`number`, `percent`) rather than introducing new ones.
 
 **Tests**
-- [ ] `prints_a_correction_context_section`
-- [ ] `says_so_when_no_ngram_window_exists`
+- [x] `prints_a_correction_context_section`
+- [x] `says_so_when_no_ngram_window_exists`

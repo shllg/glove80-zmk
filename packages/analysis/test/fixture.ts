@@ -51,6 +51,25 @@ CREATE TABLE pos_count (
   window_id INTEGER NOT NULL REFERENCES key_window(id), pos INTEGER NOT NULL, presses INTEGER NOT NULL,
   PRIMARY KEY (window_id, pos)
 ) WITHOUT ROWID;
+CREATE TABLE ngram_window (
+  id INTEGER PRIMARY KEY, device_id INTEGER NOT NULL REFERENCES device(id),
+  profile_id INTEGER REFERENCES profile(id), start_ts INTEGER NOT NULL, end_ts INTEGER NOT NULL,
+  corrections INTEGER NOT NULL, degraded INTEGER NOT NULL, dropped INTEGER NOT NULL
+);
+CREATE TABLE ngram (
+  window_id INTEGER NOT NULL REFERENCES ngram_window(id),
+  pos_a INTEGER NOT NULL, pos_b INTEGER NOT NULL, pos_c INTEGER NOT NULL,
+  mod_mask INTEGER NOT NULL, latency_bucket INTEGER NOT NULL, run_bucket INTEGER NOT NULL,
+  n INTEGER NOT NULL,
+  PRIMARY KEY (window_id, pos_a, pos_b, pos_c, mod_mask, latency_bucket, run_bucket)
+) WITHOUT ROWID;
+CREATE TABLE ngram_finger (
+  window_id INTEGER NOT NULL REFERENCES ngram_window(id),
+  finger_a INTEGER NOT NULL, finger_b INTEGER NOT NULL, finger_c INTEGER NOT NULL,
+  mod_mask INTEGER NOT NULL, latency_bucket INTEGER NOT NULL, run_bucket INTEGER NOT NULL,
+  n INTEGER NOT NULL,
+  PRIMARY KEY (window_id, finger_a, finger_b, finger_c, mod_mask, latency_bucket, run_bucket)
+) WITHOUT ROWID;
 CREATE TABLE live_snapshot (
   id INTEGER PRIMARY KEY CHECK (id = 1), updated_at INTEGER NOT NULL, json TEXT NOT NULL
 );
@@ -82,7 +101,7 @@ export function createFixture(
   const database = new Database(path, { create: true });
   database.exec(SCHEMA);
   database.query("INSERT INTO meta(key, value) VALUES (?, ?)").run(
-    "schema_version", String(options.schemaVersion ?? 3),
+    "schema_version", String(options.schemaVersion ?? 4),
   );
   database.query("INSERT INTO meta(key, value) VALUES (?, ?)").run("alt_hand_ambiguous", "1");
   database.query("INSERT INTO device(id, name, uniq, first_ts, keymap_kind, keymap_hash) VALUES (1, 'fixture', NULL, ?, 'glove80', 'fixture')")
@@ -175,6 +194,48 @@ export function createFixture(
     insertPosition.run(1, -1, 30);
     insertPosition.run(2, rightHomeInner.pos, 1_000);
 
+    // Tier C. Two windows so a key that appears in both has to be summed rather than averaged, one
+    // trigram carrying the -2/-1 sentinels, and a window whose counts are split across degraded and
+    // dropped so the shares are not both zero.
+    const positionOf = (keycode: string): number => {
+      const position = metadata.positions.find((entry) => entry.baseKeycode === keycode);
+      if (!position) throw new Error(`Fixture could not find keymap position for ${keycode}`);
+      return position.pos;
+    };
+    const [t, h, e, a, s, d, q, w] = (
+      ["KEY_T", "KEY_H", "KEY_E", "KEY_A", "KEY_S", "KEY_D", "KEY_Q", "KEY_W"] as const
+    ).map(positionOf) as [number, number, number, number, number, number, number, number];
+
+    const insertNgramWindow = database.query(
+      "INSERT INTO ngram_window(id, device_id, profile_id, start_ts, end_ts, corrections, degraded, dropped)"
+      + " VALUES (?, 1, 1, ?, ?, ?, ?, ?)",
+    );
+    insertNgramWindow.run(1, recentBucketId, recentBucketId + 30, 320, 50, 20);
+    insertNgramWindow.run(2, recentBucketId + 40, recentBucketId + 70, 180, 0, 0);
+
+    const insertNgram = database.query(
+      "INSERT INTO ngram(window_id, pos_a, pos_b, pos_c, mod_mask, latency_bucket, run_bucket, n)"
+      + " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    );
+    // mod_mask 8 is bit 3, L_SHIFT.
+    for (const row of [
+      [1, t, h, e, 0, 0, 0, 120],
+      [1, t, h, e, 0, 3, 1, 40],
+      [1, a, s, d, 8, 2, 2, 60],
+      [1, -2, -1, e, 0, 1, 0, 30],
+      [2, t, h, e, 0, 0, 0, 80],
+      [2, q, w, e, 0, 3, 6, 100],
+    ] as const) {
+      insertNgram.run(...row);
+    }
+
+    const insertNgramFinger = database.query(
+      "INSERT INTO ngram_finger(window_id, finger_a, finger_b, finger_c, mod_mask, latency_bucket, run_bucket, n)"
+      + " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    );
+    insertNgramFinger.run(1, 0, 1, 5, 0, 0, 0, 40);
+    insertNgramFinger.run(1, 3, -1, 3, 0, 2, 1, 10);
+
     if (options.future) {
       const futureTs = FIXTURE_NOW + 60;
       insertBucket.run(futureTs, 77, 0);
@@ -205,7 +266,7 @@ export function createMultiDeviceFixture(): SeededFixture {
   const metaPath = resolve(dirname(fileURLToPath(import.meta.url)), "../../../out/keymap-meta.json");
   const database = new Database(path, { create: true });
   database.exec(SCHEMA);
-  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '3')").run();
+  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '4')").run();
   database.query("INSERT INTO meta(key, value) VALUES ('alt_hand_ambiguous', '0')").run();
   database.query(`
     INSERT INTO device(id, name, uniq, first_ts, keymap_kind, keymap_hash) VALUES
@@ -243,6 +304,21 @@ export function createMultiDeviceFixture(): SeededFixture {
   );
   insertPosition.run(1, 0, 100);
   insertPosition.run(2, 0, 60);
+
+  // A sealed Tier C window on each keyboard, so an n-gram read that pools them has its own conflict
+  // to trip over rather than borrowing the Tier B guard's.
+  const insertNgramWindow = database.query(
+    "INSERT INTO ngram_window(id, device_id, profile_id, start_ts, end_ts, corrections, degraded, dropped)"
+    + " VALUES (?, ?, 1, ?, ?, ?, 0, 0)",
+  );
+  insertNgramWindow.run(1, 1, recentBucketId, recentBucketId + 10, 500);
+  insertNgramWindow.run(2, 2, recentBucketId + 20, recentBucketId + 30, 500);
+  const insertNgram = database.query(
+    "INSERT INTO ngram(window_id, pos_a, pos_b, pos_c, mod_mask, latency_bucket, run_bucket, n)"
+    + " VALUES (?, ?, ?, ?, 0, 0, 0, ?)",
+  );
+  insertNgram.run(1, 0, 1, 2, 500);
+  insertNgram.run(2, 0, 1, 2, 500);
   database.close();
 
   return {
@@ -264,7 +340,7 @@ export function createProfileFixture(): SeededFixture {
   const metaPath = resolve(dirname(fileURLToPath(import.meta.url)), "../../../out/keymap-meta.json");
   const database = new Database(path, { create: true });
   database.exec(SCHEMA);
-  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '3')").run();
+  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '4')").run();
   database.query("INSERT INTO meta(key, value) VALUES ('alt_hand_ambiguous', '0')").run();
   database.query("INSERT INTO device(id, name, uniq, first_ts, keymap_kind, keymap_hash) VALUES (1, 'fixture', NULL, ?, 'glove80', 'fixture')")
     .run(FIXTURE_NOW - 1_000_000);

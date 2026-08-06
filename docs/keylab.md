@@ -241,7 +241,9 @@ The schema is at version 4 and is migrated in place the first time the new daemo
 
 The first two backfills are accurate rather than guesses: every pre-v3 row was captured on the Glove80 through evsieve during ordinary use, before profiles or multi-device support existed. v3 → v4 has nothing to backfill, because correction context that was never captured cannot be reconstructed.
 
-`packages/analysis` and `packages/viewer` pin schema version 3 and will refuse a v4 database with a clear message until the analysis surface is updated to read Tier C.
+`packages/analysis`, `packages/viewer` and `packages/trainer` all open the database through `openKeylabDatabase`, which pins schema version 4. An older database is refused with a message that points at the daemon, which migrates it in place on its next start.
+
+`pnpm analysis report` renders Tier C as a *correction context* block under "Correction tax": the top ordered trigrams with their base-layer characters, the fumble / ambiguous / edit split, the finger-transition rollup for whatever degraded, and the degraded and dropped shares. A trigram position renders as `?` when it is unattributed or has no base-layer binding and as `·` when the slot held no key at all — the two are never conflated. Ordered trigrams are geometric, so the read refuses to pool across position spaces exactly as Tier B does; select one device with `--device ID`. The block states when it is empty and why, because a silently absent section would read as "no corrections".
 
 Tier C's on-disk position encoding extends `pos_count`'s convention: `0..79` is a physical position, `-1` is unattributed (deliberately the same value `pos_count` uses), and `-2` is *absent* — fewer than three keys preceded that correction, for example at the very start of a window. Finger columns use `0..9` and `-1` for absent, since a key with no base-layer position has no finger either.
 
