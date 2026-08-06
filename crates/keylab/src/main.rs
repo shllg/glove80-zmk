@@ -8,7 +8,7 @@ mod encode;
 mod keymap;
 mod store;
 
-use aggregate::Aggregator;
+use aggregate::{Aggregator, SealPolicy};
 use anyhow::{bail, Context, Result};
 use config::Config;
 use keymap::Keymap;
@@ -234,16 +234,17 @@ fn selftest_replay(path: &Path) -> Result<()> {
             hash: &keymap.hash,
         },
     )?;
+    let policy = SealPolicy::from_config(&Config::default());
     let mut aggregate = Aggregator::new(start_ts, 1);
     for index in 0_u64..25 {
         let press_ts = index.saturating_mul(2);
-        if aggregate
-            .handle_event(press_ts, 30, 1, &keymap, 2_000)
-            .is_some()
+        if !aggregate
+            .handle_event(press_ts, 30, 1, &keymap, &policy)
+            .is_empty()
         {
-            bail!("short verification fixture unexpectedly sealed Tier B");
+            bail!("short verification fixture unexpectedly sealed a window");
         }
-        aggregate.handle_event(press_ts.saturating_add(1), 30, 0, &keymap, 2_000);
+        aggregate.handle_event(press_ts.saturating_add(1), 30, 0, &keymap, &policy);
     }
     let seal = aggregate
         .tick(start_ts.saturating_add(10), 10_000, 25)
@@ -556,6 +557,7 @@ fn process_device_events(
     devices: &mut HashMap<PathBuf, RuntimeDevice>,
 ) -> Result<bool> {
     let paused = state.paused();
+    let policy = SealPolicy::from_config(config);
     for runtime in devices.values_mut() {
         loop {
             let event = match runtime.input.next_event() {
@@ -596,19 +598,32 @@ fn process_device_events(
             let keymap = keymaps
                 .get(runtime.rule_index)
                 .context("device keymap index is out of range")?;
-            if let Some(mut seal) = runtime.aggregate.handle_event(
+            let mut batch = runtime.aggregate.handle_event(
                 event.t_ms(),
                 event.code(),
                 event.value(),
                 keymap,
-                config.tier_b_seal_count,
-            ) {
+                &policy,
+            );
+            if !batch.is_empty() {
+                // A pause that arrived between sealing and writing wins: the window is dropped
+                // rather than written.
                 if pause_requested(pause_path)? {
-                    drop(seal);
+                    drop(batch);
                     return Ok(true);
                 }
-                translate_tier_b_timestamps(&mut seal)?;
-                store.seal_tier_b(runtime.device_id, runtime.profile_id, &seal)?;
+                if let Some(seal) = batch.tier_b.as_mut() {
+                    translate_tier_b_timestamps(seal)?;
+                    store.seal_tier_b(runtime.device_id, runtime.profile_id, seal)?;
+                }
+                if let Some(seal) = batch.tier_c.as_mut() {
+                    translate_tier_c_timestamps(seal)?;
+                    store.seal_tier_c(runtime.device_id, runtime.profile_id, seal)?;
+                    info!(
+                        corrections = seal.corrections,
+                        "sealed a correction-context window"
+                    );
+                }
             }
             debug_assert!(
                 runtime.aggregate.bounded_footprint()
@@ -780,6 +795,14 @@ fn translate_tier_b_timestamps(seal: &mut aggregate::TierBSeal) -> Result<()> {
     Ok(())
 }
 
+fn translate_tier_c_timestamps(seal: &mut aggregate::TierCSeal) -> Result<()> {
+    let elapsed_ms = seal.end_ts.saturating_sub(seal.start_ts);
+    let end_wall_ms = unix_millis()?;
+    seal.end_ts = end_wall_ms / 1_000;
+    seal.start_ts = end_wall_ms.saturating_sub(elapsed_ms) / 1_000;
+    Ok(())
+}
+
 fn replace_live_snapshot(
     config: &Config,
     store: &mut Store,
@@ -882,6 +905,154 @@ mod tests {
         let store =
             Store::open(&db_path, &keymap, 1_000).unwrap_or_else(|error| panic!("{error:#}"));
         (db_path, store)
+    }
+
+    fn correction_keymap() -> Keymap {
+        Keymap::fixture(&[
+            (
+                30,
+                keymap::KeyInfo {
+                    pos: 0,
+                    hand: 0,
+                    finger_id: 0,
+                    row_idx: 4,
+                },
+            ),
+            (
+                48,
+                keymap::KeyInfo {
+                    pos: 1,
+                    hand: 1,
+                    finger_id: 7,
+                    row_idx: 5,
+                },
+            ),
+            (
+                46,
+                keymap::KeyInfo {
+                    pos: 2,
+                    hand: 0,
+                    finger_id: 1,
+                    row_idx: 3,
+                },
+            ),
+        ])
+    }
+
+    /// Drives `count` corrections through the aggregator exactly as the event loop would, writing
+    /// every sealed Tier C window to the store on the daemon's own path.
+    fn replay_corrections(
+        store: &mut Store,
+        device_id: i64,
+        aggregate: &mut Aggregator,
+        count: u32,
+        pause_path: &Path,
+    ) -> Result<usize> {
+        let keymap = correction_keymap();
+        let policy = SealPolicy::from_config(&Config::default());
+        let mut written = 0;
+        let mut t = 0_u64;
+        let press = |aggregate: &mut Aggregator, t: &mut u64, code: u16| {
+            let mut batch = aggregate.handle_event(*t, code, 1, &keymap, &policy);
+            let down = batch.tier_c.take();
+            let mut batch = aggregate.handle_event(*t + 1, code, 0, &keymap, &policy);
+            *t += 2;
+            down.or_else(|| batch.tier_c.take())
+        };
+        for index in 0..u64::from(count) {
+            for code in [30, 48, 46] {
+                press(aggregate, &mut t, code);
+            }
+            for _ in 0..=(index % 3) {
+                press(aggregate, &mut t, 14);
+            }
+            // The run stays open until the next non-backspace key, so the seal can surface here.
+            if let Some(mut seal) = press(aggregate, &mut t, 30) {
+                if pause_requested(pause_path)? {
+                    drop(seal);
+                    continue;
+                }
+                translate_tier_c_timestamps(&mut seal)?;
+                store.seal_tier_c(device_id, 1, &seal)?;
+                written += 1;
+            }
+        }
+        Ok(written)
+    }
+
+    fn window_count(db_path: &Path) -> i64 {
+        let connection = Connection::open_with_flags(
+            db_path,
+            OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NOFOLLOW,
+        )
+        .unwrap_or_else(|error| panic!("{error}"));
+        connection
+            .query_row("SELECT COUNT(*) FROM ngram_window", [], |row| row.get(0))
+            .unwrap_or_else(|error| panic!("{error}"))
+    }
+
+    #[test]
+    fn a_tier_c_window_appears_after_enough_corrections() {
+        let temp = tempfile::tempdir().unwrap_or_else(|error| panic!("{error}"));
+        let (db_path, mut store) = control_test_store(temp.path());
+        let data_dir = db_path.parent().unwrap_or_else(|| unreachable!());
+        let pause_path = data_dir.join("PAUSED");
+        let device_id = store
+            .register_device(
+                "fixture",
+                None,
+                1_000,
+                &store::DeviceKeymap {
+                    kind: config::DEFAULT_KEYMAP_KIND,
+                    hash: "fixture",
+                },
+            )
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        let mut aggregate = Aggregator::new(0, 1);
+
+        let written = replay_corrections(&mut store, device_id, &mut aggregate, 499, &pause_path)
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        assert_eq!(written, 0, "the 500-correction floor is not reached yet");
+
+        let written = replay_corrections(&mut store, device_id, &mut aggregate, 1, &pause_path)
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        assert_eq!(written, 1);
+        store.close().unwrap_or_else(|error| panic!("{error:#}"));
+
+        assert_eq!(window_count(&db_path), 1);
+    }
+
+    #[test]
+    fn a_hard_pause_mid_window_discards_the_tier_c_window() {
+        let temp = tempfile::tempdir().unwrap_or_else(|error| panic!("{error}"));
+        let (db_path, mut store) = control_test_store(temp.path());
+        let data_dir = db_path.parent().unwrap_or_else(|| unreachable!());
+        let pause_path = data_dir.join("PAUSED");
+        let device_id = store
+            .register_device(
+                "fixture",
+                None,
+                1_000,
+                &store::DeviceKeymap {
+                    kind: config::DEFAULT_KEYMAP_KIND,
+                    hash: "fixture",
+                },
+            )
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        let mut aggregate = Aggregator::new(0, 1);
+
+        replay_corrections(&mut store, device_id, &mut aggregate, 499, &pause_path)
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        // The hard pause discards every partial aggregate, Tier C included.
+        aggregate.discard_partials(10);
+        let written = replay_corrections(&mut store, device_id, &mut aggregate, 499, &pause_path)
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        assert_eq!(
+            written, 0,
+            "a discarded window must not be completed by later corrections"
+        );
+        store.close().unwrap_or_else(|error| panic!("{error:#}"));
+        assert_eq!(window_count(&db_path), 0);
     }
 
     #[test]

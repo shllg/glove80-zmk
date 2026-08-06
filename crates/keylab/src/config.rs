@@ -7,6 +7,24 @@ pub const MIN_TIER_A_SEAL_FLOOR: u32 = 25;
 pub const MIN_TIER_B_SEAL_COUNT: u32 = 2_000;
 pub const MIN_BUCKET_SECONDS: u64 = 10;
 
+/// A Tier C window is sealed by *corrections*, where one correction is one completed backspace
+/// run. Like the Tier A and Tier B floors this is an enforced minimum, not a preference.
+pub const MIN_NGRAM_SEAL_COUNT: u32 = 500;
+/// An ordered position trigram seen fewer than this many times in one window is written as its
+/// finger-level projection instead. Targets the long tail where a repeated fumble lives.
+pub const MIN_NGRAM_MIN_COUNT: u32 = 3;
+/// Bounds the per-profile Tier C accumulators. `docs/keylab.md` promises bounded in-memory state,
+/// so the maps are capped rather than allowed to grow with the stream.
+pub const MAX_NGRAM_ENTRIES: usize = 4_096;
+pub const MAX_NGRAM_FINGER_ENTRIES: usize = 1_024;
+
+// The caps are hard ceilings, not tuning. At the enforced seal floor the position map cannot
+// overflow from a single window at all; the cap is what still bounds it when `ngram_seal_count` is
+// raised. The finger map is deliberately the smaller of the two: a degraded row carries strictly
+// less identity, so it needs strictly less room.
+const _: () = assert!(MAX_NGRAM_ENTRIES >= MIN_NGRAM_SEAL_COUNT as usize);
+const _: () = assert!(MAX_NGRAM_FINGER_ENTRIES < MAX_NGRAM_ENTRIES);
+
 /// Bounds the per-profile Tier B accumulators. This is a privacy invariant, not a preference:
 /// each profile holds its own 81-slot histogram and the total footprint must stay bounded.
 pub const MAX_PROFILES: usize = 8;
@@ -47,6 +65,11 @@ pub struct Config {
     pub live_snapshot_seconds: u64,
     pub profiles: Vec<String>,
     pub auto_revert_idle_seconds: u64,
+    /// Tier C correction-context capture. On by default: a manually-armed capture would
+    /// systematically miss ordinary work, which is the only thing worth measuring.
+    pub ngram_capture: bool,
+    pub ngram_seal_count: u32,
+    pub ngram_min_count: u32,
 }
 
 impl Default for Config {
@@ -67,6 +90,9 @@ impl Default for Config {
                 "gaming".to_owned(),
             ],
             auto_revert_idle_seconds: 900,
+            ngram_capture: true,
+            ngram_seal_count: MIN_NGRAM_SEAL_COUNT,
+            ngram_min_count: MIN_NGRAM_MIN_COUNT,
         }
     }
 }
@@ -128,6 +154,18 @@ impl Config {
             bail!(
                 "tier_b_seal_count cannot be below privacy floor {}",
                 MIN_TIER_B_SEAL_COUNT
+            );
+        }
+        if self.ngram_seal_count < MIN_NGRAM_SEAL_COUNT {
+            bail!(
+                "ngram_seal_count cannot be below privacy floor {}",
+                MIN_NGRAM_SEAL_COUNT
+            );
+        }
+        if self.ngram_min_count < MIN_NGRAM_MIN_COUNT {
+            bail!(
+                "ngram_min_count cannot be below privacy floor {}",
+                MIN_NGRAM_MIN_COUNT
             );
         }
         if self.profiles.len() > MAX_PROFILES {
@@ -233,6 +271,51 @@ mod tests {
         assert_eq!(config.tier_a_seal_floor, 25);
         assert_eq!(config.tier_b_seal_count, 2_000);
         assert_eq!(config.live_snapshot_seconds, 1);
+        assert!(config.ngram_capture);
+        assert_eq!(config.ngram_seal_count, 500);
+        assert_eq!(config.ngram_min_count, 3);
+    }
+
+    #[test]
+    fn rejects_lower_ngram_seal_count() {
+        let config = Config {
+            ngram_seal_count: 499,
+            ..Config::default()
+        };
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn rejects_lower_ngram_min_count() {
+        let config = Config {
+            ngram_min_count: 2,
+            ..Config::default()
+        };
+        assert!(config.validate().is_err());
+    }
+
+    /// `Config` carries `#[serde(default)]`, so an installed configuration written before Tier C
+    /// existed must keep loading and pick up the enforced defaults.
+    #[test]
+    fn a_config_without_ngram_keys_still_loads() {
+        let source = r#"
+device_name_contains = "Evsieve Virtual Device"
+db_path = "/tmp/keylab.db"
+keymap_meta_path = "/tmp/keymap-meta.json"
+bucket_seconds = 10
+tier_a_seal_floor = 25
+tier_b_seal_count = 2000
+live_snapshot_seconds = 1
+profiles = ["default", "gaming"]
+auto_revert_idle_seconds = 900
+"#;
+        let config: Config = toml::from_str(source).unwrap_or_else(|error| panic!("{error}"));
+        assert!(config.ngram_capture);
+        assert_eq!(config.ngram_seal_count, MIN_NGRAM_SEAL_COUNT);
+        assert_eq!(config.ngram_min_count, MIN_NGRAM_MIN_COUNT);
+        config
+            .validate()
+            .unwrap_or_else(|error| panic!("{error:#}"));
     }
 
     #[test]

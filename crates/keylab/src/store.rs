@@ -1,5 +1,8 @@
-use crate::aggregate::{TierASeal, TierBSeal};
-use crate::config::{MIN_BUCKET_SECONDS, MIN_TIER_A_SEAL_FLOOR, MIN_TIER_B_SEAL_COUNT};
+use crate::aggregate::{TierASeal, TierBSeal, TierCSeal};
+use crate::config::{
+    MIN_BUCKET_SECONDS, MIN_NGRAM_SEAL_COUNT, MIN_TIER_A_SEAL_FLOOR, MIN_TIER_B_SEAL_COUNT,
+};
+use crate::encode::{unpack_finger, unpack_ngram, FINGER_ABSENT, POS_ABSENT, POS_UNATTRIBUTED};
 use crate::keymap::Keymap;
 use anyhow::{bail, Context, Result};
 use rusqlite::{params, Connection, OpenFlags, OptionalExtension, Transaction};
@@ -98,6 +101,41 @@ CREATE TABLE IF NOT EXISTS pos_count (
   pos       INTEGER NOT NULL,
   presses   INTEGER NOT NULL,
   PRIMARY KEY (window_id, pos)
+) WITHOUT ROWID;
+
+CREATE TABLE IF NOT EXISTS ngram_window (
+  id          INTEGER PRIMARY KEY,
+  device_id   INTEGER NOT NULL REFERENCES device(id),
+  profile_id  INTEGER REFERENCES profile(id),
+  start_ts    INTEGER NOT NULL,
+  end_ts      INTEGER NOT NULL,
+  corrections INTEGER NOT NULL,
+  degraded    INTEGER NOT NULL,
+  dropped     INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ngram (
+  window_id      INTEGER NOT NULL REFERENCES ngram_window(id),
+  pos_a          INTEGER NOT NULL,
+  pos_b          INTEGER NOT NULL,
+  pos_c          INTEGER NOT NULL,
+  mod_mask       INTEGER NOT NULL,
+  latency_bucket INTEGER NOT NULL,
+  run_bucket     INTEGER NOT NULL,
+  n              INTEGER NOT NULL,
+  PRIMARY KEY (window_id, pos_a, pos_b, pos_c, mod_mask, latency_bucket, run_bucket)
+) WITHOUT ROWID;
+
+CREATE TABLE IF NOT EXISTS ngram_finger (
+  window_id      INTEGER NOT NULL REFERENCES ngram_window(id),
+  finger_a       INTEGER NOT NULL,
+  finger_b       INTEGER NOT NULL,
+  finger_c       INTEGER NOT NULL,
+  mod_mask       INTEGER NOT NULL,
+  latency_bucket INTEGER NOT NULL,
+  run_bucket     INTEGER NOT NULL,
+  n              INTEGER NOT NULL,
+  PRIMARY KEY (window_id, finger_a, finger_b, finger_c, mod_mask, latency_bucket, run_bucket)
 ) WITHOUT ROWID;
 
 CREATE TABLE IF NOT EXISTS live_snapshot (
@@ -322,6 +360,85 @@ impl Store {
             .context("failed to commit Tier B transaction")
     }
 
+    /// Writes one sealed Tier C correction-context window. `degraded` is every count that lost its
+    /// position identity — by low-count suppression at seal or by cap overflow during capture —
+    /// and `dropped` is every count that lost even its finger identity.
+    pub fn seal_tier_c(&mut self, device_id: i64, profile_id: i64, seal: &TierCSeal) -> Result<()> {
+        if seal.corrections < MIN_NGRAM_SEAL_COUNT {
+            bail!("refusing to persist a Tier C window below the privacy count floor");
+        }
+        let degraded = seal.degraded();
+        let accounted = sum_row_counts(&seal.rows)
+            .saturating_add(degraded)
+            .saturating_add(seal.dropped);
+        if accounted != seal.corrections {
+            bail!("refusing to persist an inconsistent Tier C correction window");
+        }
+        let start_ts = to_i64(seal.start_ts, "Tier C start timestamp")?;
+        let end_ts = to_i64(seal.end_ts, "Tier C end timestamp")?;
+        let transaction = self
+            .connection
+            .transaction()
+            .context("failed to begin Tier C transaction")?;
+        transaction
+            .execute(
+                "INSERT INTO ngram_window(device_id, profile_id, start_ts, end_ts, corrections, degraded, dropped)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![
+                    device_id,
+                    profile_id,
+                    start_ts,
+                    end_ts,
+                    seal.corrections,
+                    degraded,
+                    seal.dropped
+                ],
+            )
+            .context("failed to write Tier C window")?;
+        let window_id = transaction.last_insert_rowid();
+        for (key, count) in &seal.rows {
+            let (positions, mod_mask, latency, run) = unpack_ngram(*key);
+            transaction
+                .execute(
+                    "INSERT INTO ngram(window_id, pos_a, pos_b, pos_c, mod_mask, latency_bucket, run_bucket, n)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                    params![
+                        window_id,
+                        on_disk_position(positions[0]),
+                        on_disk_position(positions[1]),
+                        on_disk_position(positions[2]),
+                        mod_mask,
+                        latency,
+                        run,
+                        count
+                    ],
+                )
+                .context("failed to write a Tier C n-gram")?;
+        }
+        for (key, count) in &seal.finger_rows {
+            let (fingers, mod_mask, latency, run) = unpack_finger(*key);
+            transaction
+                .execute(
+                    "INSERT INTO ngram_finger(window_id, finger_a, finger_b, finger_c, mod_mask, latency_bucket, run_bucket, n)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                    params![
+                        window_id,
+                        on_disk_finger(fingers[0]),
+                        on_disk_finger(fingers[1]),
+                        on_disk_finger(fingers[2]),
+                        mod_mask,
+                        latency,
+                        run,
+                        count
+                    ],
+                )
+                .context("failed to write a Tier C finger n-gram")?;
+        }
+        transaction
+            .commit()
+            .context("failed to commit Tier C transaction")
+    }
+
     pub fn replace_live_snapshot(
         &mut self,
         updated_at: i64,
@@ -457,17 +574,22 @@ fn initialize_meta(connection: &Connection, keymap: &Keymap, now_ts: i64) -> Res
         .optional()
         .context("failed to read schema version")?;
     match schema_version.as_deref() {
-        None | Some("3") => {}
+        None | Some("4") => {}
         Some("1") => {
             migrate_v1_to_v2(connection)?;
             migrate_v2_to_v3(connection, keymap)?;
+            migrate_v3_to_v4(connection)?;
         }
-        Some("2") => migrate_v2_to_v3(connection, keymap)?,
+        Some("2") => {
+            migrate_v2_to_v3(connection, keymap)?;
+            migrate_v3_to_v4(connection)?;
+        }
+        Some("3") => migrate_v3_to_v4(connection)?,
         Some(_) => bail!("unsupported database schema version"),
     }
     connection
         .execute(
-            "INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', '3')",
+            "INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', '4')",
             [],
         )
         .context("failed to initialize schema version")?;
@@ -596,6 +718,21 @@ fn migrate_v2_to_v3(connection: &Connection, keymap: &Keymap) -> Result<()> {
     Ok(())
 }
 
+/// v3 databases predate Tier C. There is nothing to backfill — correction context that was never
+/// captured cannot be reconstructed — so this only adds the three tables. `SCHEMA` has already run
+/// with `CREATE TABLE IF NOT EXISTS`, which is what makes the migration re-runnable after a
+/// partial failure.
+fn migrate_v3_to_v4(connection: &Connection) -> Result<()> {
+    connection
+        .execute_batch(SCHEMA)
+        .context("failed to create the version 4 correction-context tables")?;
+    connection
+        .execute_batch("UPDATE meta SET value = '4' WHERE key = 'schema_version';")
+        .context("failed to record the version 4 schema")?;
+    info!("migrated database schema from version 3 to 4");
+    Ok(())
+}
+
 fn append_keymap_history(connection: &Connection, hash: &str, from_ts: i64) -> Result<()> {
     let existing: Option<String> = connection
         .query_row(
@@ -719,6 +856,31 @@ fn write_event_counts(transaction: &Transaction<'_>, seal: &TierASeal) -> Result
     Ok(())
 }
 
+fn sum_row_counts(rows: &[(u64, u32)]) -> u32 {
+    rows.iter()
+        .map(|(_, count)| *count)
+        .fold(0_u32, u32::saturating_add)
+}
+
+/// `-1` for unattributed matches `pos_count`'s existing convention deliberately, so one reader can
+/// treat the value the same way in both tables. `-2` extends it: unlike Tier B, a Tier C slot can
+/// hold no key at all when fewer than three keys preceded the correction.
+fn on_disk_position(pos: u8) -> i64 {
+    match pos {
+        POS_UNATTRIBUTED => -1,
+        POS_ABSENT => -2,
+        other => i64::from(other),
+    }
+}
+
+/// The finger projection has one absent value: a key with no base-layer position has no finger.
+fn on_disk_finger(finger: u8) -> i64 {
+    match finger {
+        FINGER_ABSENT => -1,
+        other => i64::from(other),
+    }
+}
+
 fn to_i64(value: u64, description: &str) -> Result<i64> {
     i64::try_from(value).with_context(|| format!("{description} exceeds SQLite integer range"))
 }
@@ -726,11 +888,17 @@ fn to_i64(value: u64, description: &str) -> Result<i64> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::aggregate::{Aggregator, TierAAccumulator};
-    use crate::encode::{BSP_BURST, BSP_BURST_AFTER_MOD, LONELY_MOD, MOD_DURING_ALPHA};
+    use crate::aggregate::{Aggregator, SealPolicy, TierAAccumulator};
+    use crate::encode::{
+        pack_finger, pack_ngram, BSP_BURST, BSP_BURST_AFTER_MOD, LONELY_MOD, MOD_DURING_ALPHA,
+    };
     use crate::keymap::KeyInfo;
     use std::path::PathBuf;
     use tempfile::TempDir;
+
+    fn policy() -> SealPolicy {
+        SealPolicy::fixture()
+    }
 
     fn fixture_keymap() -> DeviceKeymap<'static> {
         DeviceKeymap {
@@ -834,7 +1002,7 @@ mod tests {
     }
 
     #[test]
-    fn migrating_a_v1_database_backfills_every_row_to_default() {
+    fn migrates_v1_all_the_way_to_v4() {
         let (_temp, path, mut store, device_id) = open_store();
         let profile_id = store
             .register_profile("gaming")
@@ -842,11 +1010,15 @@ mod tests {
         store
             .seal_tier_a(device_id, profile_id, &sample_tier_a_seal())
             .unwrap_or_else(|error| panic!("{error:#}"));
-        // Simulate a database written before the migration existed.
+        // Simulate a database written before any of the migrations existed.
         store
             .connection()
             .execute_batch(
                 "UPDATE bucket SET profile_id = NULL;
+                 UPDATE device SET keymap_kind = NULL, keymap_hash = NULL;
+                 DROP TABLE ngram;
+                 DROP TABLE ngram_finger;
+                 DROP TABLE ngram_window;
                  UPDATE meta SET value = '1' WHERE key = 'schema_version';",
             )
             .unwrap_or_else(|error| panic!("{error}"));
@@ -863,15 +1035,57 @@ mod tests {
             )
             .unwrap_or_else(|error| panic!("{error}"));
         assert_eq!(orphaned, 0);
-        let version: String = reopened
+        assert_eq!(schema_version(reopened.connection()), "4");
+        assert_eq!(correction_context_tables(reopened.connection()), 3);
+    }
+
+    /// A v3 database predates Tier C entirely: the migration is pure table creation, and running it
+    /// twice must be as safe as running it once.
+    #[test]
+    fn migrates_v3_to_v4() {
+        let (_temp, path, store, _device_id) = open_store();
+        store
             .connection()
+            .execute_batch(
+                "DROP TABLE ngram;
+                 DROP TABLE ngram_finger;
+                 DROP TABLE ngram_window;
+                 UPDATE meta SET value = '3' WHERE key = 'schema_version';",
+            )
+            .unwrap_or_else(|error| panic!("{error}"));
+        store.close().unwrap_or_else(|error| panic!("{error:#}"));
+
+        let reopened =
+            Store::open(&path, &keymap(), 3_000).unwrap_or_else(|error| panic!("{error:#}"));
+        assert_eq!(schema_version(reopened.connection()), "4");
+        assert_eq!(correction_context_tables(reopened.connection()), 3);
+        reopened.close().unwrap_or_else(|error| panic!("{error:#}"));
+
+        let again =
+            Store::open(&path, &keymap(), 4_000).unwrap_or_else(|error| panic!("{error:#}"));
+        assert_eq!(schema_version(again.connection()), "4");
+        assert_eq!(correction_context_tables(again.connection()), 3);
+    }
+
+    fn schema_version(connection: &Connection) -> String {
+        connection
             .query_row(
                 "SELECT value FROM meta WHERE key = 'schema_version'",
                 [],
                 |row| row.get(0),
             )
-            .unwrap_or_else(|error| panic!("{error}"));
-        assert_eq!(version, "3");
+            .unwrap_or_else(|error| panic!("{error}"))
+    }
+
+    fn correction_context_tables(connection: &Connection) -> i64 {
+        connection
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master
+                 WHERE type = 'table' AND name IN ('ngram_window', 'ngram', 'ngram_finger')",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap_or_else(|error| panic!("{error}"))
     }
 
     #[test]
@@ -919,6 +1133,9 @@ mod tests {
             .connection()
             .execute_batch(
                 "UPDATE device SET keymap_kind = NULL, keymap_hash = NULL;
+                 DROP TABLE ngram;
+                 DROP TABLE ngram_finger;
+                 DROP TABLE ngram_window;
                  UPDATE meta SET value = '2' WHERE key = 'schema_version';",
             )
             .unwrap_or_else(|error| panic!("{error}"));
@@ -942,6 +1159,8 @@ mod tests {
             })
             .unwrap_or_else(|error| panic!("{error}"));
         assert_eq!(kind, crate::config::DEFAULT_KEYMAP_KIND);
+        assert_eq!(schema_version(reopened.connection()), "4");
+        assert_eq!(correction_context_tables(reopened.connection()), 3);
     }
 
     #[test]
@@ -984,7 +1203,7 @@ mod tests {
                 |row| row.get(0),
             )
             .unwrap();
-        assert_eq!(schema_version, "3");
+        assert_eq!(schema_version, "4");
         let initial: Value = serde_json::from_str(&initial_history).unwrap();
         assert_eq!(initial.as_array().map(Vec::len), Some(1));
         store.close().unwrap();
@@ -1137,13 +1356,13 @@ mod tests {
         let (_temp, _path, mut store, device_id) = open_store();
         let mut aggregate = Aggregator::new(1_000, 1);
         for index in 0..24 {
-            aggregate.handle_event(index, 30, 1, &keymap(), 2_000);
+            aggregate.handle_event(index, 30, 1, &keymap(), &policy());
         }
         let first = aggregate.tick(1_010, 10_000, 25);
         assert!(first.is_none());
         assert_eq!(table_count(store.connection(), "bucket"), 0);
         for index in 24..30 {
-            aggregate.handle_event(index, 30, 1, &keymap(), 2_000);
+            aggregate.handle_event(index, 30, 1, &keymap(), &policy());
         }
         let second = aggregate.tick(1_020, 10_000, 25);
         assert!(second.is_some());
@@ -1238,15 +1457,16 @@ mod tests {
         let (_temp, _path, mut store, device_id) = open_store();
         let mut aggregate = Aggregator::new(0, 1);
         for index in 0..1_998 {
-            let seal = aggregate.handle_event(index, 30, 1, &keymap(), 2_000);
-            assert!(seal.is_none());
+            let batch = aggregate.handle_event(index, 30, 1, &keymap(), &policy());
+            assert!(batch.is_empty());
         }
-        let seal = aggregate.handle_event(1_998, 200, 1, &keymap(), 2_000);
-        assert!(seal.is_none());
+        let batch = aggregate.handle_event(1_998, 200, 1, &keymap(), &policy());
+        assert!(batch.is_empty());
         assert_eq!(table_count(store.connection(), "key_window"), 0);
-        let seal = aggregate.handle_event(1_999, 30, 1, &keymap(), 2_000);
-        assert!(seal.is_some());
-        let seal = seal.unwrap_or_else(|| unreachable!());
+        let seal = aggregate
+            .handle_event(1_999, 30, 1, &keymap(), &policy())
+            .tier_b
+            .unwrap_or_else(|| unreachable!());
         store
             .seal_tier_b(device_id, 1, &seal)
             .unwrap_or_else(|error| panic!("{error:#}"));
@@ -1270,14 +1490,14 @@ mod tests {
         let (_temp, _path, store, _device_id) = open_store();
         let mut tier_b_partial = Aggregator::new(0, 1);
         for index in 0..1_500 {
-            tier_b_partial.handle_event(index, 30, 1, &keymap(), 2_000);
+            tier_b_partial.handle_event(index, 30, 1, &keymap(), &policy());
         }
         tier_b_partial.discard_partials(10);
         assert_eq!(tier_b_partial.tier_b_total(), 0);
 
         let mut tier_a_partial = Aggregator::new(0, 1);
         for index in 0..24 {
-            tier_a_partial.handle_event(index, 30, 1, &keymap(), 2_000);
+            tier_a_partial.handle_event(index, 30, 1, &keymap(), &policy());
         }
         assert!(tier_a_partial.tick(10, 10_000, 25).is_none());
         tier_a_partial.discard_partials(10);
@@ -1291,22 +1511,21 @@ mod tests {
         let (_temp, _path, mut store, device_id) = open_store();
         let mut aggregate = Aggregator::new(1_000, 1);
 
-        aggregate.handle_event(100, 30, 1, &keymap(), 2_000);
-        aggregate.handle_event(110, 30, 0, &keymap(), 2_000);
-        aggregate.handle_event(120, 29, 1, &keymap(), 2_000);
-        aggregate.handle_event(130, 29, 0, &keymap(), 2_000);
-        aggregate.handle_event(629, 14, 1, &keymap(), 2_000);
-        aggregate.handle_event(630, 14, 0, &keymap(), 2_000);
-        aggregate.handle_event(631, 30, 1, &keymap(), 2_000);
+        aggregate.handle_event(100, 30, 1, &keymap(), &policy());
+        aggregate.handle_event(110, 30, 0, &keymap(), &policy());
+        aggregate.handle_event(120, 29, 1, &keymap(), &policy());
+        aggregate.handle_event(130, 29, 0, &keymap(), &policy());
+        aggregate.handle_event(629, 14, 1, &keymap(), &policy());
+        aggregate.handle_event(630, 14, 0, &keymap(), &policy());
+        aggregate.handle_event(631, 30, 1, &keymap(), &policy());
 
         let mut tier_b = None;
         for offset in 0..1_997 {
-            let seal = aggregate.handle_event(632 + offset, 30, 1, &keymap(), 2_000);
-            if seal.is_some() {
-                tier_b = seal;
+            let mut batch = aggregate.handle_event(632 + offset, 30, 1, &keymap(), &policy());
+            if let Some(seal) = batch.tier_b.take() {
+                tier_b = Some(seal);
             }
         }
-        assert!(tier_b.is_some());
         let tier_b = tier_b.unwrap_or_else(|| unreachable!());
         store.seal_tier_b(device_id, 1, &tier_b).unwrap();
         let tier_a = aggregate
@@ -1411,6 +1630,119 @@ mod tests {
             .unwrap();
         assert_eq!((left_finger, right_finger), (1_999, 1));
         assert_eq!((pos_a, pos_bsp), (1_999, 1));
+    }
+
+    fn sample_tier_c_seal() -> TierCSeal {
+        // 500 corrections: 300 keep their positions, 150 degrade to fingers, 50 lost even that.
+        TierCSeal {
+            start_ts: 1_000,
+            end_ts: 2_000,
+            corrections: 500,
+            dropped: 50,
+            rows: vec![
+                (pack_ngram([0, 1, 2], 0b0000_0001, 1, 2), 200),
+                (pack_ngram([POS_ABSENT, POS_UNATTRIBUTED, 79], 0, 3, 0), 100),
+            ],
+            finger_rows: vec![
+                (pack_finger([0, 5, 9], 0, 0, 1), 100),
+                (pack_finger([FINGER_ABSENT, 1, 2], 0xff, 2, 6), 50),
+            ],
+        }
+    }
+
+    #[test]
+    fn seals_a_tier_c_window() {
+        let (_temp, _path, mut store, device_id) = open_store();
+        let seal = sample_tier_c_seal();
+        store
+            .seal_tier_c(device_id, 1, &seal)
+            .unwrap_or_else(|error| panic!("{error:#}"));
+
+        assert_eq!(table_count(store.connection(), "ngram_window"), 1);
+        assert_eq!(
+            scalar(store.connection(), "SELECT corrections FROM ngram_window"),
+            500
+        );
+        assert_eq!(
+            scalar(store.connection(), "SELECT degraded FROM ngram_window"),
+            150
+        );
+        assert_eq!(
+            scalar(store.connection(), "SELECT dropped FROM ngram_window"),
+            50
+        );
+        assert_eq!(table_count(store.connection(), "ngram"), 2);
+        assert_eq!(scalar(store.connection(), "SELECT SUM(n) FROM ngram"), 300);
+        assert_eq!(table_count(store.connection(), "ngram_finger"), 2);
+        assert_eq!(
+            scalar(store.connection(), "SELECT SUM(n) FROM ngram_finger"),
+            150
+        );
+
+        let row: (i64, i64, i64, i64, i64, i64) = store
+            .connection()
+            .query_row(
+                "SELECT pos_a, pos_b, pos_c, mod_mask, latency_bucket, run_bucket
+                 FROM ngram WHERE n = 200",
+                [],
+                |row| {
+                    Ok((
+                        row.get(0)?,
+                        row.get(1)?,
+                        row.get(2)?,
+                        row.get(3)?,
+                        row.get(4)?,
+                        row.get(5)?,
+                    ))
+                },
+            )
+            .unwrap_or_else(|error| panic!("{error}"));
+        assert_eq!(row, (0, 1, 2, 1, 1, 2));
+
+        // -1 is the existing `pos_count` unattributed convention; -2 is the Tier C extension.
+        let sentinels: (i64, i64) = store
+            .connection()
+            .query_row("SELECT pos_a, pos_b FROM ngram WHERE n = 100", [], |row| {
+                Ok((row.get(0)?, row.get(1)?))
+            })
+            .unwrap_or_else(|error| panic!("{error}"));
+        assert_eq!(sentinels, (-2, -1));
+        assert_eq!(
+            scalar(
+                store.connection(),
+                "SELECT finger_a FROM ngram_finger WHERE n = 50"
+            ),
+            -1
+        );
+    }
+
+    #[test]
+    fn refuses_a_tier_c_window_below_the_floor() {
+        let (_temp, _path, mut store, device_id) = open_store();
+        let seal = TierCSeal {
+            start_ts: 1_000,
+            end_ts: 2_000,
+            corrections: 499,
+            dropped: 0,
+            rows: vec![(pack_ngram([0, 1, 2], 0, 0, 0), 499)],
+            finger_rows: Vec::new(),
+        };
+        assert!(store.seal_tier_c(device_id, 1, &seal).is_err());
+        assert_eq!(table_count(store.connection(), "ngram_window"), 0);
+        assert_eq!(table_count(store.connection(), "ngram"), 0);
+    }
+
+    #[test]
+    fn refuses_an_inconsistent_tier_c_window() {
+        let (_temp, _path, mut store, device_id) = open_store();
+        let mut seal = sample_tier_c_seal();
+        seal.dropped = 49;
+        assert!(
+            store.seal_tier_c(device_id, 1, &seal).is_err(),
+            "degradation moves counts, so the three parts must sum exactly"
+        );
+        assert_eq!(table_count(store.connection(), "ngram_window"), 0);
+        assert_eq!(table_count(store.connection(), "ngram_finger"), 0);
     }
 
     fn table_count(connection: &Connection, table: &str) -> i64 {

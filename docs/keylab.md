@@ -1,22 +1,27 @@
 # keylab
 
-`keylab` is a local-only daemon that reads the Glove80's Linux evdev events and stores privacy-reduced ergonomic aggregates in SQLite. It is intended for measuring per-finger load, modifier burden, home-row-mod misfires, and typing dose without creating a keystroke sequence or corpus.
+`keylab` is a local-only daemon that reads the Glove80's Linux evdev events and stores privacy-reduced ergonomic aggregates in SQLite. It is intended for measuring per-finger load, modifier burden, home-row-mod misfires, correction context, and typing dose without creating a keystroke log or a corpus of ordinary typing. It does record one narrow ordered fragment — the three positions preceding each correction — under its own privacy floor; see *Tier C* below and its residual risks.
 
 ## What is recorded
 
-keylab has two persistent privacy tiers plus a replace-only live snapshot:
+keylab has three persistent privacy tiers plus a replace-only live snapshot:
 
 - **Tier A — fine, time-sealed:** nominal 10-second buckets containing start time, span, active time, total presses, autorepeats, per-finger and per-hand/row marginal counts, duration and gap histograms, modifier hold histograms, and content-free misfire/correction counters. It contains no keycode or physical-position identity and no finger-by-row joint distribution.
 - **Tier B — coarse, count-sealed:** an unordered histogram of counts for physical positions 0–79 plus an unattributed position, with the window's start/end times and total press count. It contains position identity, but no ordering or per-press timestamp.
+- **Tier C — correction context, count-sealed:** for each backspace *run*, the **ordered trigram** of physical positions that immediately preceded it, together with the held-modifier mask, a latency bucket (fumble vs. edit) and the existing backspace run bucket. Rows are counted per window, never timestamped individually. This is the only place in keylab where event order is recorded, and it is recorded only at a correction.
 - **Live snapshot:** replace-only per-finger marginals and typing rate. It contains no positions.
 
 The database also records device identity, schema/daemon versions, the generated keymap hash, and keymap-hash history so aggregate data remains attributable to the configuration that produced it.
 
-keylab does **not** record characters, raw keycodes, a raw event log, event order, bigrams, words, clipboard contents, applications, windows, or focused fields. It never persists individual key timestamps. Its bounded in-memory state tracks only currently held keys, the immediately previous event context needed for timing/counters, Tier A aggregates, and an unordered Tier B histogram.
+keylab does **not** record characters, raw keycodes, a raw event log, word identity, clipboard contents, applications, windows, or focused fields. It never persists individual key timestamps. It **does** record, at each correction, an ordered trigram of physical positions — that is Tier C, and nothing outside Tier C carries event order. Its bounded in-memory state tracks only currently held keys, the immediately previous event context needed for timing/counters, Tier A aggregates, an unordered Tier B histogram, and Tier C's three-slot position ring plus its two capped per-profile count maps.
 
-Tier A is not sealed until at least **25 keystrokes** have accumulated. A shorter bucket is carried into the next time bucket, preventing an isolated short burst such as a password from becoming a fine-grained stored sample. Tier B is not sealed until at least **2000 keystrokes** have accumulated. At the minimum floor, this limits a 12-character password to 0.6% of the unordered positional histogram on a normal workstation, and further typing dilutes it more. Both values are enforced minimums, not merely configuration defaults.
+Tier A is not sealed until at least **25 keystrokes** have accumulated. A shorter bucket is carried into the next time bucket, preventing an isolated short burst such as a password from becoming a fine-grained stored sample. Tier B is not sealed until at least **2000 keystrokes** have accumulated. At the minimum floor, this limits a 12-character password to 0.6% of the unordered positional histogram on a normal workstation, and further typing dilutes it more. Tier C is not sealed until at least **500 corrections** have accumulated, where one correction is one completed backspace run whatever its length. All three values are enforced minimums, not merely configuration defaults.
 
-Partial buckets are discarded on shutdown, disconnect, or pause. The last few minutes are therefore intentionally lost rather than writing data below either privacy floor.
+Tier C additionally applies a **degradation rule** at seal: any trigram seen fewer than **3 times** in the window loses its position identity and is written instead as its finger-level projection — the ordered triple of fingers, with the same modifier, latency and run context. The counts move, they are never dropped: `sum(positions) + sum(fingers) + dropped == corrections` holds exactly for every window, and `dropped` reports what overflowed the bounded in-memory maps and lost even its finger identity. Nothing is silently capped.
+
+Why record correction context at all: the pre-existing counters answer *how much* correcting happens but not *what* was being corrected, so they cannot tell a home-row-mod misfire from an ordinary typo from a deliberate rewrite — which is the whole question a layout experiment needs answered. Capture is on by default because a manually armed capture would systematically miss ordinary work, which is the only thing worth measuring; `ngram_capture = false` turns it off completely, and both pause channels already stop all counting.
+
+Partial buckets and windows are discarded on shutdown, disconnect, or pause. The last few minutes are therefore intentionally lost rather than writing data below any privacy floor.
 
 ## Install
 
@@ -62,9 +67,20 @@ tier_b_seal_count = 2000
 live_snapshot_seconds = 1
 profiles = ["default", "training-de", "training-en", "gaming"]
 auto_revert_idle_seconds = 900
+ngram_capture = true
+ngram_seal_count = 500
+ngram_min_count = 3
 ```
 
-`device_name_contains` selects evdev devices by a case-sensitive name fragment. `keymap_meta_path` must point to the metadata emitted by `pnpm build`. The daemon refuses bucket/floor settings below 10 seconds, 25 keystrokes, and 2000 keystrokes, and refuses more than 8 profiles or a list whose first entry is not `default`. Restart the service after configuration changes:
+`device_name_contains` selects evdev devices by a case-sensitive name fragment. `keymap_meta_path` must point to the metadata emitted by `pnpm build`. The daemon refuses bucket/floor settings below 10 seconds, 25 keystrokes, and 2000 keystrokes, and refuses more than 8 profiles or a list whose first entry is not `default`.
+
+The three `ngram_*` keys control Tier C:
+
+- `ngram_capture` (default `true`) turns correction-context capture on or off. When off, no position ring is maintained and no record is created — not "recorded and discarded".
+- `ngram_seal_count` (default and enforced minimum **500**) is how many corrections a window needs before it is written. Below 500 is refused at load.
+- `ngram_min_count` (default and enforced minimum **3**) is how many times a trigram must appear in a window to keep its position identity. Below 3 is refused at load.
+
+All three keys are optional: a configuration written before Tier C existed keeps loading and picks up these defaults. Restart the service after configuration changes:
 
 ```bash
 systemctl restart keylab.service
@@ -82,7 +98,7 @@ At startup, keylab logs each matched device and event path plus the total match 
 
 ## Activity profiles
 
-Every sealed Tier A bucket and Tier B window carries a `profile_id`. The profile is an *activity* label — practice, gaming, language drilling — and is orthogonal to `device_id`, so "gaming across both keyboards" stays answerable.
+Every sealed Tier A bucket, Tier B window and Tier C window carries a `profile_id`. The profile is an *activity* label — practice, gaming, language drilling — and is orthogonal to `device_id`, so "gaming across both keyboards" stays answerable.
 
 ```bash
 keylabctl profile list        # configured profiles; * marks the active one
@@ -93,8 +109,8 @@ keylabctl status
 Rules that matter:
 
 - **The configured list is a closed set.** `profiles` in `keylab.toml` must start with `default`, hold at most **8** entries, and use only `[a-z0-9-]`. A name outside the list is rejected by both `keylabctl` and the daemon, which keeps its last known-good state rather than guessing.
-- **The cap is a privacy invariant, not a preference.** Each profile holds its own 81-slot Tier B histogram; `MAX_PROFILES = 8` is what keeps the daemon's in-memory footprint bounded.
-- **Tier B is preserved across a switch, per profile.** Switching profiles never discards positional progress. It also means a profile you rarely use may take weeks to reach the 2000-keystroke floor and seal a window — correct behaviour, not a fault.
+- **The cap is a privacy invariant, not a preference.** Each profile holds its own 81-slot Tier B histogram plus its own two capped Tier C maps (at most 4096 position rows and 1024 finger rows); `MAX_PROFILES = 8` is what keeps the daemon's in-memory footprint bounded.
+- **Tier B and Tier C are preserved across a switch, per profile.** Switching profiles never discards positional or correction progress. It also means a profile you rarely use may take weeks to reach the 2000-keystroke or 500-correction floor and seal a window — correct behaviour, not a fault. A Tier C seal clears only the sealing profile's accumulator.
 - **Tier A is sealed or discarded at the boundary.** A bucket that clears both floors (25 keystrokes, 10 seconds) is sealed under the outgoing profile; anything below is discarded. A switch therefore smears at most one bucket.
 - **Idle auto-revert.** After `auto_revert_idle_seconds` (default 900) with no keystrokes on any device, the daemon rewrites `control.json` back to `default`, so a forgotten `gaming` profile cannot silently poison a working day. Set it to `0` to disable.
 
@@ -154,13 +170,13 @@ evsieve merges the Kensington trackball into the same virtual device as the Glov
 
 There are three separate mechanisms with three different guarantees. Do not conflate them.
 
-| | command | guarantee | Tier B |
+| | command | guarantee | Tier B and Tier C |
 |---|---|---|---|
 | soft | `keylabctl pause` | events read, nothing counted | preserved |
 | hard | `touch ~/.local/share/glove80-lab/PAUSED` | device still open, all partials discarded | discarded |
 | stop | `sudo systemctl stop keylab.service` | device closed, nothing read | discarded |
 
-The **soft pause** lives in `control.json` and exists so a pause does not throw away up to 1999 keystrokes of Tier B progress. The daemon keeps reading the device and counts nothing:
+The **soft pause** lives in `control.json` and exists so a pause does not throw away up to 1999 keystrokes of Tier B progress or 499 corrections of Tier C progress. The daemon keeps reading the device and counts nothing. Tier C's position ring is cleared either way — a trigram spanning a pause, or spanning a kernel event-buffer overflow, would be fiction — while the counted totals stay:
 
 ```bash
 keylabctl pause
@@ -174,7 +190,7 @@ touch "$HOME/.local/share/glove80-lab/PAUSED"
 rm -- "$HOME/.local/share/glove80-lab/PAUSED"
 ```
 
-Creating or removing the marker discards all partial Tier A and Tier B aggregates; they are never flushed below their floors. The effective pause is `PAUSED exists || control.paused`, so either channel alone stops counting.
+Creating or removing the marker discards all partial Tier A, Tier B and Tier C aggregates; they are never flushed below their floors. The effective pause is `PAUSED exists || control.paused`, so either channel alone stops counting.
 
 A soft pause is **"not counted", not "not read"** — the device stays open. Only `systemctl stop` closes it.
 
@@ -210,20 +226,26 @@ Useful read-only commands at the SQLite prompt include:
 .tables
 SELECT COUNT(*), SUM(keystrokes) FROM bucket;
 SELECT COUNT(*), SUM(keystrokes) FROM key_window;
+SELECT COUNT(*), SUM(corrections), SUM(degraded), SUM(dropped) FROM ngram_window;
 SELECT updated_at, json FROM live_snapshot;
 SELECT p.name, SUM(b.keystrokes) FROM bucket b JOIN profile p ON p.id = b.profile_id GROUP BY 1;
 ```
 
-The schema is at version 3 and is migrated in place the first time the new daemon opens an older database:
+The schema is at version 4 and is migrated in place the first time the new daemon opens an older database:
 
 | from | adds | backfill |
 |---|---|---|
 | v1 → v2 | `bucket.profile_id`, `key_window.profile_id` | every existing row to `default` |
 | v2 → v3 | `device.keymap_kind`, `device.keymap_hash` | every existing device to `glove80` |
+| v3 → v4 | `ngram_window`, `ngram`, `ngram_finger` | none — new tables |
 
-Both backfills are accurate rather than guesses: every pre-v3 row was captured on the Glove80 through evsieve during ordinary use, before profiles or multi-device support existed. The analysis and viewer packages require version 3 and say so plainly, with the fix, if they meet an unmigrated database.
+The first two backfills are accurate rather than guesses: every pre-v3 row was captured on the Glove80 through evsieve during ordinary use, before profiles or multi-device support existed. v3 → v4 has nothing to backfill, because correction context that was never captured cannot be reconstructed.
 
-Tier B's `pos_count` table contains diluted physical-position histograms. Treat the entire database, including `keylab.db-wal` and `keylab.db-shm`, as privacy-sensitive.
+`packages/analysis` and `packages/viewer` pin schema version 3 and will refuse a v4 database with a clear message until the analysis surface is updated to read Tier C.
+
+Tier C's on-disk position encoding extends `pos_count`'s convention: `0..79` is a physical position, `-1` is unattributed (deliberately the same value `pos_count` uses), and `-2` is *absent* — fewer than three keys preceded that correction, for example at the very start of a window. Finger columns use `0..9` and `-1` for absent, since a key with no base-layer position has no finger either.
+
+Tier B's `pos_count` table contains diluted physical-position histograms, and Tier C's `ngram` table contains ordered position triples. Treat the entire database, including `keylab.db-wal` and `keylab.db-shm`, as privacy-sensitive.
 
 ## Known limitations
 
@@ -273,6 +295,15 @@ Modifier **hold** durations are measurable — the mod press is emitted at resol
   Add `/home/sascha/.local/share/glove80-lab` to Timeshift and Dropbox exclusions explicitly as well.
 - **Long carried Tier A spans:** `span_ms` on a carried bucket can be hours long. This reveals that an isolated burst of typing occurred at that time. Content is diluted; the fact that *something* was typed at 03:00 is not.
 - **A password-only machine:** on a machine used almost exclusively to type one password, repeated entry can make that password's multiset dominant within a 2000-keystroke Tier B window. This is irrelevant for a daily-driver workstation, but remains a real limitation.
+
+### Tier C residual risks
+
+Recording an ordered trigram at each correction is a categorical change, not a quantitative one. These four risks are inherent to it, and no configuration setting removes them short of `ngram_capture = false`:
+
+- **Suppression is per-window, not lifetime.** A fragment fumbled three or more times inside one window is written verbatim as an ordered position triple. Across windows it degrades to fingers each time, but within one window it can survive with its positions intact.
+- **The trigger is mistake-correlated.** Corrections cluster where typing is hardest, and password entry is exactly that. The capture condition is adversarially aligned with the sensitive case: the harder something is to type, the more likely its context is recorded.
+- **Positions are characters.** On a fixed base layer, position 35 *is* `a`. Storing physical positions rather than keycodes is a schema convenience and buys no privacy whatsoever. Do not read the position encoding as obfuscation.
+- **Pause reachability is now load-bearing.** Reaching either pause control during a password prompt is impractical (see *Pause* above). That was a tolerable cost when everything stored was a diluted aggregate; for ordered sequences it is the primary residual risk. The firmware-bound pause toggle is out of scope here, but its priority rises because of this work.
 
 ## Uninstall
 

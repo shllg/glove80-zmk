@@ -16,6 +16,19 @@ profiles = ["default", "training-de", "training-en", "gaming"]
 # Set to 0 to disable the idle auto-revert entirely.
 auto_revert_idle_seconds = 900
 
+# Tier C — correction context. Records, for each backspace run, the ordered trigram of physical
+# positions that preceded it, plus the held-modifier mask, a latency bucket and the run bucket.
+# This is the only place keylab records event order; read the "What is recorded" and
+# "What this does not protect against" sections of docs/keylab.md before leaving it on.
+# Set to false to disable capture entirely — no ring is kept and no record is created.
+ngram_capture = true
+# A window seals after this many corrections, where one correction is one completed backspace run.
+# Refused below 500.
+ngram_seal_count = 500
+# A trigram seen fewer than this many times in a window is written as its finger-level projection
+# instead of as positions. Refused below 3.
+ngram_min_count = 3
+
 # Multi-device capture. Each rule pairs an evdev name fragment with the position space that
 # keyboard's Tier B counts belong to. Fragments must be unambiguous — no fragment may contain
 # another. Omit this table entirely to keep the single-keyboard `device_name_contains` above.

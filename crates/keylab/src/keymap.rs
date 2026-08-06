@@ -23,6 +23,9 @@ pub struct Keymap {
     pub git_commit: String,
     pub alt_hand_ambiguous: bool,
     by_keycode: HashMap<u16, KeyInfo>,
+    /// Position to `finger_id`, indexed by physical position. Tier C degrades a rare ordered
+    /// position trigram to its finger-level projection, which needs this direction of the map.
+    finger_by_position: [Option<u8>; 80],
 }
 
 #[derive(Deserialize)]
@@ -102,6 +105,7 @@ impl Keymap {
 
     fn from_file(file: KeymapFile) -> Result<Self> {
         let mut by_keycode = HashMap::with_capacity(80);
+        let mut finger_by_position: [Option<u8>; 80] = [None; 80];
         let mut ambiguous_keycodes = HashSet::new();
         let mut left_alt_codes = HashSet::new();
         let mut right_alt_codes = HashSet::new();
@@ -126,6 +130,9 @@ impl Keymap {
             if position.finger_id != finger_id(hand, finger) {
                 bail!("keymap metadata contains an inconsistent finger encoding");
             }
+            // Recorded before the `linux_keycode` check below, so the projection covers every
+            // declared position rather than only the ones reachable from the base layer.
+            finger_by_position[usize::from(position.pos)] = Some(position.finger_id);
 
             if position.is_hrm {
                 if let (Some(class), Some(code)) = (
@@ -170,11 +177,18 @@ impl Keymap {
             git_commit: file.git_commit,
             alt_hand_ambiguous,
             by_keycode,
+            finger_by_position,
         })
     }
 
     pub fn resolve(&self, code: u16) -> Option<KeyInfo> {
         self.by_keycode.get(&code).copied()
+    }
+
+    /// The finger that owns a physical position, or `None` for a position this board does not
+    /// declare. Tier C uses it to degrade a rare position trigram to its finger projection.
+    pub fn finger_for_position(&self, pos: u8) -> Option<u8> {
+        self.finger_by_position.get(usize::from(pos)).copied()?
     }
 }
 
@@ -200,11 +214,16 @@ fn modifier_keycode_from_binding(binding: &str) -> Option<u16> {
 #[cfg(test)]
 impl Keymap {
     pub(crate) fn fixture(entries: &[(u16, KeyInfo)]) -> Self {
+        let mut finger_by_position: [Option<u8>; 80] = [None; 80];
+        for (_, info) in entries {
+            finger_by_position[usize::from(info.pos)] = Some(info.finger_id);
+        }
         Self {
             hash: "fixture".to_owned(),
             git_commit: "fixture".to_owned(),
             alt_hand_ambiguous: false,
             by_keycode: entries.iter().copied().collect(),
+            finger_by_position,
         }
     }
 }
@@ -241,6 +260,17 @@ mod tests {
         assert!(keymap.resolve(86).is_some(), "KEY_102ND must be mapped");
         // Nothing from the Glove80's F-row exists on this board.
         assert!(keymap.resolve(59).is_none());
+    }
+
+    #[test]
+    fn projects_a_physical_position_back_to_its_finger() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../out/keymap-meta.json");
+        let keymap = Keymap::load(&path).unwrap_or_else(|error| panic!("{error:#}"));
+        let a = keymap
+            .resolve(30)
+            .unwrap_or_else(|| unreachable!("KEY_A must resolve"));
+        assert_eq!(keymap.finger_for_position(a.pos), Some(a.finger_id));
+        assert_eq!(keymap.finger_for_position(200), None);
     }
 
     #[test]
