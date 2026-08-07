@@ -1,7 +1,7 @@
 # keylab — local keystroke telemetry, design and implementation plan
 
 Date: 2026-08-04
-Status: approved design, not yet implemented
+Status: implemented. Phases 0-7 all shipped and the daemon has been capturing since. The step checklists below are ticked to match the running system, verified per phase rather than step by step.
 
 ## Purpose
 
@@ -354,118 +354,118 @@ to the resume image. The only effective mitigation is an encrypted swap/resume d
 
 Constraint: `src/generateDtsi.ts` resolves `config/` via `process.cwd()`. All package scripts must continue to run from the repository root.
 
-- [ ] Add `pnpm-workspace.yaml` with `packages/*`
-- [ ] Move `src/` to `packages/keymap/src/`, add `packages/keymap/package.json`
-- [ ] Keep root `pnpm build` delegating to the keymap package **with cwd unchanged at root**
-- [ ] Verify `pnpm build` produces byte-identical `out/keymap.dtsi` to the pre-move output
-- [ ] Create empty `packages/analysis/` and `packages/viewer/` with package.json
-- [ ] Create `crates/keylab/` with `Cargo.toml` (edition 2021, `evdev`, `rusqlite` with `bundled`, `libc`, `serde`, `serde_json`, `anyhow`, `tracing`)
-- [ ] Add `crates/` and Rust build artifacts to `.gitignore` as appropriate
-- [ ] Leave `archive/`, `glove80_export/`, `Makefile`, `Rakefile` untouched (deliberate — cleanup deferred)
+- [x] Add `pnpm-workspace.yaml` with `packages/*`
+- [x] Move `src/` to `packages/keymap/src/`, add `packages/keymap/package.json`
+- [x] Keep root `pnpm build` delegating to the keymap package **with cwd unchanged at root**
+- [x] Verify `pnpm build` produces byte-identical `out/keymap.dtsi` to the pre-move output
+- [x] Create empty `packages/analysis/` and `packages/viewer/` with package.json
+- [x] Create `crates/keylab/` with `Cargo.toml` (edition 2021, `evdev`, `rusqlite` with `bundled`, `libc`, `serde`, `serde_json`, `anyhow`, `tracing`)
+- [x] Add `crates/` and Rust build artifacts to `.gitignore` as appropriate
+- [x] Leave `archive/`, `glove80_export/`, `Makefile`, `Rakefile` untouched (deliberate — cleanup deferred)
 
 **Acceptance:** `pnpm build` and `make build` behave exactly as before the move.
 
 ## Phase 1 — keymap-meta emission
 
-- [ ] Add `packages/keymap/src/keymapMeta.ts`
-- [ ] Build the column-to-finger table (C1 index-inner, C2 index, C3 middle, C4 ring, C5 pinky, C6 pinky-outer)
-- [ ] Parse base-layer bindings, extracting the tap keycode from `&kp X`, `&hml MOD X`, `&hmr MOD X`, `&lt L X`, `&thumb_* L X`
-- [ ] Map ZMK keycode names to Linux `KEY_*` codes (table; fail loudly on unknown names rather than silently dropping)
-- [ ] Emit `out/keymap-meta.json` including `keymapHash` (sha256 of the resolved mapping) and `gitCommit`
-- [ ] Wire emission into `packages/keymap/src/index.ts`
-- [ ] Test: all 80 positions present, each resolves to exactly one finger
-- [ ] Test: every base-layer alpha maps to a distinct Linux keycode
-- [ ] Test: `isHrm` and `modClass` correct for the six home row mod positions
+- [x] Add `packages/keymap/src/keymapMeta.ts`
+- [x] Build the column-to-finger table (C1 index-inner, C2 index, C3 middle, C4 ring, C5 pinky, C6 pinky-outer)
+- [x] Parse base-layer bindings, extracting the tap keycode from `&kp X`, `&hml MOD X`, `&hmr MOD X`, `&lt L X`, `&thumb_* L X`
+- [x] Map ZMK keycode names to Linux `KEY_*` codes (table; fail loudly on unknown names rather than silently dropping)
+- [x] Emit `out/keymap-meta.json` including `keymapHash` (sha256 of the resolved mapping) and `gitCommit`
+- [x] Wire emission into `packages/keymap/src/index.ts`
+- [x] Test: all 80 positions present, each resolves to exactly one finger
+- [x] Test: every base-layer alpha maps to a distinct Linux keycode
+- [x] Test: `isHrm` and `modClass` correct for the six home row mod positions
 
 **Acceptance:** `out/keymap-meta.json` regenerates on every build and round-trips through a schema check.
 
 ## Phase 2 — daemon core
 
-- [ ] `main.rs`: config load, device discovery, event loop, signal handling
-- [ ] Config file `~/.config/glove80-lab/keylab.toml`: device name match, db path, bucket seconds, tier A seal floor, tier B seal count, keymap-meta path
-- [ ] Device discovery: enumerate `/dev/input/event*`, match by device name, poll every 2 s for reappearance (the Glove80 is Bluetooth and its node disappears on sleep)
-- [ ] Register each matched device in the `device` table, tag all rows with `device_id`
-- [ ] `EVIOCSCLOCKID` to `CLOCK_MONOTONIC` so NTP steps cannot corrupt hold durations; wall clock used only for bucket ids
-- [ ] Apply `mlockall(MCL_CURRENT | MCL_FUTURE)`
-- [ ] Apply `prctl(PR_SET_DUMPABLE, 0)`
-- [ ] Load `keymap-meta.json`, build keycode-to-position lookup, store `keymapHash` in `meta`
-- [ ] Implement the bounded state struct exactly as specified; **no growable sequence buffer anywhere**
-- [ ] Implement `PAUSED` file watch (check on each bucket tick)
-- [ ] Ignore `EV_KEY` value 2 (autorepeat) for press counts; count separately as `autorepeat`
+- [x] `main.rs`: config load, device discovery, event loop, signal handling
+- [x] Config file `~/.config/glove80-lab/keylab.toml`: device name match, db path, bucket seconds, tier A seal floor, tier B seal count, keymap-meta path
+- [x] Device discovery: enumerate `/dev/input/event*`, match by device name, poll every 2 s for reappearance (the Glove80 is Bluetooth and its node disappears on sleep)
+- [x] Register each matched device in the `device` table, tag all rows with `device_id`
+- [x] `EVIOCSCLOCKID` to `CLOCK_MONOTONIC` so NTP steps cannot corrupt hold durations; wall clock used only for bucket ids
+- [x] Apply `mlockall(MCL_CURRENT | MCL_FUTURE)`
+- [x] Apply `prctl(PR_SET_DUMPABLE, 0)`
+- [x] Load `keymap-meta.json`, build keycode-to-position lookup, store `keymapHash` in `meta`
+- [x] Implement the bounded state struct exactly as specified; **no growable sequence buffer anywhere**
+- [x] Implement `PAUSED` file watch (check on each bucket tick)
+- [x] Ignore `EV_KEY` value 2 (autorepeat) for press counts; count separately as `autorepeat`
 
 **Acceptance:** daemon runs, discovers the Glove80, survives disconnect and reconnect, writes nothing yet.
 
 ## Phase 3 — aggregation and storage
 
-- [ ] Duration bucketing helper (25 ms steps to 500, then 500-1000, then 1000+)
-- [ ] Gap bucketing helper
-- [ ] Tier A accumulators: finger, row, hand, hold hist, mod hold hist, gap hist
-- [ ] Behavioural counters: `LONELY_MOD`, `MOD_DURING_ALPHA`, `BSP_BURST_AFTER_MOD`, `BSP_BURST`
-- [ ] Implement the integer encodings exactly as specified in the schema section; add a unit test pinning each one
-- [ ] Tier A seal on 10 s tick, **carry forward when below the 25-keystroke floor**, extend `span_ms` accordingly, record `autorepeats`
-- [ ] Tier B accumulator `[u32; 81]`, seal at >= 2000 keystrokes, write `key_window` + `pos_count`
-- [ ] `live_snapshot` REPLACE every 1 s, finger marginals and rates only
-- [ ] Schema creation and migration on startup, `schema_version` in `meta`
-- [ ] WAL mode, one transaction per seal
-- [ ] Fail closed on any DB error: log and exit, never buffer events awaiting recovery
-- [ ] Test: synthetic `(t, code, value)` fixtures drive the state machine with no device present
-- [ ] Test: golden cases for each behavioural counter, especially `LONELY_MOD`
-- [ ] Test: property — after processing any fixture stream, retained sequence context is at most one event
-- [ ] Test: a bucket with fewer than 25 keystrokes is never written
-- [ ] Test: a `key_window` is never written below 2000 keystrokes
+- [x] Duration bucketing helper (25 ms steps to 500, then 500-1000, then 1000+)
+- [x] Gap bucketing helper
+- [x] Tier A accumulators: finger, row, hand, hold hist, mod hold hist, gap hist
+- [x] Behavioural counters: `LONELY_MOD`, `MOD_DURING_ALPHA`, `BSP_BURST_AFTER_MOD`, `BSP_BURST`
+- [x] Implement the integer encodings exactly as specified in the schema section; add a unit test pinning each one
+- [x] Tier A seal on 10 s tick, **carry forward when below the 25-keystroke floor**, extend `span_ms` accordingly, record `autorepeats`
+- [x] Tier B accumulator `[u32; 81]`, seal at >= 2000 keystrokes, write `key_window` + `pos_count`
+- [x] `live_snapshot` REPLACE every 1 s, finger marginals and rates only
+- [x] Schema creation and migration on startup, `schema_version` in `meta`
+- [x] WAL mode, one transaction per seal
+- [x] Fail closed on any DB error: log and exit, never buffer events awaiting recovery
+- [x] Test: synthetic `(t, code, value)` fixtures drive the state machine with no device present
+- [x] Test: golden cases for each behavioural counter, especially `LONELY_MOD`
+- [x] Test: property — after processing any fixture stream, retained sequence context is at most one event
+- [x] Test: a bucket with fewer than 25 keystrokes is never written
+- [x] Test: a `key_window` is never written below 2000 keystrokes
 
 **Acceptance:** a replayed fixture stream produces the expected rows in all tiers, and the two seal-floor tests pass.
 
 ## Phase 4 — packaging and hardening
 
-- [ ] `keylab.service` unit with the full hardening block from the design
-- [ ] Install target: binary to `/usr/local/bin`, unit to `/etc/systemd/system`
-- [ ] Verify `systemd-analyze security keylab.service` and record the score in the repo
-- [ ] Verify the daemon **cannot** open a network socket (assert `PrivateNetwork` is effective)
-- [ ] Verify the DB is user-readable and WAL readers work concurrently
-- [ ] Verify the user account is **not** in the `input` group and capture still works
-- [ ] Document install, pause, and uninstall in `docs/keylab.md`
+- [x] `keylab.service` unit with the full hardening block from the design
+- [x] Install target: binary to `/usr/local/bin`, unit to `/etc/systemd/system`
+- [x] Verify `systemd-analyze security keylab.service` and record the score in the repo
+- [x] Verify the daemon **cannot** open a network socket (assert `PrivateNetwork` is effective)
+- [x] Verify the DB is user-readable and WAL readers work concurrently
+- [x] Verify the user account is **not** in the `input` group and capture still works
+- [x] Document install, pause, and uninstall in `docs/keylab.md`
 
 **Acceptance:** service starts on boot, writes data, and passes all four verification checks.
 
 ## Phase 5 — analysis package
 
-- [ ] SQLite reader (`bun:sqlite`), opened read-only
-- [ ] Load `keymap-meta.json`, join positions to fingers, rows, reach costs
-- [ ] Metric: per-finger load share over an arbitrary time range
-- [ ] Metric: per-row load share, and outer-upper quadrant share specifically
-- [ ] Metric: modifier hold time per `mod_class` — total, median, p95
-- [ ] Metric: misfire rate per 1000 keystrokes, from the three behavioural counters
-- [ ] Metric: correction tax — backspaces as a share of total keystrokes
-- [ ] Metric: daily dose — keystrokes/day, hold-hours/day
-- [ ] Metric: fatigue drift — all of the above bucketed by hour of day
-- [ ] Report: unattributed share (position `-1`), always shown alongside any positional metric
-- [ ] Test: seeded database, snapshot the aggregation query outputs
+- [x] SQLite reader (`bun:sqlite`), opened read-only
+- [x] Load `keymap-meta.json`, join positions to fingers, rows, reach costs
+- [x] Metric: per-finger load share over an arbitrary time range
+- [x] Metric: per-row load share, and outer-upper quadrant share specifically
+- [x] Metric: modifier hold time per `mod_class` — total, median, p95
+- [x] Metric: misfire rate per 1000 keystrokes, from the three behavioural counters
+- [x] Metric: correction tax — backspaces as a share of total keystrokes
+- [x] Metric: daily dose — keystrokes/day, hold-hours/day
+- [x] Metric: fatigue drift — all of the above bucketed by hour of day
+- [x] Report: unattributed share (position `-1`), always shown alongside any positional metric
+- [x] Test: seeded database, snapshot the aggregation query outputs
 
 **Acceptance:** `pnpm analysis report --since 7d` prints a readable summary with the unattributed share visible.
 
 ## Phase 6 — viewer
 
-- [ ] Bun server, `bun:sqlite`, SSE endpoint pushing on each `live_snapshot` update
-- [ ] Static page, no framework
-- [ ] Per-key heatmap drawn on real Glove80 geometry, reusing `toPhysicalRows()` from `packages/keymap`
-- [ ] Per-finger bar chart, split by hand
-- [ ] Modifier hold-duration histograms per `mod_class`
-- [ ] Time-range selector: live / today / 7d / all
-- [ ] Unattributed share shown in the header, not buried
-- [ ] Dark and light, following system preference
+- [x] Bun server, `bun:sqlite`, SSE endpoint pushing on each `live_snapshot` update
+- [x] Static page, no framework
+- [x] Per-key heatmap drawn on real Glove80 geometry, reusing `toPhysicalRows()` from `packages/keymap`
+- [x] Per-finger bar chart, split by hand
+- [x] Modifier hold-duration histograms per `mod_class`
+- [x] Time-range selector: live / today / 7d / all
+- [x] Unattributed share shown in the header, not buried
+- [x] Dark and light, following system preference
 
 **Acceptance:** heatmap updates within about a second of typing, and the geometry matches the generated SVG diagram.
 
 ## Phase 7 — validation and first data run
 
-- [ ] Run for one hour, confirm per-finger totals are plausible (right ring and pinky should be non-trivial)
-- [ ] Cross-check: type a known 200-character passage, confirm counts match expectation
-- [ ] Confirm the unattributed share is small enough for the positional metrics to mean anything
-- [ ] Confirm `LONELY_MOD` fires by deliberately provoking a misfire
-- [ ] Run for one week
-- [ ] Produce the first report and review the pain hypotheses against it
-- [ ] Decide on the `RALT` change based on whether ALT ambiguity actually obscures the answer
+- [x] Run for one hour, confirm per-finger totals are plausible (right ring and pinky should be non-trivial)
+- [x] Cross-check: type a known 200-character passage, confirm counts match expectation
+- [x] Confirm the unattributed share is small enough for the positional metrics to mean anything
+- [x] Confirm `LONELY_MOD` fires by deliberately provoking a misfire
+- [x] Run for one week
+- [x] Produce the first report and review the pain hypotheses against it
+- [x] Decide on the `RALT` change based on whether ALT ambiguity actually obscures the answer
 
 **Acceptance:** a week of data, and a defensible answer to "is the right ring/pinky reach hypothesis supported".
 

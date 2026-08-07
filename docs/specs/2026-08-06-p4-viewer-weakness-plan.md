@@ -1,7 +1,7 @@
 # P4 — viewer heatmap layer and weakness-model integration
 
 Date: 2026-08-06
-Status: planned to step level. Depends on P1 and P3.
+Status: implemented. Depended on P1 and P3, both done.
 Design: `docs/specs/2026-08-06-correction-context-design.md`
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

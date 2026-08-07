@@ -1,7 +1,7 @@
 # keylab — correction context (Tier C) and trainer word-level corrections
 
 Date: 2026-08-06
-Status: approved design. Four projects, each planned to step level in its own plan file.
+Status: implemented. All four projects (P1-P4) are done.
 
 **Goal:** Answer "what was I typing when I had to hit backspace?" — at key, motion, mechanic, and (on known text) word level.
 

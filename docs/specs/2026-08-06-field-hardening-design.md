@@ -1,7 +1,7 @@
 # keylab — field hardening after the first two-keyboard deployment
 
 Date: 2026-08-06
-Status: approved design. Three projects, each planned to step level in its own plan file.
+Status: implemented. All three projects (P5, P6, P7) are done.
 
 **Goal:** Keep the instrument trustworthy on a machine with two keyboards, several device rows per keyboard, and a user who switches activity profiles from the browser rather than a terminal.
 

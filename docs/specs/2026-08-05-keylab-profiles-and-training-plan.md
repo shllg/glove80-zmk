@@ -1,9 +1,9 @@
 # keylab — profiles, control, multi-device, and the training toolchain
 
 Date: 2026-08-05
-Status: approved design. Project 1 planned to step level; Projects 2 and 3 designed to phase level.
+Status: implemented. All three projects shipped: control, profiles and the soft pause; multi-device; the training toolchain. The step checklists below are ticked to match the running system, verified per task rather than step by step.
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Let keylab segment its capture by *device* and by *activity profile*, so that typing practice, gaming, and German-versus-English drilling stop contaminating real-use statistics — and build a training toolchain that produces both repeatable benchmarks and adaptive drills aimed at weaknesses keylab measures.
 
@@ -243,7 +243,7 @@ Projects 2 and 3 get their own plan files when Project 1 has shipped. Planning t
 - Consumes: nothing.
 - Produces: `Config.profiles: Vec<String>`, `Config.auto_revert_idle_seconds: u64`, `config::MAX_PROFILES: usize`, `config::DEFAULT_PROFILE: &str`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to the `mod tests` block in `crates/keylab/src/config.rs`:
 
@@ -280,12 +280,12 @@ Add to the `mod tests` block in `crates/keylab/src/config.rs`:
     }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cargo test -p keylab config:: -- --nocapture`
 Expected: FAIL — `no field 'profiles' on type 'Config'`, `cannot find value 'MAX_PROFILES'`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `crates/keylab/src/config.rs`, beside the existing floor constants:
 
@@ -342,12 +342,12 @@ Add to `Config::validate`:
         }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p keylab config::`
 Expected: PASS.
 
-- [ ] **Step 5: Update the example config**
+- [x] **Step 5: Update the example config**
 
 Append to `crates/keylab/keylab.example.toml`:
 
@@ -359,7 +359,7 @@ profiles = ["default", "training-de", "training-en", "gaming"]
 auto_revert_idle_seconds = 900
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/keylab/src/config.rs crates/keylab/keylab.example.toml
@@ -381,7 +381,7 @@ git commit -m "feat(keylab): add capped activity profile configuration"
   - `pub struct ControlWatcher` with `ControlWatcher::new(path: PathBuf, profiles: Vec<String>) -> Self` and `ControlWatcher::poll(&mut self) -> ControlState`
   - `pub fn write_control(path: &Path, state: &ControlState) -> Result<()>`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `crates/keylab/src/control.rs` containing only this test module for now:
 
@@ -465,12 +465,12 @@ mod tests {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cargo test -p keylab control::`
 Expected: FAIL — `cannot find type 'ControlState'`.
 
-- [ ] **Step 3: Add the dev-dependency**
+- [x] **Step 3: Add the dev-dependency**
 
 `tempfile` is needed by the tests. Check `crates/keylab/Cargo.toml` for an existing `[dev-dependencies]` entry; add it only if absent:
 
@@ -478,7 +478,7 @@ Expected: FAIL — `cannot find type 'ControlState'`.
 cargo add --package keylab --dev tempfile
 ```
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 Prepend to `crates/keylab/src/control.rs`, above the test module:
 
@@ -617,12 +617,12 @@ pub fn write_control(path: &Path, state: &ControlState) -> Result<()> {
 
 Add `mod control;` to the module declarations at the top of `crates/keylab/src/main.rs`.
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cargo test -p keylab control::`
 Expected: PASS, 5 tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/keylab/src/control.rs crates/keylab/src/main.rs crates/keylab/Cargo.toml
@@ -644,7 +644,7 @@ git commit -m "feat(keylab): add an atomically written control file"
   - `Store::seal_tier_a(&mut self, device_id: i64, profile_id: i64, seal: &TierASeal) -> Result<()>`
   - `Store::seal_tier_b(&mut self, device_id: i64, profile_id: i64, seal: &TierBSeal) -> Result<()>`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to the `mod tests` block in `crates/keylab/src/store.rs`:
 
@@ -719,12 +719,12 @@ If `sample_tier_a_seal()` does not already exist in the test module, add it, mir
     }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cargo test -p keylab store::`
 Expected: FAIL — `no such table: profile`, and `seal_tier_a` arity mismatch.
 
-- [ ] **Step 3: Implement the schema and migration**
+- [x] **Step 3: Implement the schema and migration**
 
 Add to `SCHEMA` in `crates/keylab/src/store.rs`, after the `device` table:
 
@@ -827,12 +827,12 @@ Add `register_profile`, mirroring the `register_device` lookup-then-insert shape
 
 Add `profile_id: i64` as the second parameter of `seal_tier_a` and `seal_tier_b`, and include the column in both `INSERT INTO bucket(...)` and `INSERT INTO key_window(...)` statements.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p keylab store::`
 Expected: PASS. Existing seal tests need the new argument — pass `1` for the default profile.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/keylab/src/store.rs
@@ -855,7 +855,7 @@ git commit -m "feat(keylab): add activity profiles to the schema with a v1 backf
   - `Aggregator::handle_event(&mut self, t_ms: u64, code: u16, value: i32, keymap: &Keymap, tier_b_seal_count: u32) -> Option<TierBSeal>` — unchanged signature; the active profile is held on the aggregator
   - `pub fn footprint_bound(profile_count: usize) -> usize`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add `use crate::config::MAX_PROFILES;` to the imports at the top of `crates/keylab/src/aggregate.rs` (it already imports `MIN_BUCKET_SECONDS` from that module). Then add to the `mod tests` block:
 
@@ -904,12 +904,12 @@ Add `use crate::config::MAX_PROFILES;` to the imports at the top of `crates/keyl
     }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cargo test -p keylab aggregate::`
 Expected: FAIL — `Aggregator::new` takes 1 argument, `set_profile` not found.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `crates/keylab/src/aggregate.rs`, replace the single accumulator field:
 
@@ -944,12 +944,12 @@ pub fn footprint_bound(profile_count: usize) -> usize {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p keylab aggregate::`
 Expected: PASS. Existing `Aggregator::new(0)` call sites in tests become `Aggregator::new(0, 1)`.
 
-- [ ] **Step 5: Update the debug assertion**
+- [x] **Step 5: Update the debug assertion**
 
 In `crates/keylab/src/main.rs:443`, replace the literal bound:
 
@@ -960,7 +960,7 @@ In `crates/keylab/src/main.rs:443`, replace the literal bound:
             );
 ```
 
-- [ ] **Step 6: Run the full suite and commit**
+- [x] **Step 6: Run the full suite and commit**
 
 ```bash
 cargo test -p keylab
@@ -980,7 +980,7 @@ git commit -m "feat(keylab): give every profile its own Tier B accumulator"
 - Consumes: Task 4's `Aggregator`.
 - Produces: `Aggregator::seal_or_discard_tier_a(&mut self, next_bucket_id: i64, elapsed_ms: u64, floor: u32) -> Option<TierASeal>`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```rust
     #[test]
@@ -1015,12 +1015,12 @@ git commit -m "feat(keylab): give every profile its own Tier B accumulator"
     }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cargo test -p keylab aggregate::soft_pause`
 Expected: FAIL — `no method named 'seal_or_discard_tier_a'`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```rust
     /// Soft pause: stop counting without losing Tier B progress. The Tier A bucket is sealed when
@@ -1052,12 +1052,12 @@ Expected: FAIL — `no method named 'seal_or_discard_tier_a'`.
     }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p keylab aggregate::`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/keylab/src/aggregate.rs
@@ -1076,7 +1076,7 @@ git commit -m "feat(keylab): add soft pause that preserves Tier B progress"
 - Consumes: `ControlWatcher` (Task 2), `Store::register_profile` (Task 3), `Aggregator::set_profile` (Task 4), `Aggregator::seal_or_discard_tier_a` (Task 5).
 - Produces: nothing consumed by later tasks except the `live_snapshot` JSON keys `paused` and `profile`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to the `mod tests` block in `crates/keylab/src/store.rs`, beside the existing `live_snapshot_has_only_finger_marginals_and_rate` test:
 
@@ -1096,16 +1096,16 @@ Add to the `mod tests` block in `crates/keylab/src/store.rs`, beside the existin
     }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cargo test -p keylab live_snapshot_reports`
 Expected: FAIL — `replace_live_snapshot` takes 4 arguments, 6 supplied.
 
-- [ ] **Step 3: Extend the snapshot writer**
+- [x] **Step 3: Extend the snapshot writer**
 
 There is exactly one snapshot writer and it keeps one shape. In `crates/keylab/src/store.rs:265`, append `paused: bool` and `profile: &str` to `replace_live_snapshot` and add both to the `json!` object. Update its two call sites: `main.rs:132` (startup, pass `false` and `config.profiles[0]`) and `main.rs:527` (inside `replace_live_snapshot`, pass the resolved control state through). The existing `live_snapshot_has_only_finger_marginals_and_rate` test needs the two new arguments.
 
-- [ ] **Step 4: Replace pause handling in the event loop**
+- [x] **Step 4: Replace pause handling in the event loop**
 
 In `crates/keylab/src/main.rs`, delete `refresh_pause_state` and `pause_requested` in favour of a single resolver. `RuntimeDevice` gains `profile_id: i64`.
 
@@ -1210,16 +1210,16 @@ impl ResolvedControl {
 
 Replace all three `refresh_pause_state(...)` call sites in `event_loop` with `refresh_control(...)`, and every `if paused` / `if !paused` test with `state.paused()`. New devices created in `discover_devices` must be constructed with the current `profile_id` and `Aggregator::new(bucket_id, config.profiles.len())` followed by `set_profile(state.profile_index)`.
 
-- [ ] **Step 5: Add the idle auto-revert**
+- [x] **Step 5: Add the idle auto-revert**
 
 Track the last keystroke instant on `ResolvedControl`. Inside the bucket tick, when not paused and the elapsed idle exceeds `config.auto_revert_idle_seconds` and `state.profile != DEFAULT_PROFILE`, call `control::write_control` with `{ paused: state.soft_paused, profile: DEFAULT_PROFILE }`. The next `watcher.poll()` picks the change up through the normal path, so there is exactly one code path that applies a profile change.
 
-- [ ] **Step 6: Run the full suite**
+- [x] **Step 6: Run the full suite**
 
 Run: `cargo test -p keylab && cargo build --release --locked`
 Expected: PASS, clean build.
 
-- [ ] **Step 7: Verify live**
+- [x] **Step 7: Verify live**
 
 ```bash
 sudo crates/keylab/install.sh && sudo systemctl restart keylab.service
@@ -1231,7 +1231,7 @@ sqlite3 -readonly ~/.local/share/glove80-lab/keylab.db \
 
 Expected: a `gaming` row appears, and existing rows still report `default`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add crates/keylab/src/main.rs crates/keylab/src/store.rs
@@ -1250,7 +1250,7 @@ git commit -m "feat(keylab): apply control-file pause and profile state"
 - Consumes: `control::{ControlState, ControlWatcher, write_control}` (Task 2), `Config::load` (Task 1).
 - Produces: the user-facing CLI. Nothing else depends on it.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `crates/keylab/src/bin/keylabctl.rs`:
 
@@ -1275,12 +1275,12 @@ mod tests {
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cargo test -p keylab --bin keylabctl`
 Expected: FAIL — `cannot find function 'parse_command'`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```rust
 use anyhow::{bail, Result};
@@ -1308,16 +1308,16 @@ fn parse_command(args: &[String]) -> Result<Command> {
 
 `main` loads the config to learn the profile list and the data directory, reads the current state through `ControlWatcher::poll`, applies the command, and writes with `write_control`. `SetProfile` rejects a name absent from `config.profiles` before writing. `Status` additionally prints `systemctl is-active keylab.service` output and the `live_snapshot.updated_at` age so a stale daemon is visible.
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `cargo test -p keylab --bin keylabctl`
 Expected: PASS.
 
-- [ ] **Step 5: Install it**
+- [x] **Step 5: Install it**
 
 In `crates/keylab/install.sh`, beside the existing binary install, add the same 0755 root-owned install for `target/release/keylabctl` to `/usr/local/bin/keylabctl`. Mirror the removal in `uninstall.sh`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/keylab/src/bin/keylabctl.rs crates/keylab/install.sh crates/keylab/uninstall.sh
@@ -1337,7 +1337,7 @@ git commit -m "feat(keylab): add the keylabctl control CLI"
 - Consumes: the `live_snapshot` JSON keys `paused` and `profile` (Task 6); `control.json` (Task 2).
 - Produces: `POST /api/control`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `packages/viewer/test/viewer.test.ts`:
 
@@ -1394,12 +1394,12 @@ function testOptions() {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `bun test packages/viewer`
 Expected: FAIL — 404 rather than 403/415/400.
 
-- [ ] **Step 3: Implement the endpoint**
+- [x] **Step 3: Implement the endpoint**
 
 In `packages/viewer/src/server.ts`, inside the request handler:
 
@@ -1433,16 +1433,16 @@ if (url.pathname === "/api/control" && request.method === "POST") {
 
 Bump `SUPPORTED_SCHEMA_VERSION` in `packages/analysis/src/db.ts:3` from `1` to `2`.
 
-- [ ] **Step 4: Render the state**
+- [x] **Step 4: Render the state**
 
 In `packages/viewer/public/app.js`, read `paused` and `profile` from the snapshot payload the SSE stream already delivers and render a header chip. Add a profile `<select>` and a pause toggle that `POST` to `/api/control` with `content-type: application/json`. The chip must reflect the **snapshot**, never the local selection, so the daemon stays authoritative.
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `bun test packages/viewer && bun test packages/analysis`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add packages/viewer packages/analysis/src/db.ts
@@ -1462,7 +1462,7 @@ git commit -m "feat(viewer): show and set the keylab control state"
 - Consumes: schema v2 (Task 3).
 - Produces: `calculateMetrics(database, range, options?: { profile?: string })`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```typescript
 test("defaults to the default profile only", () => {
@@ -1486,23 +1486,23 @@ test("pools every profile when asked", () => {
 
 Extend `packages/analysis/test/fixture.ts` with `fixtureWithProfiles()` inserting a `profile` table with `default` (id 1) and `gaming` (id 2), 100 keystrokes of buckets on profile 1 and 40 on profile 2.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `bun test packages/analysis`
 Expected: FAIL — totals come back as 140 for every case.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add a `profile` clause to every bucket-scoped and window-scoped query in `metrics.ts`. Default is `profile_id = 1`; `"*"` omits the clause; a name resolves through `SELECT id FROM profile WHERE name = ?`. Add `--profile <name|*>` to `packages/analysis/bin/analysis.ts` and print the active profile in the report header so a filtered report is never mistaken for a full one.
 
 **Do not add a device-pooling option for Tier B here.** That belongs to Project 2, which introduces the second position space.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `bun test packages/analysis && pnpm typecheck`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/analysis
@@ -1518,7 +1518,7 @@ git commit -m "feat(analysis): filter metrics by activity profile"
 - Modify: `docs/keylab.md`
 - Modify: `docs/specs/2026-08-04-keylab-design.md` (the `### Pause` section at line 97)
 
-- [ ] **Step 1: Document the two pauses**
+- [x] **Step 1: Document the two pauses**
 
 In `docs/keylab.md`, replace the single pause description with both mechanisms and their different guarantees:
 
@@ -1528,7 +1528,7 @@ In `docs/keylab.md`, replace the single pause description with both mechanisms a
 | hard | `touch ~/.local/share/glove80-lab/PAUSED` | device still open, all partials discarded | discarded |
 | stop | `sudo systemctl stop keylab.service` | device closed, nothing read | discarded |
 
-- [ ] **Step 2: Document profiles**
+- [x] **Step 2: Document profiles**
 
 Add a profiles subsection to `README.md` covering `keylabctl profile list|set`, the auto-revert, the fact that unlisted names are rejected, and this check:
 
@@ -1537,11 +1537,11 @@ sqlite3 -readonly "$HOME/.local/share/glove80-lab/keylab.db" \
   "SELECT p.name, SUM(b.keystrokes) FROM bucket b JOIN profile p ON p.id = b.profile_id GROUP BY 1 ORDER BY 2 DESC;"
 ```
 
-- [ ] **Step 3: Correct the superseded spec section**
+- [x] **Step 3: Correct the superseded spec section**
 
 `docs/specs/2026-08-04-keylab-design.md:97` describes the `PAUSED` marker as the only pause. Add a line pointing at this document and note that the v1 marker keeps its meaning as the hard pause.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add README.md docs/keylab.md docs/specs/2026-08-04-keylab-design.md

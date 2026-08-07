@@ -1,7 +1,7 @@
 # P3 — trainer: correction capture and word-level attribution
 
 Date: 2026-08-06
-Status: planned to step level. Depends on nothing. Recommended first.
+Status: implemented. Depended on nothing, and was built first.
 Design: `docs/specs/2026-08-06-correction-context-design.md`
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
