@@ -77,6 +77,76 @@ export function percentage(value) {
   return `${(value * 100).toFixed(2)}%`;
 }
 
+export function applyStatus(target, text, isError = false) {
+  target.textContent = text;
+  target.classList.toggle("error", isError);
+}
+
+export function createRouteTracker(initialRoute, initialLocation = initialRoute) {
+  let displayedRoute = initialRoute;
+  let displayedLocation = initialLocation;
+  return {
+    current: () => displayedLocation,
+    leaves: (nextRoute) => nextRoute !== displayedRoute,
+    commit(nextRoute, nextLocation = nextRoute) {
+      displayedRoute = nextRoute;
+      displayedLocation = nextLocation;
+    },
+    replaceLocation(nextLocation) { displayedLocation = nextLocation; },
+  };
+}
+
+export function mechanicAvailable(health) {
+  return health?.service === "active" && health.capture === "fresh" && !health.paused;
+}
+
+export function trainingErrorIsTerminal(code) {
+  return code === "lease-lost" || code === "not-found";
+}
+
+export function recommendedDrill(model) {
+  if (model.positions?.length > 0) return "position";
+  if (model.correctedTransitions?.length > 0 || model.bigrams?.length > 0) return "bigram";
+  if (model.mechanics?.length > 0) return "mechanic";
+  return "language";
+}
+
+export function fingerLabel(finger) {
+  return `${finger.label.replace(/^[LR]_/, "")} · ${percentage(finger.share)}`;
+}
+
+export function positionalSummary(context) {
+  return `${percentage(context.unattributedShare)} unattributed `
+    + `(${context.unattributedPresses}/${context.tierBKeystrokes} Tier B keystrokes)`
+    + (context.unreliable ? " · unreliable" : "");
+}
+
+export function misfireSummary(kind, misfires) {
+  const target = kind.kind === 0
+    ? ` · target <${misfires.targetPercent}%: ${misfires.lonelyModTargetMet ? "met" : "above"}`
+    : "";
+  const classes = kind.byModClass
+    .map((entry) => `${entry.label} ${entry.per1000.toFixed(2)}/1k (${entry.count})`)
+    .join(" · ");
+  return `${kind.per1000.toFixed(2)} / 1k · ${kind.count}${target} · ${classes}`;
+}
+
+export function correctionContextSummary(context) {
+  if (context.windowCount === 0) return null;
+  const denominator = context.corrections || 1;
+  const latency = ["fumble", "ambiguous", "edit"]
+    .map((kind) => `${kind} ${context.byLatency[kind]} (${percentage(context.byLatency[kind] / denominator)})`)
+    .join(" · ");
+  return {
+    headline: `${context.windowCount} windows · ${context.corrections} corrections · `
+      + `degraded ${context.degraded} (${percentage(context.degradedShare)}) · `
+      + `dropped ${context.dropped} (${percentage(context.droppedShare)})`,
+    latency,
+    top: `${context.topNgrams.length} of ${context.distinctNgrams} distinct trigrams shown`,
+    fingers: `${context.byFinger.length} of ${context.distinctFingerNgrams} distinct finger transitions shown`,
+  };
+}
+
 /**
  * The footnote is not decoration: a correction layer that silently omits the positions it cannot
  * rate, and the corrections that never had a position, reads as a complete picture of corrections.

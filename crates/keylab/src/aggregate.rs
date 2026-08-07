@@ -13,7 +13,7 @@ use zeroize::Zeroize;
 const NO_EVENT_TS: u64 = u64::MAX;
 const KEY_BACKSPACE: u16 = 14;
 const MAX_HELD_KEYS: usize = 16;
-const TIER_A_FIXED_ENTRIES: usize = 10 + 12 + (10 * 22) + (8 * 22) + (2 * 22) + (4 * 8);
+const TIER_A_FIXED_ENTRIES: usize = 10 + 12 + 16 + (10 * 22) + (8 * 22) + (2 * 22) + (4 * 8);
 /// A correction with no preceding keystroke at all is not a fumble: it reads as the slowest
 /// latency bucket, the same one an ordinary deliberate edit lands in.
 const LATENCY_NO_PRECEDING_KEY: u8 = 3;
@@ -141,6 +141,7 @@ pub struct TierAAccumulator {
     pub autorepeats: u32,
     pub finger_count: [u32; 10],
     pub row_count: [u32; 12],
+    pub layer_count: [u32; 16],
     pub hold_hist: [[u32; 22]; 10],
     pub mod_hold_hist: [[u32; 22]; 8],
     pub gap_hist: [[u32; 22]; 2],
@@ -154,6 +155,7 @@ impl TierAAccumulator {
         self.autorepeats.zeroize();
         self.finger_count.zeroize();
         self.row_count.zeroize();
+        self.layer_count.zeroize();
         self.hold_hist.zeroize();
         self.mod_hold_hist.zeroize();
         self.gap_hist.zeroize();
@@ -268,7 +270,7 @@ fn zeroize_ngram_map(map: &mut HashMap<u64, u32>) {
 }
 
 /// Projects an ordered position trigram key onto its finger-level key. Both `POS_UNATTRIBUTED` and
-/// `POS_ABSENT` collapse to `FINGER_ABSENT`: a key with no base-layer position has no finger
+/// `POS_ABSENT` collapse to `FINGER_ABSENT`: a key with no resolved physical position has no finger
 /// either, so the finger projection has exactly one "no finger" value.
 fn degrade_ngram_key(key: u64, keymap: &Keymap) -> u64 {
     let (positions, mod_mask, latency, run) = unpack_ngram(key);
@@ -280,6 +282,19 @@ fn degrade_ngram_key(key: u64, keymap: &Keymap) -> u64 {
         }
     });
     pack_finger(fingers, mod_mask, latency, run)
+}
+
+#[derive(Clone, Copy)]
+struct ActiveLayer {
+    code: u16,
+    index: u8,
+}
+
+impl Zeroize for ActiveLayer {
+    fn zeroize(&mut self) {
+        self.code.zeroize();
+        self.index.zeroize();
+    }
 }
 
 pub struct Aggregator {
@@ -306,10 +321,10 @@ pub struct Aggregator {
     ngram_events: [u32; MAX_PROFILES],
     ngram_dropped: [u32; MAX_PROFILES],
     ngram_start_ts: [Option<u64>; MAX_PROFILES],
-    /// The keycode of the last layer signal the firmware sent, or `None` before the first one. It
-    /// is the code rather than the name so the aggregator stays free of allocations on the event
-    /// path; `Keymap::layer_signal` turns it back into a layer.
-    active_layer_code: Option<u16>,
+    /// The last layer signal the firmware sent, or `None` before the first one. The canonical index
+    /// is cached when the signal arrives so an ordinary event needs only the layer-table slice
+    /// access and keycode lookup; the code remains available for the live display name.
+    active_layer: Option<ActiveLayer>,
 }
 
 impl Aggregator {
@@ -340,7 +355,7 @@ impl Aggregator {
             ngram_events: [0; MAX_PROFILES],
             ngram_dropped: [0; MAX_PROFILES],
             ngram_start_ts: [None; MAX_PROFILES],
-            active_layer_code: None,
+            active_layer: None,
         }
     }
 
@@ -367,10 +382,10 @@ impl Aggregator {
         // user typed. It is taken before any timing or counting: counting it would inflate every
         // Tier A total by one per layer change, and letting it set `last_event_ts` would charge
         // the gap before it to active time and split backspace runs that never paused.
-        if keymap.layer_signal(code).is_some() {
+        if let Some(index) = keymap.layer_index(code) {
             // Press only. The release is the other half of the same tap and says nothing new.
             if value == 1 {
-                self.active_layer_code = Some(code);
+                self.active_layer = Some(ActiveLayer { code, index });
             }
             return batch;
         }
@@ -449,8 +464,10 @@ impl Aggregator {
         }
 
         self.tier_a.keystrokes = self.tier_a.keystrokes.saturating_add(1);
-        let resolved = keymap.resolve(code);
-        let pos_index = if let Some(info) = resolved {
+        let active_layer = self.active_layer.map(|layer| layer.index);
+        let resolved = keymap.resolve(code, active_layer);
+        let pos_index = if let Some(resolved) = resolved {
+            let info = resolved.info;
             self.tier_a.finger_count[usize::from(info.finger_id)] =
                 self.tier_a.finger_count[usize::from(info.finger_id)].saturating_add(1);
             let row_index = usize::from(info.hand) * 6 + usize::from(info.row_idx - 1);
@@ -459,6 +476,10 @@ impl Aggregator {
                 let bucket = usize::from(gap_bucket(gap));
                 self.tier_a.gap_hist[usize::from(info.hand)][bucket] =
                     self.tier_a.gap_hist[usize::from(info.hand)][bucket].saturating_add(1);
+            }
+            if let Some(layer) = resolved.attributed_layer {
+                self.tier_a.layer_count[usize::from(layer)] =
+                    self.tier_a.layer_count[usize::from(layer)].saturating_add(1);
             }
             info.pos
         } else {
@@ -523,9 +544,13 @@ impl Aggregator {
             self.keys_since_mod_down.remove(&mod_class);
             self.last_mod_release_ts = Some(t_ms);
             self.last_mod_release_class = Some(mod_class);
-        } else if let Some(info) = keymap.resolve(code) {
-            self.tier_a.hold_hist[usize::from(info.finger_id)][bucket] =
-                self.tier_a.hold_hist[usize::from(info.finger_id)][bucket].saturating_add(1);
+        } else {
+            let active_layer = self.active_layer.map(|layer| layer.index);
+            if let Some(resolved) = keymap.resolve(code, active_layer) {
+                self.tier_a.hold_hist[usize::from(resolved.info.finger_id)][bucket] =
+                    self.tier_a.hold_hist[usize::from(resolved.info.finger_id)][bucket]
+                        .saturating_add(1);
+            }
         }
     }
 
@@ -722,6 +747,12 @@ impl Aggregator {
         seal
     }
 
+    /// Forget the advisory layer whenever capture stops consuming a continuous event stream. A
+    /// missed transition is safer as Base fallback than as silent attribution through stale state.
+    pub fn invalidate_layer_signal(&mut self) {
+        self.active_layer.zeroize();
+    }
+
     fn clear_ngram_context(&mut self) {
         self.ngram_ring.zeroize();
         self.ngram_ring = EMPTY_NGRAM_RING;
@@ -742,7 +773,7 @@ impl Aggregator {
     /// The keycode of the last layer signal seen, for callers that want to name the active layer.
     /// `None` until the firmware sends one, which for a board that never signals is forever.
     pub fn active_layer_code(&self) -> Option<u16> {
-        self.active_layer_code
+        self.active_layer.map(|layer| layer.code)
     }
 
     pub fn live_span_ms(&self, current_bucket_elapsed_ms: u64) -> u64 {
@@ -789,6 +820,7 @@ impl Aggregator {
         self.ngram_start_ts.zeroize();
         self.tier_a_span_ms.zeroize();
         self.tier_a_bucket_id = next_bucket_id;
+        self.invalidate_layer_signal();
     }
 
     /// Recover from a `SYN_DROPPED`. The kernel overflowed this client's evdev buffer, so held-key
@@ -810,6 +842,7 @@ impl Aggregator {
         self.last_mod_release_class.zeroize();
         self.bsp_run_after_mod_class.zeroize();
         self.clear_ngram_context();
+        self.invalidate_layer_signal();
     }
 
     pub fn bounded_footprint(&self) -> usize {
@@ -887,6 +920,25 @@ mod tests {
                 },
             ),
         ])
+    }
+
+    fn layered_keymap() -> Keymap {
+        let base_a = KeyInfo {
+            pos: 0,
+            hand: 0,
+            finger_id: 0,
+            row_idx: 4,
+        };
+        let shifted_a = KeyInfo {
+            pos: 1,
+            hand: 1,
+            finger_id: 7,
+            row_idx: 5,
+        };
+        Keymap::fixture(&[(30, base_a)])
+            .with_layer(0, &[(30, base_a), (29, base_a)])
+            .with_layer(1, &[(30, shifted_a)])
+            .with_layer_signals(&[(184, "Base"), (185, "Navigation")])
     }
 
     fn policy() -> SealPolicy {
@@ -1555,6 +1607,7 @@ mod tests {
             .handle_event(100, 185, 0, &keymap, &policy())
             .is_empty());
         assert_eq!(aggregate.active_layer_code(), Some(185));
+        assert_eq!(aggregate.active_layer.map(|layer| layer.index), Some(1));
         assert_eq!(keymap.layer_signal(185), Some("Navigation"));
         assert_eq!(aggregate.tier_a.keystrokes, 0);
         assert_eq!(aggregate.tier_a.autorepeats, 0);
@@ -1578,11 +1631,60 @@ mod tests {
             .handle_event(400, 31, 1, &keymap, &policy())
             .is_empty());
         assert_eq!(aggregate.active_layer_code(), Some(184));
+        assert_eq!(aggregate.active_layer.map(|layer| layer.index), Some(0));
         assert_eq!(aggregate.tier_a.keystrokes, 2);
         assert_eq!(
             aggregate.tier_a.active_ms, 200,
             "the gap spans both real keys; the signal between them adds nothing and hides nothing"
         );
+    }
+
+    #[test]
+    fn layer_resolution_reaches_the_position_ring_counts_and_hold_histograms() {
+        let keymap = layered_keymap();
+        let mut aggregate = Aggregator::new(0, 1);
+        aggregate.handle_event(100, 185, 1, &keymap, &policy());
+        aggregate.handle_event(200, 30, 1, &keymap, &policy());
+        aggregate.handle_event(300, 30, 0, &keymap, &policy());
+
+        assert_eq!(aggregate.tier_a.finger_count[7], 1);
+        assert_eq!(aggregate.tier_a.layer_count[1], 1);
+        assert_eq!(aggregate.tier_b_accum[0][1], 1);
+        assert_eq!(aggregate.ngram_ring[NGRAM_N - 1], 1);
+        assert_eq!(
+            aggregate.tier_a.hold_hist[7][usize::from(duration_bucket(100))],
+            1
+        );
+    }
+
+    #[test]
+    fn a_signal_without_a_layer_table_falls_back_without_fabricating_base_usage() {
+        let keymap = keymap().with_layer_signals(&[(184, "Base"), (185, "Navigation")]);
+        let mut aggregate = Aggregator::new(0, 1);
+        aggregate.handle_event(100, 185, 1, &keymap, &policy());
+        aggregate.handle_event(200, 30, 1, &keymap, &policy());
+
+        assert_eq!(aggregate.tier_a.finger_count[0], 1);
+        assert_eq!(aggregate.tier_b_accum[0][0], 1);
+        assert_eq!(aggregate.tier_a.layer_count, [0; 16]);
+    }
+
+    #[test]
+    fn a_signalled_home_row_modifier_hold_is_not_double_counted() {
+        let keymap = layered_keymap();
+        let mut aggregate = Aggregator::new(0, 1);
+        aggregate.handle_event(100, 184, 1, &keymap, &policy());
+        aggregate.handle_event(200, 29, 1, &keymap, &policy());
+        aggregate.handle_event(300, 29, 0, &keymap, &policy());
+
+        let bucket = usize::from(duration_bucket(100));
+        assert_eq!(aggregate.tier_a.mod_hold_hist[0][bucket], 1);
+        assert_eq!(aggregate.tier_a.hold_hist[0][bucket], 0);
+        assert_eq!(
+            aggregate.tier_a.keystrokes, 0,
+            "modifier holds remain non-keystrokes"
+        );
+        assert_eq!(aggregate.tier_a.layer_count, [0; 16]);
     }
 
     #[test]
@@ -1705,6 +1807,25 @@ mod tests {
     }
 
     #[test]
+    fn sequence_loss_invalidates_the_layer_and_restores_base_fallback() {
+        let keymap = layered_keymap();
+        let mut aggregate = Aggregator::new(0, 1);
+        aggregate.handle_event(100, 185, 1, &keymap, &policy());
+        assert_eq!(aggregate.active_layer_code(), Some(185));
+
+        aggregate.resync_after_sequence_loss();
+        aggregate.handle_event(200, 30, 1, &keymap, &policy());
+
+        assert_eq!(aggregate.active_layer_code(), None);
+        assert!(aggregate.active_layer.is_none());
+        assert_eq!(aggregate.tier_a.finger_count[0], 1);
+        assert_eq!(aggregate.tier_a.finger_count[7], 0);
+        assert_eq!(aggregate.tier_b_accum[0][0], 1);
+        assert_eq!(aggregate.tier_b_accum[0][1], 0);
+        assert_eq!(aggregate.tier_a.layer_count, [0; 16]);
+    }
+
+    #[test]
     fn soft_pause_preserves_tier_b_and_seals_a_qualifying_tier_a_bucket() {
         let mut aggregate = Aggregator::new(0, 1);
         for index in 0..40 {
@@ -1755,6 +1876,26 @@ mod tests {
             0,
             "a key held across a pause must not be timed"
         );
+    }
+
+    #[test]
+    fn a_pause_invalidates_the_layer_and_restores_base_fallback() {
+        let keymap = layered_keymap();
+        let mut aggregate = Aggregator::new(0, 1);
+        aggregate.handle_event(100, 185, 1, &keymap, &policy());
+        assert_eq!(aggregate.active_layer_code(), Some(185));
+
+        aggregate.seal_or_discard_tier_a(1, 5_000, 25);
+        aggregate.invalidate_layer_signal();
+        aggregate.handle_event(200, 30, 1, &keymap, &policy());
+
+        assert_eq!(aggregate.active_layer_code(), None);
+        assert!(aggregate.active_layer.is_none());
+        assert_eq!(aggregate.tier_a.finger_count[0], 1);
+        assert_eq!(aggregate.tier_a.finger_count[7], 0);
+        assert_eq!(aggregate.tier_b_accum[0][0], 1);
+        assert_eq!(aggregate.tier_b_accum[0][1], 0);
+        assert_eq!(aggregate.tier_a.layer_count, [0; 16]);
     }
 
     #[test]

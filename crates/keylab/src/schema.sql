@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS profile (
   name  TEXT NOT NULL UNIQUE
 );
 
--- `id` is a surrogate: six child tables reference `bucket(id)`, so it has to stay a single opaque
+-- `id` is a surrogate: seven child tables reference `bucket(id)`, so it has to stay a single opaque
 -- column. The seal second lives in `ts`, and identity is the triple below — one bucket per device
 -- per profile per second. Two keyboards sealing in the same second are two buckets, not a
 -- collision. The UNIQUE constraint's own index leads with `ts`, which is what every range read
@@ -44,6 +44,13 @@ CREATE TABLE IF NOT EXISTS row_count (
   row_idx   INTEGER NOT NULL,
   presses   INTEGER NOT NULL,
   PRIMARY KEY (bucket_id, hand, row_idx)
+) WITHOUT ROWID;
+
+CREATE TABLE IF NOT EXISTS layer_count (
+  bucket_id INTEGER NOT NULL REFERENCES bucket(id),
+  layer_id  INTEGER NOT NULL,
+  presses   INTEGER NOT NULL,
+  PRIMARY KEY (bucket_id, layer_id)
 ) WITHOUT ROWID;
 
 CREATE TABLE IF NOT EXISTS hold_hist (

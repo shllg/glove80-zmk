@@ -111,6 +111,18 @@ export interface RowLoad {
   handShare: number;
 }
 
+export interface LayerLoad {
+  layerId: number;
+  name: string;
+  presses: number;
+  share: number;
+}
+
+export interface LayerUsage {
+  presses: number;
+  byLayer: LayerLoad[];
+}
+
 export interface ModifierHoldMetric {
   modClass: number;
   label: string;
@@ -211,8 +223,8 @@ export interface CorrectionContext {
   byPosition: CorrectedPosition[];
   /**
    * The two sentinels, kept out of `byPosition` because neither has geometry: `-1` is a key with no
-   * base-layer position, `-2` a correction with no key before it at all. A drawing excludes them; a
-   * total that hides them would not add up.
+   * resolved physical position, `-2` a correction with no key before it at all. A drawing excludes
+   * them; a total that hides them would not add up.
    */
   withoutPosition: { unattributed: CorrectedPosition; absent: CorrectedPosition };
 }
@@ -232,6 +244,8 @@ export interface RangeMetrics {
   };
   perFinger: FingerLoad[];
   perRow: RowLoad[];
+  /** `null` means no layer attribution was recorded in the selected range. */
+  layerUsage: LayerUsage | null;
   outerUpperQuadrant: {
     source: "Tier B";
     excludesUnattributed: true;
@@ -280,6 +294,11 @@ interface CountRow {
 interface RowCountRow {
   hand: number;
   row_idx: number;
+  presses: number;
+}
+
+interface LayerCountRow {
+  layer_id: number;
   presses: number;
 }
 
@@ -352,7 +371,7 @@ export function parseSince(value: string, nowTs = Math.floor(Date.now() / 1000))
   return { label: value, sinceTs: nowTs - seconds, nowTs };
 }
 
-export function parseViewerRange(
+export function parseLabRange(
   value: string,
   nowTs = Math.floor(Date.now() / 1000),
 ): TimeRange {
@@ -367,7 +386,7 @@ export function parseViewerRange(
     start.setHours(0, 0, 0, 0);
     return { label: "today", sinceTs: Math.floor(start.getTime() / 1000), nowTs };
   }
-  throw new Error(`Invalid viewer range ${JSON.stringify(value)}; expected live, today, 7d, or all`);
+  throw new Error(`Invalid Lab range ${JSON.stringify(value)}; expected live, today, 7d, or all`);
 }
 
 export function durationBucketMidpoint(bucket: number): number {
@@ -641,6 +660,42 @@ function getRowLoad(
   return result;
 }
 
+function getLayerUsage(
+  database: Database,
+  meta: AnalysisMeta,
+  range: TimeRange,
+  profile: ProfileScope,
+  device: DeviceScope,
+  hour?: number,
+): LayerUsage | null {
+  const filter = timestampFilter("b.ts", range, hour, profile, device);
+  const rows = database.query(`
+    SELECT lc.layer_id, SUM(lc.presses) AS presses
+    FROM layer_count lc JOIN bucket b ON b.id = lc.bucket_id
+    WHERE ${filter.sql}
+    GROUP BY lc.layer_id
+    ORDER BY lc.layer_id
+  `).all(...filter.params) as LayerCountRow[];
+  if (rows.length === 0) return null;
+
+  const presses = rows.reduce((sum, row) => sum + Number(row.presses), 0);
+  const byLayer = rows.map((row): LayerLoad => {
+    const layerId = Number(row.layer_id);
+    const layer = meta.layer(layerId);
+    if (!layer) {
+      throw new Error(`Layer count references metadata index ${layerId}, which is not defined`);
+    }
+    const layerPresses = Number(row.presses);
+    return {
+      layerId,
+      name: layer.name,
+      presses: layerPresses,
+      share: safeDivide(layerPresses, presses),
+    };
+  });
+  return { presses, byLayer };
+}
+
 function getPositionRows(
   database: Database,
   range: TimeRange,
@@ -812,8 +867,9 @@ function renderKeycode(keycode: string): string {
 
 /**
  * A position renders to whatever its base layer binds, never to a guess. `-1` is a key the daemon
- * could not attribute to a base-layer position, `-2` is a slot that held no key at all, and a
- * position with no base binding is as unknown as `-1` — all three would be lies if rendered as text.
+ * could not resolve to a physical position, `-2` is a slot that held no key at all, and a position
+ * with no base binding is as textually unknown as `-1` — all three would be lies if rendered as
+ * text.
  */
 function renderPosition(meta: AnalysisMeta, pos: number): string {
   if (pos === POSITION_ABSENT) return "·";
@@ -1060,6 +1116,7 @@ function computeRangeMetrics(
     },
     perFinger: getFingerLoad(database, range, profile, device, hour),
     perRow: getRowLoad(database, range, profile, device, hour),
+    layerUsage: getLayerUsage(database, meta, range, profile, device, hour),
     outerUpperQuadrant: {
       source: "Tier B",
       excludesUnattributed: true,

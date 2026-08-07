@@ -2,6 +2,7 @@ use crate::aggregate::{TierASeal, TierBSeal, TierCSeal};
 use crate::config::{
     MIN_BUCKET_SECONDS, MIN_NGRAM_SEAL_COUNT, MIN_TIER_A_SEAL_FLOOR, MIN_TIER_B_SEAL_COUNT,
 };
+use crate::control::ProfileLease;
 use crate::encode::{unpack_finger, unpack_ngram, FINGER_ABSENT, POS_ABSENT, POS_UNATTRIBUTED};
 use crate::keymap::Keymap;
 use anyhow::{bail, Context, Result};
@@ -34,13 +35,14 @@ pub struct DeviceKeymap<'a> {
     pub hash: &'a str,
 }
 
-/// The control state echoed into the live snapshot. The viewer reads it from there rather than
+/// The control state echoed into the live snapshot. Lab reads it from there rather than
 /// from its own last write, so the daemon stays the single authority on what is actually in force.
 #[derive(Clone, Copy)]
 pub struct LiveControl<'a> {
     pub paused: bool,
     pub profile: &'a str,
     pub profiles: &'a [String],
+    pub profile_lease: Option<&'a ProfileLease>,
     /// The layer the firmware last reported, on a board that signals layers. `None` says the
     /// question cannot be answered, which is different from saying the keyboard is on Base.
     pub layer: Option<&'a str>,
@@ -228,6 +230,7 @@ impl Store {
 
         write_finger_counts(&transaction, bucket_id, seal)?;
         write_row_counts(&transaction, bucket_id, seal)?;
+        write_layer_counts(&transaction, bucket_id, seal)?;
         write_hold_histograms(&transaction, bucket_id, seal)?;
         write_modifier_histograms(&transaction, bucket_id, seal)?;
         write_gap_histograms(&transaction, bucket_id, seal)?;
@@ -375,6 +378,7 @@ impl Store {
             paused,
             profile,
             profiles,
+            profile_lease,
             layer,
         } = *control;
         let rate = if elapsed_ms == 0 {
@@ -383,7 +387,7 @@ impl Store {
             f64::from(keystrokes) * 60_000.0 / elapsed_ms as f64
         };
         // Profile names are user-authored labels, not keystroke data, so echoing them here is
-        // within the logging policy. This is the viewer's only authoritative source of control
+        // within the logging policy. This is Lab's only authoritative source of control
         // state: it must never infer it from its own last write.
         let snapshot = serde_json::to_string(&json!({
             "finger_count": finger_counts,
@@ -391,6 +395,7 @@ impl Store {
             "paused": paused,
             "profile": profile,
             "profiles": profiles,
+            "profile_lease": profile_lease,
             "layer": layer,
         }))
         .context("failed to encode live snapshot")?;
@@ -500,28 +505,35 @@ fn initialize_meta(connection: &Connection, keymap: &Keymap, now_ts: i64) -> Res
         .optional()
         .context("failed to read schema version")?;
     match schema_version.as_deref() {
-        None | Some("5") => {}
+        None | Some("6") => {}
         Some("1") => {
             migrate_v1_to_v2(connection)?;
             migrate_v2_to_v3(connection, keymap)?;
             migrate_v3_to_v4(connection)?;
             migrate_v4_to_v5(connection)?;
+            migrate_v5_to_v6(connection)?;
         }
         Some("2") => {
             migrate_v2_to_v3(connection, keymap)?;
             migrate_v3_to_v4(connection)?;
             migrate_v4_to_v5(connection)?;
+            migrate_v5_to_v6(connection)?;
         }
         Some("3") => {
             migrate_v3_to_v4(connection)?;
             migrate_v4_to_v5(connection)?;
+            migrate_v5_to_v6(connection)?;
         }
-        Some("4") => migrate_v4_to_v5(connection)?,
+        Some("4") => {
+            migrate_v4_to_v5(connection)?;
+            migrate_v5_to_v6(connection)?;
+        }
+        Some("5") => migrate_v5_to_v6(connection)?,
         Some(_) => bail!("unsupported database schema version"),
     }
     connection
         .execute(
-            "INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', '5')",
+            "INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', '6')",
             [],
         )
         .context("failed to initialize schema version")?;
@@ -728,6 +740,20 @@ fn migrate_v4_to_v5(connection: &Connection) -> Result<()> {
     Ok(())
 }
 
+/// v5 predates layer attribution. No stored row knows which firmware layer produced it, so
+/// fabricating Base counts would turn absence of measurement into a measurement. The new table is
+/// created empty, and `IF NOT EXISTS` makes a pre-stamp interruption safe to resume.
+fn migrate_v5_to_v6(connection: &Connection) -> Result<()> {
+    connection
+        .execute_batch(SCHEMA)
+        .context("failed to create the version 6 layer-count table")?;
+    connection
+        .execute_batch("UPDATE meta SET value = '6' WHERE key = 'schema_version';")
+        .context("failed to record the version 6 schema")?;
+    info!("migrated database schema from version 5 to 6");
+    Ok(())
+}
+
 fn bucket_has_ts_column(connection: &Connection) -> Result<bool> {
     connection
         .query_row(
@@ -796,6 +822,24 @@ fn write_row_counts(transaction: &Transaction<'_>, bucket_id: i64, seal: &TierAS
                     params![bucket_id, hand, row_idx, presses],
                 )
                 .context("failed to write row marginal")?;
+        }
+    }
+    Ok(())
+}
+
+fn write_layer_counts(
+    transaction: &Transaction<'_>,
+    bucket_id: i64,
+    seal: &TierASeal,
+) -> Result<()> {
+    for (layer_id, presses) in seal.data.layer_count.iter().copied().enumerate() {
+        if presses > 0 {
+            transaction
+                .execute(
+                    "INSERT INTO layer_count(bucket_id, layer_id, presses) VALUES (?1, ?2, ?3)",
+                    params![bucket_id, layer_id, presses],
+                )
+                .context("failed to write layer marginal")?;
         }
     }
     Ok(())
@@ -898,7 +942,8 @@ fn on_disk_position(pos: u8) -> i64 {
     }
 }
 
-/// The finger projection has one absent value: a key with no base-layer position has no finger.
+/// The finger projection has one absent value: a key with no resolved physical position has no
+/// finger.
 fn on_disk_finger(finger: u8) -> i64 {
     match finger {
         FINGER_ABSENT => -1,
@@ -953,6 +998,18 @@ mod tests {
                 },
             ),
         ])
+    }
+
+    fn layered_keymap() -> Keymap {
+        let info = KeyInfo {
+            pos: 0,
+            hand: 0,
+            finger_id: 0,
+            row_idx: 4,
+        };
+        Keymap::fixture(&[(30, info)])
+            .with_layer(1, &[(30, info)])
+            .with_layer_signals(&[(184, "Base"), (185, "Navigation")])
     }
 
     fn open_store() -> (TempDir, PathBuf, Store, i64) {
@@ -1010,6 +1067,8 @@ mod tests {
         data.finger_count[0] = 20;
         data.finger_count[5] = 10;
         data.row_count[1] = 30;
+        data.layer_count[0] = 20;
+        data.layer_count[5] = 10;
         data.hold_hist[0][2] = 30;
         data.mod_hold_hist[0][3] = 4;
         data.gap_hist[0][1] = 29;
@@ -1059,6 +1118,57 @@ mod tests {
     }
 
     #[test]
+    fn v6_migrates_in_place_with_identical_totals() {
+        let (_temp, path, mut store, device_id) = open_store();
+        store
+            .seal_tier_a(device_id, 1, &populated_tier_a_seal(1_000))
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        let before = bucket_totals(store.connection());
+        store
+            .connection()
+            .execute_batch(
+                "DROP TABLE layer_count;
+                 UPDATE meta SET value = '5' WHERE key = 'schema_version';",
+            )
+            .unwrap_or_else(|error| panic!("{error}"));
+        store.close().unwrap_or_else(|error| panic!("{error:#}"));
+
+        let reopened =
+            Store::open(&path, &keymap(), 2_000).unwrap_or_else(|error| panic!("{error:#}"));
+        assert_eq!(schema_version(reopened.connection()), "6");
+        assert_eq!(bucket_totals(reopened.connection()), before);
+        assert_eq!(table_count(reopened.connection(), "layer_count"), 0);
+    }
+
+    #[test]
+    fn an_interrupted_migration_leaves_a_readable_database() {
+        let (_temp, path, mut store, device_id) = open_store();
+        store
+            .seal_tier_a(device_id, 1, &populated_tier_a_seal(1_000))
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        let before = bucket_totals(store.connection());
+        let layer_total = scalar(store.connection(), "SELECT SUM(presses) FROM layer_count");
+        // The table creation committed but the process died before stamping schema v6.
+        store
+            .connection()
+            .execute_batch("UPDATE meta SET value = '5' WHERE key = 'schema_version';")
+            .unwrap_or_else(|error| panic!("{error}"));
+        store.close().unwrap_or_else(|error| panic!("{error:#}"));
+
+        let reopened =
+            Store::open(&path, &keymap(), 2_000).unwrap_or_else(|error| panic!("{error:#}"));
+        assert_eq!(schema_version(reopened.connection()), "6");
+        assert_eq!(bucket_totals(reopened.connection()), before);
+        assert_eq!(
+            scalar(
+                reopened.connection(),
+                "SELECT SUM(presses) FROM layer_count"
+            ),
+            layer_total
+        );
+    }
+
+    #[test]
     fn v4_migrates_in_place_with_identical_totals() {
         let (_temp, path, mut store, device_id) = open_store();
         let profile_id = store
@@ -1082,7 +1192,7 @@ mod tests {
 
         let reopened =
             Store::open(&path, &keymap(), 3_000).unwrap_or_else(|error| panic!("{error:#}"));
-        assert_eq!(schema_version(reopened.connection()), "5");
+        assert_eq!(schema_version(reopened.connection()), "6");
         assert_eq!(bucket_totals(reopened.connection()), before);
         assert_eq!(collect_ids(reopened.connection()), ids);
         let drifted: i64 = reopened
@@ -1115,6 +1225,7 @@ mod tests {
         for (table, column, expected) in [
             ("finger_count", "presses", 30),
             ("row_count", "presses", 30),
+            ("layer_count", "presses", 30),
             ("hold_hist", "n", 30),
             ("mod_hold_hist", "n", 4),
             ("gap_hist", "n", 29),
@@ -1154,7 +1265,7 @@ mod tests {
     }
 
     #[test]
-    fn an_interrupted_migration_leaves_a_readable_database() {
+    fn an_interrupted_v5_migration_leaves_a_readable_database() {
         let (_temp, path, mut store, device_id) = open_store();
         store
             .seal_tier_a(device_id, 1, &populated_tier_a_seal(1_000))
@@ -1175,7 +1286,7 @@ mod tests {
 
         let reopened =
             Store::open(&path, &keymap(), 3_000).unwrap_or_else(|error| panic!("{error:#}"));
-        assert_eq!(schema_version(reopened.connection()), "5");
+        assert_eq!(schema_version(reopened.connection()), "6");
         assert_eq!(bucket_totals(reopened.connection()), before);
         reopened.close().unwrap_or_else(|error| panic!("{error:#}"));
 
@@ -1192,7 +1303,7 @@ mod tests {
 
         let again =
             Store::open(&path, &keymap(), 5_000).unwrap_or_else(|error| panic!("{error:#}"));
-        assert_eq!(schema_version(again.connection()), "5");
+        assert_eq!(schema_version(again.connection()), "6");
         assert_eq!(bucket_totals(again.connection()), before);
     }
 
@@ -1236,7 +1347,7 @@ mod tests {
     }
 
     #[test]
-    fn migrates_v1_all_the_way_to_v5() {
+    fn migrates_v1_all_the_way_to_v6() {
         let (_temp, path, mut store, device_id) = open_store();
         let profile_id = store
             .register_profile("gaming")
@@ -1270,7 +1381,7 @@ mod tests {
             )
             .unwrap_or_else(|error| panic!("{error}"));
         assert_eq!(orphaned, 0);
-        assert_eq!(schema_version(reopened.connection()), "5");
+        assert_eq!(schema_version(reopened.connection()), "6");
         assert_eq!(correction_context_tables(reopened.connection()), 3);
         assert!(
             bucket_has_ts_column(reopened.connection()).unwrap_or_else(|error| panic!("{error:#}"))
@@ -1280,7 +1391,7 @@ mod tests {
     /// A v3 database predates Tier C entirely: the migration is pure table creation, and running it
     /// twice must be as safe as running it once.
     #[test]
-    fn migrates_v3_to_v5() {
+    fn migrates_v3_to_v6() {
         let (_temp, path, store, _device_id) = open_store();
         downgrade_bucket_to_v4(store.connection());
         store
@@ -1296,13 +1407,13 @@ mod tests {
 
         let reopened =
             Store::open(&path, &keymap(), 3_000).unwrap_or_else(|error| panic!("{error:#}"));
-        assert_eq!(schema_version(reopened.connection()), "5");
+        assert_eq!(schema_version(reopened.connection()), "6");
         assert_eq!(correction_context_tables(reopened.connection()), 3);
         reopened.close().unwrap_or_else(|error| panic!("{error:#}"));
 
         let again =
             Store::open(&path, &keymap(), 4_000).unwrap_or_else(|error| panic!("{error:#}"));
-        assert_eq!(schema_version(again.connection()), "5");
+        assert_eq!(schema_version(again.connection()), "6");
         assert_eq!(correction_context_tables(again.connection()), 3);
     }
 
@@ -1399,7 +1510,7 @@ mod tests {
             })
             .unwrap_or_else(|error| panic!("{error}"));
         assert_eq!(kind, crate::config::DEFAULT_KEYMAP_KIND);
-        assert_eq!(schema_version(reopened.connection()), "5");
+        assert_eq!(schema_version(reopened.connection()), "6");
         assert_eq!(correction_context_tables(reopened.connection()), 3);
     }
 
@@ -1443,7 +1554,7 @@ mod tests {
                 |row| row.get(0),
             )
             .unwrap();
-        assert_eq!(schema_version, "5");
+        assert_eq!(schema_version, "6");
         let initial: Value = serde_json::from_str(&initial_history).unwrap();
         assert_eq!(initial.as_array().map(Vec::len), Some(1));
         store.close().unwrap();
@@ -1494,6 +1605,7 @@ mod tests {
                     paused: false,
                     profile: "default",
                     profiles: &[],
+                    profile_lease: None,
                     layer: None,
                 },
             )
@@ -1506,7 +1618,7 @@ mod tests {
             .unwrap();
         let snapshot: Value = serde_json::from_str(&encoded).unwrap();
         let object = snapshot.as_object().unwrap_or_else(|| unreachable!());
-        assert_eq!(object.len(), 6);
+        assert_eq!(object.len(), 7);
         assert_eq!(snapshot["finger_count"][2], 12);
         // A board that does not signal layers reports null, which is not the same as Base.
         assert!(snapshot["layer"].is_null());
@@ -1529,6 +1641,11 @@ mod tests {
                     paused: true,
                     profile: "gaming",
                     profiles: &["default".to_owned(), "gaming".to_owned()],
+                    profile_lease: Some(&ProfileLease {
+                        id: "session-1".to_owned(),
+                        restore_profile: "default".to_owned(),
+                        expires_at: 2_000,
+                    }),
                     layer: Some("Navigation"),
                 },
             )
@@ -1542,6 +1659,7 @@ mod tests {
         assert!(json.contains("\"paused\":true"));
         assert!(json.contains("\"profile\":\"gaming\""));
         assert!(json.contains("\"profiles\":[\"default\",\"gaming\"]"));
+        assert!(json.contains("\"restore_profile\":\"default\""));
         assert!(json.contains("\"layer\":\"Navigation\""));
     }
 
@@ -1586,7 +1704,7 @@ mod tests {
                 "SELECT COUNT(*) FROM sqlite_master AS tables
                  JOIN pragma_table_info(tables.name) AS columns
                  WHERE tables.name IN ('bucket', 'finger_count', 'row_count', 'hold_hist',
-                                       'mod_hold_hist', 'gap_hist', 'event_count')
+                                       'layer_count', 'mod_hold_hist', 'gap_hist', 'event_count')
                    AND columns.name IN ('pos', 'keycode', 'code')",
                 [],
                 |row| row.get(0),
@@ -1623,6 +1741,31 @@ mod tests {
             .unwrap();
         assert_eq!(row.0, 30);
         assert!(row.1 >= 20_000);
+    }
+
+    #[test]
+    fn a_press_is_counted_under_the_layer_that_resolved_it() {
+        let (_temp, _path, mut store, device_id) = open_store();
+        let keymap = layered_keymap();
+        let mut aggregate = Aggregator::new(1_000, 1);
+        aggregate.handle_event(0, 185, 1, &keymap, &policy());
+        for t_ms in 1..=25 {
+            aggregate.handle_event(t_ms, 30, 1, &keymap, &policy());
+        }
+        let seal = aggregate
+            .tick(1_010, 10_000, 25)
+            .unwrap_or_else(|| unreachable!("the Tier A floor is met"));
+        assert_eq!(seal.data.layer_count[1], 25);
+        store
+            .seal_tier_a(device_id, 1, &seal)
+            .unwrap_or_else(|error| panic!("{error:#}"));
+        assert_eq!(
+            scalar(
+                store.connection(),
+                "SELECT presses FROM layer_count WHERE layer_id = 1"
+            ),
+            25
+        );
     }
 
     #[test]

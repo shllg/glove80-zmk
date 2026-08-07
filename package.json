@@ -8,11 +8,11 @@
     "analysis": "bun packages/analysis/bin/analysis.ts",
     "build": "tsx packages/keymap/src/index.ts",
     "compile": "./scripts/compile.sh",
-    "test": "pnpm test:keymap && bun test packages/analysis && bun test packages/viewer && bun test packages/trainer && ./scripts/verify-build.sh",
+    "test": "pnpm test:keymap && bun test packages/analysis packages/trainer packages/lab && ./scripts/verify-build.sh",
     "test:keymap": "node --import tsx --test packages/keymap/test/**/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "trainer": "bun packages/trainer/bin/trainer.ts",
-    "viewer": "bun packages/viewer/src/server.ts"
+    "lab": "bun bin/lab",
+    "trainer": "bun packages/trainer/bin/trainer.ts"
   },
   "keywords": [],
   "author": "",

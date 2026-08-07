@@ -12,12 +12,11 @@ import {
   generatePositionDrill,
 } from "../src/drills";
 import { attributeCorrections } from "../src/corrections";
-import { benchmarkHistory, runTrainer } from "../src/server";
+import { benchmarkHistory } from "../src/history";
 import { defaultTrainerPath, openTrainerStore } from "../src/store";
 import { buildWeaknessModel } from "../src/weakness";
 
-const USAGE = "Usage: trainer serve [--port N]\n"
-  + "       trainer weakness [--db PATH] [--trainer PATH]\n"
+const USAGE = "Usage: trainer weakness [--db PATH] [--trainer PATH]\n"
   + "       trainer benchmark [--corpus ID] [--seed N] [--words N]\n"
   + "       trainer drill [--family position|bigram|mechanic|language] [--language en|de|code]\n"
   + "       trainer history [--trainer PATH]\n"
@@ -52,11 +51,6 @@ function keylabContext(args: string[]) {
 export function runCli(args: string[]): void {
   const command = args[0];
   const rest = args.slice(1);
-
-  if (command === "serve") {
-    runTrainer(rest);
-    return;
-  }
 
   if (command === "corpora") {
     for (const entry of listCorpora()) {
@@ -196,6 +190,7 @@ export function runCli(args: string[]): void {
       let printed = 0;
       let unattributable = 0;
       for (const session of store.sessions()) {
+        if (session.endedTs === null) continue;
         if (only !== undefined && session.id !== Number(only)) continue;
         const corrections = store.corrections(session.id);
         if (corrections.length === 0) continue;

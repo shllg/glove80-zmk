@@ -36,9 +36,10 @@ const ProfileIndicators = z.object({
 }).strict().optional();
 
 /**
- * Which spare key the firmware taps when a layer becomes the highest active one. The host cannot
- * otherwise tell a layer-shifted key from its base-layer twin — both emit the same keycode — so
- * everything typed from a layer is recorded as position-unattributed.
+ * Which spare key the firmware taps when a layer becomes the highest active one. Ordinary host key
+ * events do not carry ZMK layer state, so a base-only resolver can assign a shared keycode to the
+ * wrong Base position or leave a code absent from Base unattributed. This signal selects the
+ * matching per-layer metadata table.
  */
 const LayerSignal = z.object({
   enabled: z.boolean(),

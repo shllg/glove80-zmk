@@ -41,13 +41,16 @@ importers:
 
   packages/keymap: {}
 
-  packages/trainer:
+  packages/lab:
     dependencies:
       '@glove80/analysis':
         specifier: workspace:*
         version: link:../analysis
+      '@glove80/trainer':
+        specifier: workspace:*
+        version: link:../trainer
 
-  packages/viewer:
+  packages/trainer:
     dependencies:
       '@glove80/analysis':
         specifier: workspace:*

@@ -2,15 +2,15 @@ import type { Layout } from "./schema";
 import { resolveLayerNames } from "./generateDtsi";
 
 /**
- * The layer signal exists because the host cannot see layers. `9` typed from base row 2 and `9`
- * produced from a layer emit the same keycode, so everything typed from a layer is recorded as
- * position-unattributed and the positional data means base-layer typing only.
+ * The layer signal exists because ordinary host key events do not carry ZMK layer state. `9` typed
+ * from base row 2 and `9` produced from a layer emit the same keycode; a base-only resolver can
+ * therefore assign a layered event to the wrong Base position, while a code absent from Base is
+ * left unattributed. The signal selects the matching per-layer metadata table on the host.
  *
- * The firmware already knows: `zmk_layer_state_changed` fires on every activation. All that is
- * missing is telling the host, which this does by tapping one spare key per layer whenever the
- * highest active layer changes. One table, generated here, feeds both sides — the firmware header
- * the module compiles against and the metadata the daemon reads — because two hand-maintained
- * copies of the same mapping is a silent mis-attribution waiting to happen.
+ * `zmk_layer_state_changed` fires on every activation, so the firmware taps one spare key whenever
+ * the highest active layer changes. One table, generated here, feeds both sides — the firmware
+ * header the module compiles against and the metadata the daemon reads — because two
+ * hand-maintained copies of the same mapping is a silent mis-attribution waiting to happen.
  */
 export interface LayerSignal {
   /** The layer this code reports. Base clones report as the layer they clone. */

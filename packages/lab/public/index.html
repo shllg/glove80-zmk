@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Glove80 Lab</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" type="module"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/" data-route><span class="brand-mark">G80</span><span><strong>Lab</strong><small>keyboard telemetry & practice</small></span></a>
+      <nav aria-label="Primary navigation">
+        <a href="/" data-route>Overview</a>
+        <a href="/insights" data-route>Insights</a>
+        <a href="/train" data-route>Train</a>
+        <a href="/history" data-route>History</a>
+        <a href="/keymap" data-route>Keymap</a>
+      </nav>
+      <div class="health-strip">
+        <span id="service-chip" class="chip">service …</span>
+        <span id="capture-chip" class="chip">capture …</span>
+        <span id="layer-chip" class="chip">layer …</span>
+      </div>
+    </header>
+
+    <aside id="global-warning" class="global-warning" hidden></aside>
+    <p id="global-status" class="sr-only" role="status">Loading Lab…</p>
+
+    <main>
+      <section class="page" data-page="/" aria-labelledby="overview-title">
+        <div class="page-heading">
+          <div><p class="eyebrow">Today at a glance</p><h1 id="overview-title">Overview</h1></div>
+          <div class="daemon-controls">
+            <button id="pause-toggle" class="secondary" type="button">Pause capture</button>
+            <label><span>Recording profile</span><select id="profile"></select></label>
+          </div>
+        </div>
+        <section class="totals" aria-label="Recent totals">
+          <article><span>Keystrokes · 30m</span><strong id="overview-keys">—</strong></article>
+          <article><span>Live pace</span><strong id="overview-rate">—</strong></article>
+          <article><span>Current profile</span><strong id="overview-profile">—</strong></article>
+          <article><span>5-run median</span><strong id="overview-median">—</strong></article>
+        </section>
+        <div class="dashboard-grid">
+          <section class="panel span-2"><div class="panel-heading"><div><p class="eyebrow">Capture daemon</p><h2>System health</h2></div></div><div id="health-detail" class="status-list"></div></section>
+          <section class="panel"><div class="panel-heading"><div><p class="eyebrow">What to practise next</p><h2>Priority weaknesses</h2></div></div><p id="weakness-confidence" class="hint"></p><div id="overview-weakness"></div><a id="overview-recommended" class="text-link" href="/train?mode=drill&amp;family=position&amp;language=en" data-route>Open recommended drill →</a></section>
+          <section class="panel"><div class="panel-heading"><div><p class="eyebrow">Benchmark signal</p><h2>Recent progress</h2></div></div><div id="overview-history"></div><a class="text-link" href="/history" data-route>Inspect all sessions →</a></section>
+        </div>
+      </section>
+
+      <section class="page" data-page="/insights" aria-labelledby="insights-title" hidden>
+        <div class="page-heading"><div><p class="eyebrow">Keylab analytics</p><h1 id="insights-title">Insights</h1></div></div>
+        <section class="filter-bar" aria-label="Insight filters">
+          <label><span>Range</span><select id="range"><option value="live">Live · 30m</option><option value="today">Today</option><option value="7d">7 days</option><option value="all">All</option></select></label>
+          <label><span>Profile</span><select id="view-profile"></select></label>
+          <label><span>Keyboard</span><select id="device"></select></label>
+          <label><span>Heatmap</span><select id="layer"><option value="presses">Press load</option><option value="corrections">Correction rate</option></select></label>
+          <label id="latency-control" hidden><span>Correction kind</span><select id="correction-latency"><option value="all">All</option><option value="fumble">Fumble · &lt;400 ms</option><option value="edit">Edit · &gt;1 s</option></select></label>
+        </section>
+        <p id="insights-status" class="status">Loading telemetry…</p>
+        <p id="reliability-warning" class="warning" hidden>Positional metrics are unreliable: unattributed share exceeds 25%.</p>
+        <p id="alt-hand-warning" class="warning" hidden>ALT hand attribution is ambiguous: both home-row ALT keys emit KEY_LEFTALT, so L_ALT figures combine both hands.</p>
+        <section class="totals" aria-label="Summary totals"><article><span>Keystrokes</span><strong id="total-keys">0</strong></article><article><span>Autorepeats</span><strong id="autorepeats">0</strong></article><article><span>Tier A buckets</span><strong id="tier-a-buckets">0</strong></article><article><span>Tier B windows</span><strong id="tier-b-windows">0</strong></article><article id="unattributed-card"><span>Unattributed</span><strong id="unattributed">0.00%</strong></article></section>
+        <section class="panel heatmap-panel"><div class="panel-heading"><div><p class="eyebrow" id="heatmap-source">Tier B · unordered counts</p><h2 id="heatmap-title">Physical key load</h2></div><span>low <i class="legend"></i> high</span></div><div id="heatmap" class="heatmap" aria-label="Per-key heatmap"></div><p id="correction-note" class="hint" hidden></p></section>
+        <div class="dashboard-grid">
+          <section class="panel"><h2>Finger load</h2><div id="finger-chart" class="bar-chart"></div></section>
+          <section class="panel"><h2>Row load</h2><div id="row-load"></div></section>
+          <section class="panel"><h2>Layer usage</h2><div id="layer-usage"></div></section>
+          <section class="panel"><h2>Outer-upper quadrant</h2><div id="outer-load"></div></section>
+          <section class="panel span-2"><h2>Modifier holds</h2><div id="modifier-chart" class="histograms"></div></section>
+          <section class="panel"><h2>Misfires</h2><div id="misfires"></div></section>
+          <section class="panel"><h2>Correction tax</h2><div id="correction-tax"></div></section>
+          <section class="panel span-2"><h2>Correction context · Tier C</h2><div id="correction-context"></div></section>
+          <section class="panel"><h2>Daily dose</h2><div id="daily-dose"></div></section>
+          <section class="panel span-2"><h2>Fatigue drift by local hour</h2><div id="fatigue-drift" class="table-scroll"></div></section>
+        </div>
+      </section>
+
+      <section class="page" data-page="/train" aria-labelledby="train-title" hidden>
+        <div class="page-heading"><div><p class="eyebrow">Deliberate practice</p><h1 id="train-title">Train</h1></div><span id="training-capture" class="chip">No active session</span></div>
+        <section class="filter-bar">
+          <label><span>Mode</span><select id="mode"><option value="benchmark">Benchmark</option><option value="drill">Drill</option></select></label>
+          <label><span>Drill family</span><select id="family"><option value="position">Weak positions</option><option value="bigram">Bigrams / transitions</option><option value="mechanic">Firmware mechanics</option><option value="language">Language</option></select></label>
+          <label><span>Language</span><select id="language"><option value="en">English</option><option value="de">German</option><option value="code">Code</option></select></label>
+          <label><span>Length</span><select id="word-count"><option value="20">Short · 20</option><option value="50" selected>Standard · 50</option><option value="100">Long · 100</option></select></label>
+          <button id="start" type="button" class="primary">Start session</button>
+          <button id="cancel-training" type="button" class="secondary" hidden>Cancel</button>
+        </section>
+        <p id="train-status" class="status" role="status">Configure a session and start when ready.</p>
+        <p id="training-warning" class="warning" hidden></p>
+        <p id="rationale" class="rationale" hidden></p>
+        <section class="panel training-panel"><div id="prompt" class="prompt" aria-live="polite"></div><input id="entry" class="entry" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Type here once started" aria-label="Typing entry"><div id="mechanic-steps" hidden></div><button id="complete-mechanic" class="primary" type="button" hidden>Complete guided drill</button></section>
+        <section class="totals" aria-label="Session result"><article><span>WPM</span><strong id="wpm">—</strong></article><article><span>Accuracy</span><strong id="accuracy">—</strong></article><article><span>Keystrokes</span><strong id="keystrokes">0</strong></article><article><span>Corrections</span><strong id="correction-count">0</strong></article><article id="composed-card"><span>Composed</span><strong id="composed">0</strong></article></section>
+        <p id="ibus-note" class="warning" hidden></p>
+        <section class="panel"><h2>Session corrections</h2><p class="hint">Backspaces remain outside WPM and accuracy denominators.</p><div id="corrections"></div></section>
+      </section>
+
+      <section class="page" data-page="/history" aria-labelledby="history-title" hidden>
+        <div class="page-heading"><div><p class="eyebrow">Completed practice</p><h1 id="history-title">History</h1></div></div>
+        <section class="filter-bar"><label><span>Mode</span><select id="history-mode"><option value="">All</option><option value="benchmark">Benchmark</option><option value="drill">Drill</option></select></label><label><span>Language</span><select id="history-language"><option value="">All</option><option value="en">English</option><option value="de">German</option><option value="code">Code</option></select></label></section>
+        <div class="dashboard-grid"><section class="panel"><h2>Five-run benchmark median</h2><div id="history-trends"></div></section><section class="panel span-2"><h2>Sessions</h2><div id="history-sessions" class="table-scroll"></div></section><section class="panel span-3"><h2>Session detail</h2><div id="history-detail"><p class="hint">Choose a completed session.</p></div></section></div>
+      </section>
+
+      <section class="page" data-page="/keymap" aria-labelledby="keymap-title" hidden>
+        <div class="page-heading"><div><p class="eyebrow">Generated artifacts · read-only</p><h1 id="keymap-title">Keymap</h1></div><div class="keymap-actions"><label><span>Zoom</span><input id="keymap-zoom" type="range" min="50" max="200" step="10" value="100"><output id="keymap-zoom-output" for="keymap-zoom">100%</output></label><a id="keymap-pdf" class="secondary button-link" href="/assets/keymap.pdf" target="_blank" rel="noreferrer">Open PDF</a></div></div>
+        <p class="hint">Lab never generates, builds, flashes, or edits firmware. Use the repository’s <code>make</code> workflows for those deliberate operations.</p>
+        <div id="keymap-warning" class="warning" hidden></div>
+        <section class="panel"><div id="keymap-meta" class="status-list"></div></section>
+        <section class="panel keymap-canvas"><img id="keymap-image" src="/assets/keymap.svg" alt="Generated Glove80 keymap"></section>
+      </section>
+    </main>
+  </body>
+</html>

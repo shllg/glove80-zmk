@@ -103,20 +103,14 @@ fn run() -> Result<()> {
 
     match command {
         Command::Status => print_status(&config, &data_dir, &current),
-        Command::Pause => set_state(
-            &control_path,
-            &ControlState {
-                paused: true,
-                profile: current.profile,
-            },
-        ),
-        Command::Resume => set_state(
-            &control_path,
-            &ControlState {
-                paused: false,
-                profile: current.profile,
-            },
-        ),
+        Command::Pause => update_state(&control_path, |mut latest| {
+            latest.paused = true;
+            latest
+        }),
+        Command::Resume => update_state(&control_path, |mut latest| {
+            latest.paused = false;
+            latest
+        }),
         Command::ListProfiles => {
             for name in &config.profiles {
                 let marker = if *name == current.profile { "*" } else { " " };
@@ -131,13 +125,12 @@ fn run() -> Result<()> {
                     config.profiles.join(", ")
                 );
             }
-            set_state(
-                &control_path,
-                &ControlState {
-                    paused: current.paused,
-                    profile: name,
-                },
-            )
+            update_state(&control_path, |mut latest| {
+                latest.profile = name;
+                // An explicit profile change owns the state and cancels any trainer lease.
+                latest.profile_lease = None;
+                latest
+            })
         }
         Command::ListDevices => list_devices(&config.db_path),
         Command::MergeDevices { sources, target } => {
@@ -224,8 +217,11 @@ fn is_stopped(state: &str) -> bool {
     matches!(state, "inactive" | "failed") || state.starts_with("unknown")
 }
 
-fn set_state(control_path: &Path, state: &ControlState) -> Result<()> {
-    control::write_control(control_path, state)?;
+fn update_state<F>(control_path: &Path, update: F) -> Result<()>
+where
+    F: FnOnce(ControlState) -> ControlState,
+{
+    let state = control::update_control(control_path, update)?;
     println!("paused={} profile={}", state.paused, state.profile);
     Ok(())
 }
@@ -242,6 +238,14 @@ fn print_status(config: &Config, data_dir: &Path, current: &ControlState) -> Res
         if hard_paused { "yes" } else { "no" }
     );
     println!("profile:      {}", current.profile);
+    if let Some(lease) = &current.profile_lease {
+        println!(
+            "profile lease: active until {} (restores {})",
+            lease.expires_at, lease.restore_profile
+        );
+    } else {
+        println!("profile lease: none");
+    }
     println!("configured:   {}", config.profiles.join(", "));
     match live_snapshot_age(&config.db_path) {
         Ok(Some(age)) => println!("last capture: {age}s ago"),
@@ -438,16 +442,14 @@ mod tests {
     }
 
     #[test]
-    fn set_state_writes_a_file_the_watcher_accepts() {
+    fn update_state_writes_a_file_the_watcher_accepts() {
         let temp = tempfile::tempdir().unwrap_or_else(|error| panic!("{error}"));
         let control_path = temp.path().join("control.json");
-        set_state(
-            &control_path,
-            &ControlState {
-                paused: true,
-                profile: "gaming".to_owned(),
-            },
-        )
+        update_state(&control_path, |_| ControlState {
+            paused: true,
+            profile: "gaming".to_owned(),
+            profile_lease: None,
+        })
         .unwrap_or_else(|error| panic!("{error:#}"));
         let mut watcher = ControlWatcher::new(
             control_path,

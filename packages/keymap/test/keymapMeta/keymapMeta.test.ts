@@ -14,7 +14,8 @@ import {
 import type { FingerName, KeymapMeta, KeymapPosition } from "../../src/keymapMeta";
 import { zmkKeycode } from "../../src/keymapMeta";
 import { renderLayerSignalHeader, resolveLayerSignals } from "../../src/layerSignal";
-import { resolveLayerNames } from "../../src/generateDtsi";
+import { resolveLayerNames, resolveLayers } from "../../src/generateDtsi";
+import { toPhysicalRows } from "../../src/layout";
 
 const repositoryRoot = process.cwd();
 const layoutSource = fs.readFileSync(path.join(repositoryRoot, "config/layout.json5"), "utf8");
@@ -154,6 +155,79 @@ test("keymapHash is stable for unchanged positions and changes with a binding", 
     gitCommit: "first",
   });
   assert.notEqual(first.keymapHash, changed.keymapHash);
+
+  const changedLayerLayout = structuredClone(layout);
+  const navigation = changedLayerLayout.layers.find(({ name }) => name === "Navigation");
+  assert.ok(navigation);
+  const navigationRow = navigation.keys.left[0];
+  assert.ok(navigationRow);
+  navigationRow[0] = "&kp A";
+  const changedLayer = createKeymapMeta(changedLayerLayout, positionDefineSource, {
+    generatedAt: "2026-08-04T00:00:00.000Z",
+    gitCommit: "first",
+  });
+  assert.notEqual(first.keymapHash, changedLayer.keymapHash);
+});
+
+test("every_layer_index_has_a_keycode_table", () => {
+  const meta = generateMeta();
+  assert.ok(meta.layers);
+  assert.equal(meta.layers.length, resolveLayerNames(layout).length);
+  assert.deepEqual(meta.layers.map(({ index }) => index), meta.layers.map((_, index) => index));
+  assert.deepEqual(meta.layers.map(({ name }) => name), resolveLayerNames(layout));
+});
+
+test("a_home_row_mod_contributes_its_tap_and_its_modifier", () => {
+  const meta = generateMeta();
+  const base = meta.layers?.[0];
+  assert.ok(base);
+  const position = positionForDefinition(meta, "POS_LH_C2R4");
+  assert.deepEqual(
+    base.positions
+      .filter(({ pos }) => pos === position.pos)
+      .map(({ linuxKeycode }) => linuxKeycode)
+      .sort((left, right) => left - right),
+    [29, 33],
+  );
+});
+
+test("a_none_binding_contributes_nothing", () => {
+  const meta = generateMeta();
+  const special = meta.layers?.find(({ name }) => name === "Special");
+  const source = resolveLayers(layout).find(({ name }) => name === "Special");
+  assert.ok(special);
+  assert.ok(source);
+  const nonePos = toPhysicalRows(source.keys).flat().findIndex((binding) => binding === "&none");
+  assert.notEqual(nonePos, -1);
+  assert.equal(special.positions.some(({ pos }) => pos === nonePos), false);
+});
+
+test("a_keycode_on_two_positions_of_one_layer_is_dropped", () => {
+  const ambiguous = structuredClone(layout);
+  const base = ambiguous.layers.find(({ name }) => name === "Base");
+  assert.ok(base);
+  const row = base.keys.left[0];
+  assert.ok(row);
+  row[0] = "&kp A";
+  row[1] = "&kp A";
+  const meta = createKeymapMeta(ambiguous, positionDefineSource, {
+    generatedAt: "2026-08-04T00:00:00.000Z",
+    gitCommit: "test",
+  });
+  assert.equal(meta.layers?.[0]?.positions.some(({ linuxKeycode }) => linuxKeycode === 30), false);
+});
+
+test("a_transparent_binding_is_rejected_instead_of_guessed", () => {
+  const transparent = structuredClone(layout);
+  const navigation = transparent.layers.find(({ name }) => name === "Navigation");
+  assert.ok(navigation);
+  const row = navigation.keys.left[0];
+  assert.ok(row);
+  row[0] = "&trans";
+  assert.throws(
+    () => createKeymapMeta(transparent, positionDefineSource),
+    /Transparent binding.*cannot be attributed without resolving the layer stack/,
+  );
 });
 
 test("unknown ZMK keycodes fail loudly with the offending name", () => {

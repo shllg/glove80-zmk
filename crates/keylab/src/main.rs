@@ -93,6 +93,7 @@ struct ResolvedControl {
     profile: String,
     profile_id: i64,
     profile_index: usize,
+    profile_lease: Option<control::ProfileLease>,
     last_activity: Instant,
 }
 
@@ -178,6 +179,7 @@ fn selftest_hold_database(path: &Path) -> Result<()> {
             paused: false,
             profile: config::DEFAULT_PROFILE,
             profiles: &[config::DEFAULT_PROFILE.to_owned()],
+            profile_lease: None,
             layer: None,
         },
     )?;
@@ -324,11 +326,13 @@ fn event_loop(
         profile: config::DEFAULT_PROFILE.to_owned(),
         profile_id: store.register_profile(config::DEFAULT_PROFILE)?,
         profile_index: 0,
+        profile_lease: None,
         last_activity: Instant::now(),
     };
     // Resolve once before the first discovery so devices are created under the right profile.
     refresh_control(
         &mut watcher,
+        control_path,
         pause_path,
         config,
         store,
@@ -353,6 +357,7 @@ fn event_loop(
 
         refresh_control(
             &mut watcher,
+            control_path,
             pause_path,
             config,
             store,
@@ -388,6 +393,7 @@ fn event_loop(
         if now >= next_bucket_tick {
             refresh_control(
                 &mut watcher,
+                control_path,
                 pause_path,
                 config,
                 store,
@@ -418,6 +424,7 @@ fn event_loop(
         if now >= next_live_tick {
             refresh_control(
                 &mut watcher,
+                control_path,
                 pause_path,
                 config,
                 store,
@@ -425,7 +432,7 @@ fn event_loop(
                 &mut state,
             )?;
             // The snapshot is written even while paused, with zeroed live figures. Freezing it
-            // would leave the viewer showing a stale profile chip with no way to tell.
+            // would leave Lab showing a stale profile chip with no way to tell.
             replace_live_snapshot(config, keymaps, store, &devices, &state, now)?;
             next_live_tick = now + live_duration;
         }
@@ -482,8 +489,8 @@ fn discover_devices(
                 event_path = %path.display(),
                 keymap_kind = %rule.name,
                 // Whether this board tells the host which layer is active. Worth one word at
-                // startup: it is the difference between positional data that covers every layer
-                // and positional data that covers the base layer only.
+                // startup: a signalling board can use every generated layer table, while a board
+                // without signals deliberately stays on the Base fallback.
                 layer_signals = keymaps
                     .get(rule_index)
                     .is_some_and(Keymap::signals_layers),
@@ -678,13 +685,14 @@ fn process_device_events(
 /// preserves the Tier B accumulators.
 fn refresh_control(
     watcher: &mut control::ControlWatcher,
+    control_path: &Path,
     pause_path: &Path,
     config: &Config,
     store: &mut Store,
     devices: &mut HashMap<PathBuf, RuntimeDevice>,
     state: &mut ResolvedControl,
 ) -> Result<()> {
-    let desired = watcher.poll();
+    let desired = resolve_profile_lease(watcher, control_path)?;
     let hard_paused = pause_requested(pause_path)?;
 
     if hard_paused != state.hard_paused {
@@ -728,10 +736,37 @@ fn refresh_control(
             }
             state.last_activity = now;
         }
+        for runtime in devices.values_mut() {
+            runtime.aggregate.invalidate_layer_signal();
+        }
         info!(paused = desired.paused, "soft pause state changed");
         state.soft_paused = desired.paused;
     }
+    state.profile_lease = desired.profile_lease;
     Ok(())
+}
+
+/// Resolves a wall-clock lease before applying the requested profile. The watcher adopts the
+/// restored state even if rewriting fails, so an unchanged stale file cannot reactivate the lease
+/// on every event-loop poll. A daemon restart will resolve the same expired file again.
+fn resolve_profile_lease(
+    watcher: &mut control::ControlWatcher,
+    control_path: &Path,
+) -> Result<control::ControlState> {
+    let desired = watcher.poll();
+    let Some(restored) = control::expire_profile_lease(&desired, unix_seconds()?) else {
+        return Ok(desired);
+    };
+    match control::write_control_if_unchanged(control_path, &desired, &restored) {
+        Ok(true) => info!(
+            profile = %restored.profile,
+            "expired profile lease restored the previous profile"
+        ),
+        Ok(false) => return Ok(watcher.poll()),
+        Err(error) => warn!(error = %error, "failed to persist expired profile lease restoration"),
+    }
+    watcher.adopt(restored.clone());
+    Ok(restored)
 }
 
 /// Closes the current Tier A bucket on every device at a boundary that must not straddle two
@@ -777,6 +812,7 @@ fn apply_idle_auto_revert(
     }
     if state.paused()
         || state.profile == config::DEFAULT_PROFILE
+        || state.profile_lease.is_some()
         || !auto_revert_due(now, state.last_activity, config.auto_revert_idle_seconds)
     {
         return;
@@ -784,12 +820,19 @@ fn apply_idle_auto_revert(
     let reverted = control::ControlState {
         paused: state.soft_paused,
         profile: config::DEFAULT_PROFILE.to_owned(),
+        profile_lease: None,
     };
-    match control::write_control(control_path, &reverted) {
-        Ok(()) => info!(
+    let expected = control::ControlState {
+        paused: state.soft_paused,
+        profile: state.profile.clone(),
+        profile_lease: state.profile_lease.clone(),
+    };
+    match control::write_control_if_unchanged(control_path, &expected, &reverted) {
+        Ok(true) => info!(
             idle_seconds = config.auto_revert_idle_seconds,
             "idle auto-revert to the default profile"
         ),
+        Ok(false) => {}
         Err(error) => warn!(error = %error, "failed to write the idle auto-revert"),
     }
     // Re-arm regardless: a failed write must not retry on every bucket tick.
@@ -889,6 +932,7 @@ fn replace_live_snapshot(
             paused: state.paused(),
             profile: &state.profile,
             profiles: &config.profiles,
+            profile_lease: state.profile_lease.as_ref(),
             layer,
         },
     )
@@ -1129,6 +1173,7 @@ mod tests {
                 .register_profile(config::DEFAULT_PROFILE)
                 .unwrap_or_else(|error| panic!("{error:#}")),
             profile_index: 0,
+            profile_lease: None,
             last_activity: Instant::now(),
         };
 
@@ -1137,11 +1182,13 @@ mod tests {
             &control::ControlState {
                 paused: true,
                 profile: "gaming".to_owned(),
+                profile_lease: None,
             },
         )
         .unwrap_or_else(|error| panic!("{error:#}"));
         refresh_control(
             &mut watcher,
+            &control_path,
             &pause_path,
             &config,
             &mut store,
@@ -1165,6 +1212,7 @@ mod tests {
         .unwrap_or_else(|error| panic!("{error}"));
         refresh_control(
             &mut watcher,
+            &control_path,
             &pause_path,
             &config,
             &mut store,
@@ -1184,7 +1232,8 @@ mod tests {
         let control_path = data_dir.join("control.json");
         let pause_path = data_dir.join("PAUSED");
         let config = Config::default();
-        let mut watcher = control::ControlWatcher::new(control_path, config.profiles.clone());
+        let mut watcher =
+            control::ControlWatcher::new(control_path.clone(), config.profiles.clone());
         let mut devices: HashMap<PathBuf, RuntimeDevice> = HashMap::new();
         let mut state = ResolvedControl {
             hard_paused: false,
@@ -1192,12 +1241,14 @@ mod tests {
             profile: config::DEFAULT_PROFILE.to_owned(),
             profile_id: 1,
             profile_index: 0,
+            profile_lease: None,
             last_activity: Instant::now(),
         };
 
         std::fs::write(&pause_path, b"").unwrap_or_else(|error| panic!("{error}"));
         refresh_control(
             &mut watcher,
+            &control_path,
             &pause_path,
             &config,
             &mut store,
@@ -1211,6 +1262,7 @@ mod tests {
         std::fs::remove_file(&pause_path).unwrap_or_else(|error| panic!("{error}"));
         refresh_control(
             &mut watcher,
+            &control_path,
             &pause_path,
             &config,
             &mut store,
@@ -1219,6 +1271,58 @@ mod tests {
         )
         .unwrap_or_else(|error| panic!("{error:#}"));
         assert!(!state.paused());
+    }
+
+    #[test]
+    fn refresh_control_restores_an_expired_profile_lease_before_applying_it() {
+        let temp = tempfile::tempdir().unwrap_or_else(|error| panic!("{error}"));
+        let (db_path, mut store) = control_test_store(temp.path());
+        let data_dir = db_path.parent().unwrap_or_else(|| unreachable!());
+        let control_path = data_dir.join("control.json");
+        let pause_path = data_dir.join("PAUSED");
+        let config = Config::default();
+        let mut watcher =
+            control::ControlWatcher::new(control_path.clone(), config.profiles.clone());
+        let mut devices: HashMap<PathBuf, RuntimeDevice> = HashMap::new();
+        let mut state = ResolvedControl {
+            hard_paused: false,
+            soft_paused: false,
+            profile: config::DEFAULT_PROFILE.to_owned(),
+            profile_id: 1,
+            profile_index: 0,
+            profile_lease: None,
+            last_activity: Instant::now(),
+        };
+        control::write_control(
+            &control_path,
+            &control::ControlState {
+                paused: false,
+                profile: "gaming".to_owned(),
+                profile_lease: Some(control::ProfileLease {
+                    id: "expired-session".to_owned(),
+                    restore_profile: "default".to_owned(),
+                    expires_at: 0,
+                }),
+            },
+        )
+        .unwrap_or_else(|error| panic!("{error:#}"));
+
+        refresh_control(
+            &mut watcher,
+            &control_path,
+            &pause_path,
+            &config,
+            &mut store,
+            &mut devices,
+            &mut state,
+        )
+        .unwrap_or_else(|error| panic!("{error:#}"));
+
+        assert_eq!(state.profile, "default");
+        assert!(state.profile_lease.is_none());
+        let mut reread = control::ControlWatcher::new(control_path, config.profiles.clone());
+        assert_eq!(reread.poll().profile, "default");
+        assert!(reread.poll().profile_lease.is_none());
     }
 
     #[test]
@@ -1254,6 +1358,7 @@ mod tests {
             profile: config::DEFAULT_PROFILE.to_owned(),
             profile_id: 1,
             profile_index: 0,
+            profile_lease: None,
             last_activity: Instant::now(),
         };
         assert!(!state.paused());

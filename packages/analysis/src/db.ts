@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 
-export const SUPPORTED_SCHEMA_VERSION = 5;
+export const SUPPORTED_SCHEMA_VERSION = 6;
 
 interface MetaRow {
   value: string;

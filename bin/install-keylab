@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+repo_root=$(cd -- "$script_dir/.." && pwd)
+service=keylab.service
+config_path=/home/sascha/.config/glove80-lab/keylab.toml
+
+usage() {
+  printf '%s\n' 'Usage: bin/install-keylab'
+  printf '%s\n' 'Build, install, enable, and restart keylab from the current checkout.'
+  printf '%s\n' 'Run this command as the normal user; it invokes sudo only for privileged steps.'
+}
+
+if (( $# > 0 )); then
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      printf 'Unknown argument: %s\n' "$1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+fi
+
+if (( EUID == 0 )); then
+  printf '%s\n' 'Refusing to run the deployment build as root.' >&2
+  printf '%s\n' 'Run bin/install-keylab as the normal user; it will invoke sudo when needed.' >&2
+  exit 1
+fi
+
+for required in pnpm cargo sudo systemctl journalctl; do
+  if ! command -v "$required" >/dev/null 2>&1; then
+    printf 'Required command is not available: %s\n' "$required" >&2
+    exit 1
+  fi
+done
+
+had_config=false
+if [[ -e "$config_path" || -L "$config_path" ]]; then
+  had_config=true
+fi
+
+printf '%s\n' '==> Generating current keymap metadata and diagrams'
+(cd -- "$repo_root" && pnpm build)
+
+printf '%s\n' '==> Building locked release binaries'
+(cd -- "$repo_root" && cargo build --release --locked)
+
+printf '%s\n' '==> Installing keylab, keylabctl, and the systemd unit'
+sudo -v
+sudo "$repo_root/crates/keylab/install.sh" --skip-build
+
+if [[ "$had_config" == false ]]; then
+  printf '\n%s\n' "Installed the initial configuration at $config_path."
+  printf '%s\n' 'Review it, then rerun bin/install-keylab to enable and start the service.'
+  exit 0
+fi
+
+printf '%s\n' '==> Enabling and restarting keylab.service'
+sudo systemctl enable "$service"
+if ! sudo systemctl restart "$service"; then
+  printf '%s\n' 'keylab.service failed to restart; recent logs follow:' >&2
+  sudo journalctl -u "$service" -n 30 --no-pager >&2 || true
+  exit 1
+fi
+
+# Type=simple can report a successful start before an immediate configuration or migration failure.
+sleep 1
+if ! systemctl is-enabled --quiet "$service"; then
+  printf '%s\n' 'keylab.service is not enabled after installation.' >&2
+  exit 1
+fi
+if ! systemctl is-active --quiet "$service"; then
+  printf '%s\n' 'keylab.service is not active after restart; recent logs follow:' >&2
+  sudo journalctl -u "$service" -n 30 --no-pager >&2 || true
+  exit 1
+fi
+
+printf '%s\n' 'Installed keylab successfully; keylab.service is enabled and active.'

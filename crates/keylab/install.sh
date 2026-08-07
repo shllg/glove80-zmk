@@ -5,6 +5,30 @@ script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 repo_root=$(cd -- "$script_dir/../.." && pwd)
 service_user=sascha
 invoking_user=${SUDO_USER:-${USER:?USER is not set}}
+skip_build=false
+
+usage() {
+  printf '%s\n' 'Usage: sudo crates/keylab/install.sh [--skip-build]'
+  printf '%s\n' '  --skip-build  Install existing target/release binaries without rebuilding as root.'
+}
+
+while (( $# > 0 )); do
+  case "$1" in
+    --skip-build)
+      skip_build=true
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      printf 'Unknown argument: %s\n' "$1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
 
 note_input_member() {
   local account=$1
@@ -32,7 +56,17 @@ if [[ "$service_home" != /home/sascha ]]; then
   exit 1
 fi
 
-(cd -- "$repo_root" && cargo build --release --locked)
+if [[ "$skip_build" == true ]]; then
+  for binary in keylab keylabctl; do
+    if [[ ! -x "$repo_root/target/release/$binary" ]]; then
+      printf 'Refusing to install: prebuilt binary is missing or not executable: %s\n' \
+        "$repo_root/target/release/$binary" >&2
+      exit 1
+    fi
+  done
+else
+  (cd -- "$repo_root" && cargo build --release --locked)
+fi
 
 install -D -m 0755 -o root -g root \
   "$repo_root/target/release/keylab" /usr/local/bin/keylab
@@ -57,6 +91,4 @@ fi
 
 systemctl daemon-reload
 
-printf '%s\n' 'Installed keylab and keylabctl. Review the configuration, then run these commands deliberately:'
-printf '%s\n' '  systemctl enable keylab.service'
-printf '%s\n' '  systemctl start keylab.service'
+printf '%s\n' 'Installed keylab and keylabctl. This lower-level installer did not change the service enablement or running state.'

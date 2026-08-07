@@ -25,10 +25,13 @@ afterEach(() => {
   for (const fixture of fixtures.splice(0)) fixture.cleanup();
 });
 
-function seededMetrics(options: { empty?: boolean; future?: boolean; since?: "7d" | "all" } = {}) {
-  const fixtureOptions: { empty?: boolean; future?: boolean } = {};
+function seededMetrics(
+  options: { empty?: boolean; future?: boolean; since?: "7d" | "all"; layerCounts?: boolean } = {},
+) {
+  const fixtureOptions: { empty?: boolean; future?: boolean; layerCounts?: boolean } = {};
   if (options.empty !== undefined) fixtureOptions.empty = options.empty;
   if (options.future !== undefined) fixtureOptions.future = options.future;
+  if (options.layerCounts !== undefined) fixtureOptions.layerCounts = options.layerCounts;
   const fixture = createFixture(fixtureOptions);
   fixtures.push(fixture);
   const database = openKeylabDatabase(fixture.path);
@@ -45,6 +48,7 @@ describe("analysis metrics", () => {
         header: metrics.header,
         perFinger: metrics.perFinger.map(({ label, presses, share }) => ({ label, presses, share })),
         perRow: metrics.perRow.filter((row) => row.presses > 0),
+        layerUsage: metrics.layerUsage,
         outerUpperQuadrant: metrics.outerUpperQuadrant,
         modifierHolds: metrics.modifierHolds
           .filter((metric) => metric.count > 0)
@@ -97,6 +101,13 @@ describe("analysis metrics", () => {
           { hand: "R", rowIdx: 1, presses: 10, share: 0.1, handShare: 0.2 },
           { hand: "R", rowIdx: 3, presses: 40, share: 0.4, handShare: 0.8 },
         ],
+        layerUsage: {
+          presses: 100,
+          byLayer: [
+            { layerId: 0, name: "Base", presses: 80, share: 0.8 },
+            { layerId: 5, name: "Navigation", presses: 20, share: 0.2 },
+          ],
+        },
         outerUpperQuadrant: {
           source: "Tier B",
           excludesUnattributed: true,
@@ -182,7 +193,7 @@ describe("analysis metrics", () => {
     });
   });
 
-  test("unattributed share is correct and the over-25% warning is loud", () => {
+  test("unattributed_share_counts_only_presses_with_no_position", () => {
     const { database, metrics } = seededMetrics();
     try {
       expect(metrics.outerUpperQuadrant.positional.unattributedShare).toBe(0.3);
@@ -192,6 +203,18 @@ describe("analysis metrics", () => {
       expect(report).toContain("POSITIONAL METRICS ARE UNRELIABLE");
       expect(report).toContain("L: 12/12 attributed hand presses");
       expect(report).toContain("R: 20/58 attributed hand presses");
+    } finally {
+      database.close();
+    }
+  });
+
+  test("the_layer_split_is_absent_rather_than_zero_before_the_boundary", () => {
+    const { database, metrics } = seededMetrics({ layerCounts: false });
+    try {
+      expect(metrics.layerUsage).toBeNull();
+      expect(renderReport(metrics)).toContain(
+        "absent — no layer attribution was recorded in this range",
+      );
     } finally {
       database.close();
     }
@@ -291,6 +314,7 @@ describe("analysis metrics", () => {
           .filter((finger) => finger.presses > 0)
           .map(({ label, presses, share }) => ({ label, presses, share })),
         perRow: active.metrics.perRow.filter((row) => row.presses > 0),
+        layerUsage: active.metrics.layerUsage,
         outerUpperQuadrant: active.metrics.outerUpperQuadrant,
         modifierHolds: active.metrics.modifierHolds
           .filter((metric) => metric.count > 0)
@@ -332,6 +356,13 @@ describe("analysis metrics", () => {
           { hand: "R", rowIdx: 1, presses: 10, share: 0.1, handShare: 0.2 },
           { hand: "R", rowIdx: 3, presses: 40, share: 0.4, handShare: 0.8 },
         ],
+        layerUsage: {
+          presses: 100,
+          byLayer: [
+            { layerId: 0, name: "Base", presses: 80, share: 0.8 },
+            { layerId: 5, name: "Navigation", presses: 20, share: 0.2 },
+          ],
+        },
         outerUpperQuadrant: {
           source: "Tier B", excludesUnattributed: true,
           byHand: [
@@ -455,7 +486,7 @@ describe("Tier C correction context", () => {
         .find((entry) => entry.count === 30);
       expect(sentinel).toBeDefined();
       expect(sentinel?.positions).toEqual([-2, -1, expect.any(Number)]);
-      // "·" is a slot that held no key, "?" is a key with no base-layer position. Never the same.
+      // "·" is a slot that held no key, "?" is a key with no resolved position. Never the same.
       expect(sentinel?.characters).toBe("· ? e");
 
       const degraded = metrics.correctionTax.context.byFinger
@@ -736,24 +767,24 @@ describe("multi-device position spaces", () => {
 
 describe("database opener", () => {
   test("rejects a future schema_version clearly", () => {
-    const fixture = createFixture({ schemaVersion: 6 });
+    const fixture = createFixture({ schemaVersion: 7 });
     fixtures.push(fixture);
-    expect(() => openKeylabDatabase(fixture.path)).toThrow("schema_version \"6\"; expected 5");
+    expect(() => openKeylabDatabase(fixture.path)).toThrow("schema_version \"7\"; expected 6");
   });
 
   test("rejects a v3 database with an actionable message", () => {
     const fixture = createFixture({ schemaVersion: 3 });
     fixtures.push(fixture);
-    // v3 predates Tier C. The daemon's v3 -> v4 -> v5 migration is the fix, and the message has to
+    // v3 predates Tier C. The daemon's v3 -> v4 -> v5 -> v6 migration is the fix, and the message has to
     // say so.
     expect(() => openKeylabDatabase(fixture.path))
-      .toThrow("Unsupported keylab schema_version \"3\"; expected 5");
+      .toThrow("Unsupported keylab schema_version \"3\"; expected 6");
     expect(() => openKeylabDatabase(fixture.path))
       .toThrow("Restart keylab.service once; the daemon migrates older schemas in place.");
   });
 
   test("points an unmigrated older database at the daemon", () => {
-    for (const version of [1, 2, 3, 4]) {
+    for (const version of [1, 2, 3, 4, 5]) {
       const fixture = createFixture({ schemaVersion: version });
       fixtures.push(fixture);
       expect(() => openKeylabDatabase(fixture.path))

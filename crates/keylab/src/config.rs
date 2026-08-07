@@ -88,6 +88,7 @@ impl Default for Config {
                 "training-de".to_owned(),
                 "training-en".to_owned(),
                 "gaming".to_owned(),
+                "training-code".to_owned(),
             ],
             auto_revert_idle_seconds: 900,
             ngram_capture: true,

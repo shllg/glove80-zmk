@@ -86,6 +86,9 @@ function positionRationale(confidence: WeaknessModel["confidence"], targets: str
     return "No trainer history yet, so weighting comes from the keys keylab saw you correct in "
       + `real work, per press rather than in total: ${targets}.`;
   }
+  if (confidence === "keymap") {
+    return "No trainer or keylab evidence is available yet, so this uses the neutral drill pool.";
+  }
   return "No trainer history yet, so weighting is bootstrapped from keylab position frequency: "
     + `${targets}.`;
 }

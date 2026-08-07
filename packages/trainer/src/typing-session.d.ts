@@ -15,22 +15,34 @@ export interface PendingCorrection {
 }
 
 export interface TypingSession {
-  id: number;
+  id: string | number;
   text: string;
   keystrokes: PendingKeystroke[];
   corrections: PendingCorrection[];
   pendingCode: string | null;
   pendingDelete: boolean;
-  lastLength: number;
+  value: string;
   wrongIndices: Set<number>;
 }
 
 export interface InputOutcome {
-  kind: "keystroke" | "correction" | "outside";
+  kind: "keystroke" | "correction" | "outside" | "unsupported";
   complete: boolean;
+  acceptedValue: string;
+}
+
+export interface InputProvenance {
+  inputType: string;
+  isComposing: boolean;
+  trusted: boolean;
 }
 
 export function expectedCodeFor(character: string): string | null;
-export function createTypingSession(id: number, text: string): TypingSession;
+export function createTypingSession(id: string | number, text: string): TypingSession;
 export function noteKeydown(session: TypingSession, event: { key: string; code: string }): void;
-export function applyInput(session: TypingSession, typed: string, tsMs: number): InputOutcome;
+export function applyInput(
+  session: TypingSession,
+  typed: string,
+  tsMs: number,
+  provenance?: InputProvenance,
+): InputOutcome;

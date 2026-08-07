@@ -109,6 +109,17 @@ export function renderReport(metrics: AnalysisMetrics): string {
     lines.push(`  ${hand}: ${values.join("  ")}`);
   }
 
+  lines.push("", "Layer usage (Tier A)");
+  if (metrics.layerUsage === null) {
+    lines.push("  absent — no layer attribution was recorded in this range");
+  } else {
+    for (const layer of metrics.layerUsage.byLayer) {
+      lines.push(
+        `  ${layer.name.padEnd(16)} ${String(layer.presses).padStart(7)}  ${percent(layer.share)}`,
+      );
+    }
+  }
+
   lines.push("", "Outer-upper quadrant (Tier B; rows 1-3, cols 4-6; excludes unattributed)");
   for (const hand of metrics.outerUpperQuadrant.byHand) {
     lines.push(

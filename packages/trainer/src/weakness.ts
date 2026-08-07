@@ -93,7 +93,7 @@ export interface MechanicWeakness {
 }
 
 export interface WeaknessModel {
-  confidence: "bootstrap" | "keylab-tier-c" | "trainer";
+  confidence: "keymap" | "bootstrap" | "keylab-tier-c" | "trainer";
   sessionCount: number;
   positions: PositionWeakness[];
   bigrams: BigramWeakness[];
@@ -308,7 +308,7 @@ export interface WeaknessOptions {
 export function buildWeaknessModel(
   trainer: Database,
   meta: AnalysisMeta,
-  metrics: AnalysisMetrics,
+  metrics?: AnalysisMetrics,
   options: WeaknessOptions = {},
 ): WeaknessModel {
   const minimumAttempts = options.minimumAttempts ?? 20;
@@ -324,23 +324,30 @@ export function buildWeaknessModel(
   );
 
   const expected = trainer.query(`
-    SELECT expected_code, COUNT(*) AS attempts, SUM(1 - correct) AS errors
-    FROM keystroke WHERE expected_code IS NOT NULL
-    GROUP BY expected_code
+    SELECT k.expected_code, COUNT(*) AS attempts, SUM(1 - k.correct) AS errors
+    FROM keystroke k JOIN session s ON s.id = k.session_id
+    WHERE k.expected_code IS NOT NULL AND s.ended_ts IS NOT NULL
+    GROUP BY k.expected_code
   `).all() as ExpectedRow[];
   const trainerByName = new Map(expected.map((row) => [row.expected_code, row]));
   const usableTrainerData = expected.some((row) => Number(row.attempts) >= minimumAttempts);
 
   // Tier B frequency. On its own frequency is not weakness — a key you press often is not a key you
   // press badly — so it only ever breaks ties and only ever contributes a minority of the score.
-  const maximumPresses = Math.max(1, ...metrics.positionLoad.map((position) => position.presses));
+  const positionLoad = metrics?.positionLoad ?? meta.positions.map((position) => ({
+    ...position,
+    presses: 0,
+  }));
+  const maximumPresses = Math.max(1, ...positionLoad.map((position) => position.presses));
 
   // Tier C, as a rate rather than a count: the keys corrected most in absolute terms are simply the
   // keys pressed most, and scoring that would be scoring frequency twice under a different name.
-  const context = metrics.correctionTax.context;
-  const correctedByPosition = new Map(context.byPosition.map((entry) => [entry.pos, entry]));
+  const context = metrics?.correctionTax.context;
+  const correctedByPosition = new Map(
+    (context?.byPosition ?? []).map((entry) => [entry.pos, entry]),
+  );
 
-  const scored: PositionWeakness[] = metrics.positionLoad
+  const scored: PositionWeakness[] = positionLoad
     .filter((position) => position.baseKeycode !== null)
     .map((position) => {
       const row = position.baseKeycode ? trainerByName.get(position.baseKeycode) : undefined;
@@ -396,7 +403,9 @@ export function buildWeaknessModel(
     FROM keystroke current
     JOIN keystroke previous
       ON previous.session_id = current.session_id AND previous.seq = current.seq - 1
+    JOIN session completed ON completed.id = current.session_id
     WHERE current.correct = 1 AND previous.correct = 1
+      AND completed.ended_ts IS NOT NULL
       AND current.ts_ms > previous.ts_ms AND current.ts_ms - previous.ts_ms < 2000
   `).all() as LatencyRow[];
   const grouped = new Map<string, number[]>();
@@ -429,11 +438,11 @@ export function buildWeaknessModel(
   return {
     confidence: usableTrainerData
       ? "trainer"
-      : usableCorrectionData ? "keylab-tier-c" : "bootstrap",
+      : usableCorrectionData ? "keylab-tier-c" : metrics ? "bootstrap" : "keymap",
     sessionCount,
     positions,
     bigrams,
-    correctedTransitions: correctedTransitions(meta, context, limit),
-    mechanics: mechanicsFromTierA(metrics),
+    correctedTransitions: context ? correctedTransitions(meta, context, limit) : [],
+    mechanics: metrics ? mechanicsFromTierA(metrics) : [],
   };
 }

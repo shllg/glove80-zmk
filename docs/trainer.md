@@ -1,9 +1,14 @@
-# trainer
+# Training in Glove80 Lab
 
-The trainer is a local practice tool that sits beside keylab. keylab measures what your hands do all day; the trainer measures whether you type the *right* thing, on text it generated and therefore knows the ground truth for.
+Training is part of the unified local Lab application. keylab measures what your hands do all day; the trainer domain measures whether you type the *right* thing, on text it generated and therefore knows the ground truth for.
 
 ```bash
-pnpm trainer serve                 # http://127.0.0.1:4124
+bin/lab                            # prints http://127.0.0.1:4123; does not open it
+```
+
+Use **Train** for benchmarks and every drill family, **History** for completed results and correction attribution, and **Overview** for current weakness priorities. Diagnostic text commands remain available for scripts and investigation, but are not the daily interface:
+
+```bash
 pnpm trainer benchmark --corpus de-common --seed 7
 pnpm trainer drill --family mechanic
 pnpm trainer weakness
@@ -12,9 +17,9 @@ pnpm trainer corrections            # per-word correction attribution
 pnpm trainer corpora
 ```
 
-## Two instruments, not one
+## One application, two instruments
 
-During any drill both instruments run, and they measure different things:
+Lab coordinates two measurement instruments without merging their stores. The capture daemon remains a separate Rust application that writes privacy-reduced telemetry; the foreground Lab process serves the UI and stores completed practice results.
 
 | | keylab | trainer |
 |---|---|---|
@@ -23,6 +28,10 @@ During any drill both instruments run, and they measure different things:
 | a German `ä` | **8 keystrokes** (`Ctrl+Shift+U`, four hex digits, Space — `config/macros.dtsi:87`) | 1 character |
 
 The trainer alone would report "typed ä, one keystroke" while the hand did eight. keylab is the only path that sees the real cost, and that cost *is* the German-versus-English finding.
+
+Lab temporarily maps English, German, and code practice to `training-en`, `training-de`, and `training-code`. It writes a 60-second daemon-owned profile lease, waits for the daemon snapshot to confirm it, renews every ten seconds, and restores the previous profile on completion or cancellation. The daemon restores an expired lease after browser loss, Lab failure, or its own restart. An explicit external profile change wins immediately and ends the active training session without saving, so History can never claim that mixed-profile input was captured under the original training profile. Lab never resumes a paused daemon automatically. If keylab is unavailable, non-mechanic practice can run trainer-only with a visible warning; mechanic drills require live telemetry.
+
+Train remembers mode, family, language, and length in both the URL and tab-local `sessionStorage`. History does the same for mode and language filters. The mechanic option is disabled while capture is stopped, stale, or paused, matching the server-side requirement rather than failing only after Start.
 
 ### The IBus question, answered continuously
 
@@ -53,6 +62,8 @@ Four families:
 - **bigram / transition** — the transitions your corrections landed after, the slowest transitions your own history recorded, or, before either exists, the same-finger bigrams this keymap admits. A degraded Tier C row names two fingers and no keys, so what it contributes is whatever pairs this keymap puts on those fingers.
 - **mechanic** — hold/tap discrimination, layer-hold accuracy, thumb clusters, `LONELY_MOD` misfire rate. **This is the family nothing else can do.** The measured `R_GUI` hold — median ~750 ms, p95 ≥ 1000 ms, against 160–240 ms for every other modifier — is not a typing-accuracy problem, and no word-list drill will ever surface it. These are the mechanics of *this* firmware.
 - **language** — umlaut macro sequences, German compounds, and code identifiers, which are a third language with their own shape.
+
+Mechanic drills are guided steps and deliberately unscored. Fake zero WPM or accuracy would say nothing about the hold/release mechanic being practised; physical improvement remains visible in keylab telemetry.
 
 ## Corrections
 
@@ -86,12 +97,13 @@ Four sources, four genuinely different weaknesses:
 | keylab Tier C | which key you corrected in real work, and how quickly | real-use *error*, but no ground truth about intent | `keylab-tier-c` |
 | keylab Tier B | position frequency | frequency is not weakness; only useful combined | `bootstrap` |
 | keylab Tier A | finger imbalance, hold outliers, correction runs, mod misfires | real-use friction | `bootstrap` |
+| generated keymap | same-finger transitions and neutral drill pools | fallback only | `keymap` |
 
-Day one there is no trainer history, so the model bootstraps off keylab and switches to trainer-derived scoring once enough attempts accumulate. `confidence` reports which regime produced a given entry, so a drill built on frequency alone is never mistaken for one built on error data. The trainer reads keylab **read-only**; the two instruments cannot corrupt each other.
+Day one there is no trainer history, so the model bootstraps off keylab and switches to trainer-derived scoring once enough attempts accumulate. If keylab is unavailable it can still use sufficient completed trainer evidence, then keymap-derived same-finger transitions and neutral drill pools. `confidence` reports which regime produced a given entry, so a drill built on fallback data is never mistaken for one built on measured error. Lab reads keylab **read-only**; the two databases cannot corrupt each other.
 
 Tier C is its own source and not a second opinion about frequency. Tier B says a key is pressed often; Tier C says a key is *deleted* often, which is evidence of error that frequency can never be. It is still weaker than trainer history, because keylab never sees the text and so cannot know what the hand meant to type. The scoring says exactly that: frequency alone reaches at most 0.4, Tier C 0.8, and only measured error against generated text reaches 1. Frequency's weight falls as better evidence arrives — otherwise the most-pressed key tops every ranking whatever it measures.
 
-Like the viewer's layer, Tier C enters as a **rate**, weighted by latency class: fumbles count fully, ambiguous corrections half, and edits over a second not at all, because a deliberate rewrite is not a mistyped key. A key needs 50 presses in range before it is rated at all; below that its `correctionRate` is `null` rather than a number built from four presses. Degraded finger rows are used for transition weakness and are **never** attributed to a position — they identify a motion and no key.
+Like Lab's correction layer, Tier C enters as a **rate**, weighted by latency class: fumbles count fully, ambiguous corrections half, and edits over a second not at all, because a deliberate rewrite is not a mistyped key. A key needs 50 presses in range before it is rated at all; below that its `correctionRate` is `null` rather than a number built from four presses. Degraded finger rows are used for transition weakness and are **never** attributed to a position — they identify a motion and no key.
 
 **None of this reaches the benchmark corpus.** Correction data steers which drill words are picked; it never widens where they come from, and a corrected trigram that happens to appear in a benchmark word cannot pull that word into a drill pool. The pools stay disjoint, and the test at `packages/trainer/test/trainer.test.ts` enforces it — the moment weakness data reaches the benchmark, the trend line stops meaning anything.
 
@@ -104,12 +116,16 @@ Generic word lists drill generic text. `packages/trainer/src/ownMaterial.ts` bui
 The trainer database is `~/.local/share/glove80-lab/trainer.db`, separate from keylab's.
 
 ```sql
-session(id, started_ts, ended_ts, mode, language, corpus_id, corpus_version, seed, device_label, keylab_profile, text)
+session(id, started_ts, ended_ts, mode, language, corpus_id, corpus_version, seed, device_label, keylab_profile, text, drill_family)
 keystroke(session_id, seq, ts_ms, code, expected_code, correct)
 correction(session_id, seq, ts_ms, char_index, run_length, expected_code)
 ```
 
-Schema version 2 added `correction` and `session.text`; the store migrates a v1 database in place on open, so a schema change never costs practice history. `char_index` is the index of the **first character removed**, so a correction attributes to the character that was wrong rather than to the cursor position left behind, and `run_length` carries the whole run — a held Backspace autorepeat or a Ctrl+Backspace removes several characters in one event. `correction.seq` is independent of `keystroke.seq`.
+Schema version 2 added `correction` and `session.text`; version 3 adds nullable `drill_family`. The store migrates v1/v2 databases in place, preserving practice history. Pre-v3 drills appear with an unspecified family rather than one reverse-engineered from a corpus name. `char_index` is the index of the **first character removed**, so a correction attributes to the character that was wrong rather than to the cursor position left behind, and `run_length` carries the whole run — a held Backspace autorepeat or a Ctrl+Backspace removes several characters in one event. `correction.seq` is independent of `keystroke.seq`.
+
+Starting a prompt creates no database row. The active prompt, keystrokes, and corrections remain in memory until the prompt is complete; a ten-second browser heartbeat keeps that in-memory session alive, and a lost browser is evicted after 60 seconds so it cannot block later practice. Completion validates and scores first, then inserts the session and every child row in one SQLite transaction. A failed completion remains retryable, a transaction failure leaves no partial row, and cancellation stores nothing. Old incomplete rows are ignored and never deleted automatically.
+
+Paste, drop, browser-reported autofill/replacement, synthetic input, unkeyed non-composition input, and mid-text insertion are rejected in the typing field. Genuine input-method composition remains supported and is visibly counted as unattributed. The rejected inputs do not have a one-to-one physical key event, so accepting them would create a plausible-looking but corrupt WPM/accuracy record.
 
 `session.text` is stored because a correction attributes to a word, and the word is only knowable from the text the corpus produced — a drill's text is not regenerable from `corpus_id` and `seed` alone. It adds no privacy surface: `keystroke` already holds the full ordered record of what was typed. Sessions recorded before v2 have `text = NULL` and cannot be attributed to words at all; `pnpm trainer corrections` says so rather than reporting them as clean.
 
@@ -117,7 +133,7 @@ Only `mode = benchmark` rows are plotted as a trend. A 60-second test is roughly
 
 ### Two capture bugs fixed with correction capture
 
-Both were silent, and both were in `public/app.js` before the decision moved into `public/typing-session.js` where a test can drive it without a DOM:
+Both were silent, and both were in the old trainer page before the decision moved into `packages/trainer/src/typing-session.js`, where a test can drive it without a DOM and the unified Lab UI can reuse it:
 
 1. **Backspace never reached `keydown`.** The handler returned on `event.key.length !== 1`, and `"Backspace"` is nine characters long.
 2. **Every deletion was recorded as a composed character.** The `input` handler did not distinguish insertion from deletion, so a deletion appended a *second* keystroke row for a character already recorded, with no pending code behind it — which scored as an input-method composition.

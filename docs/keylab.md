@@ -6,7 +6,7 @@
 
 keylab has three persistent privacy tiers plus a replace-only live snapshot:
 
-- **Tier A — fine, time-sealed:** nominal 10-second buckets containing start time, span, active time, total presses, autorepeats, per-finger and per-hand/row marginal counts, duration and gap histograms, modifier hold histograms, and content-free misfire/correction counters. It contains no keycode or physical-position identity and no finger-by-row joint distribution.
+- **Tier A — fine, time-sealed:** nominal 10-second buckets containing start time, span, active time, total presses, autorepeats, per-finger, per-hand/row and per-layer marginal counts, duration and gap histograms, modifier hold histograms, and content-free misfire/correction counters. It contains no keycode or physical-position identity and no finger-by-row joint distribution. Layer marginals are absent when the board has not reported a layer.
 - **Tier B — coarse, count-sealed:** an unordered histogram of counts for physical positions 0–79 plus an unattributed position, with the window's start/end times and total press count. It contains position identity, but no ordering or per-press timestamp.
 - **Tier C — correction context, count-sealed:** for each backspace *run*, the **ordered trigram** of physical positions that immediately preceded it, together with the held-modifier mask, a latency bucket (fumble vs. edit) and the existing backspace run bucket. Rows are counted per window, never timestamped individually. This is the only place in keylab where event order is recorded, and it is recorded only at a correction.
 - **Live snapshot:** replace-only per-finger marginals and typing rate. It contains no positions.
@@ -23,24 +23,29 @@ Why record correction context at all: the pre-existing counters answer *how much
 
 Partial buckets and windows are discarded on shutdown, disconnect, or pause. The last few minutes are therefore intentionally lost rather than writing data below any privacy floor.
 
+## Layer-attribution boundary
+
+Layer-aware attribution starts at the schema-v6/keymap-hash boundary on **2026-08-07**. The exact local start is the `from_ts` of the corresponding entry in `meta.keymap_hash_history`. From that boundary onward, the daemon resolves each keycode through the last layer the firmware reported; before the first signal, after a pause or input sequence loss until a fresh signal arrives, on a board without layer signalling, or when the reported index has no table, it uses the same base-layer resolution as before.
+
+Nothing before this boundary is backfilled into `layer_count`. Historical rows do not say which layer produced them, and assigning all of them to Base would fabricate a measurement. A report over a range with no layer rows therefore says the split is **absent**, not zero.
+
+The boundary also changes positional totals. Layer-shifted ordinary keys that previously had no position now land on their physical key, while shifted keycodes that happened to exist on Base stop landing on the wrong Base position. Per-key totals can step up or move between positions, and the unattributed share can fall, at this boundary. That is an instrumentation change, not evidence that typing improved; the unattributed definition remains presses with no resolved physical position. The layer tables also identify unambiguous home-row-mod modifier emissions, but modifier durations remain represented once in the dedicated modifier histogram rather than being copied into the ordinary per-finger histogram.
+
 ## Install
 
 The system service is deliberately tied to the local `sascha` account and `/home/sascha`. On this machine, `sascha` remains in the `input` group because evsieve runs under that account and must read and grab input devices. This means every process running as `sascha` can read all input devices. The installer reports this as an informational note; `SupplementaryGroups=input` on the unit keeps keylab's own access explicitly scoped.
 
-Generate current keymap metadata, review the example configuration, run the offline hardening checks, and then run the installer as root yourself:
+Run the deployment helper as the normal user:
 
 ```bash
-pnpm build
-bash crates/keylab/verify-hardening.sh
-sudo crates/keylab/install.sh
+bin/install-keylab
 ```
 
-The installer builds locked release binaries, installs them as `/usr/local/bin/keylab` and `/usr/local/bin/keylabctl` with mode `0755` and `root:root` ownership, installs the system unit, creates the private data/configuration directories, and installs the example configuration only when no configuration already exists. It never overwrites an existing configuration silently. It reloads systemd but only prints the enable/start commands; run them after reviewing the configuration:
+The helper generates current keymap metadata, builds locked release binaries as the normal user, installs them as `/usr/local/bin/keylab` and `/usr/local/bin/keylabctl` with mode `0755` and `root:root` ownership, installs the system unit, enables and restarts the service, and verifies that it is active. It creates the private data/configuration directories and never overwrites an existing configuration silently.
 
-```bash
-systemctl enable keylab.service
-systemctl start keylab.service
-```
+After changing the systemd unit or Rust dependency graph, run `bash crates/keylab/verify-hardening.sh` before deploying; the deeper offline security check is intentionally not repeated by every routine install.
+
+On the first run, the helper installs the example configuration but deliberately stops before enabling or starting the service. Review `/home/sascha/.config/glove80-lab/keylab.toml`, then rerun `bin/install-keylab`. The lower-level `sudo crates/keylab/install.sh` remains available when installation without service lifecycle changes is required.
 
 Check startup with:
 
@@ -65,7 +70,7 @@ bucket_seconds = 10
 tier_a_seal_floor = 25
 tier_b_seal_count = 2000
 live_snapshot_seconds = 1
-profiles = ["default", "training-de", "training-en", "gaming"]
+profiles = ["default", "training-de", "training-en", "gaming", "training-code"]
 auto_revert_idle_seconds = 900
 ngram_capture = true
 ngram_seal_count = 500
@@ -113,9 +118,9 @@ Rules that matter:
 - **Tier B and Tier C are preserved across a switch, per profile.** Switching profiles never discards positional or correction progress. It also means a profile you rarely use may take weeks to reach the 2000-keystroke or 500-correction floor and seal a window — correct behaviour, not a fault. A Tier C seal clears only the sealing profile's accumulator.
 - **Tier A is sealed or discarded at the boundary.** A bucket that clears both floors (25 keystrokes, 10 seconds) is sealed under the outgoing profile; anything below is discarded. A switch therefore smears at most one bucket.
 - **Idle auto-revert.** After `auto_revert_idle_seconds` (default 900) with no keystrokes on any device, the daemon rewrites `control.json` back to `default`, so a forgotten `gaming` profile cannot silently poison a working day. Set it to `0` to disable.
-- **Recording and viewing are two different axes.** *Recording as* writes `control.json` and changes what the daemon records from now on, machine-wide and until changed; *Showing* filters what is already stored, in this tab only, and defaults to **all** profiles. The viewer's header draws that split — the two controls sit in separate, differently styled groups labelled with what they do — because side by side and identically styled they read as one redundant pair. Scoping the view to one profile is a filter you can see; a hidden default of `default` would drop everything typed under any other label while the totals still read as the whole picture. `pnpm analysis report` keeps its own default of `--profile default`, because it prints the scope it used at the top of the report.
+- **Recording and viewing are two different axes.** *Recording profile* writes `control.json` and changes what the daemon records from now on, machine-wide and until changed; the filters under Lab's **Insights** page select what is already stored, in that tab only, and default to **all** profiles. Scoping the view to one profile is a filter you can see; a hidden default of `default` would drop everything typed under any other label while the totals still read as the whole picture. `pnpm analysis report` keeps its own default of `--profile default`, because it prints the scope it used at the top of the report.
 
-The viewer's daemon group covers `keylabctl status`, `pause`, `resume` and `profile set`, and nothing else writes from the browser. The hard pause stays a deliberate filesystem action (see *Pause*): it discards every partial aggregate, and a control that costly should not be one click away from a dashboard.
+Lab's daemon controls cover `keylabctl status`, `pause`, `resume` and `profile set`, and nothing else writes from the browser except expiring training-profile leases. The hard pause stays a deliberate filesystem action (see *Pause*): it discards every partial aggregate, and a control that costly should not be one click away from a dashboard.
 
 Check the split:
 
@@ -174,7 +179,7 @@ pnpm analysis report --since all --device 1
    2  Evsieve Virtual Device        glove80      2026-08-02 21:16        223       0       0  no positional data
 ```
 
-The figures are the ones the viewer's device menu shows, computed the same way; the listing differs from the menu in one respect only, that it also names rows holding nothing at all, because a merge has to be able to address them. It is safe to run while the daemon is capturing.
+The figures are the ones Lab's device menu shows, computed the same way; the listing differs from the menu in one respect only, that it also names rows holding nothing at all, because a merge has to be able to address them. It is safe to run while the daemon is capturing.
 
 **One keyboard can hold several rows.** An older build minted a fresh `device_id` on every reconnect instead of reusing the row for that `(name, uniq)`, so a database that has been running a while may carry a dozen rows for one physical keyboard. Those rows keep their data. The marker in the listing is what makes an orphan recognisable: Tier B is the only tier carrying position identity, so a row with real keystrokes and no Tier B window has history that cannot be drawn on a keyboard.
 
@@ -191,7 +196,7 @@ It repoints `bucket`, `key_window` and `ngram_window` onto the target, then dele
 - **It refuses a merge across position spaces**, naming both, before opening a transaction or taking a backup. `pos` only means something inside one keyboard's geometry, so folding the laptop's `qwerty-ansi` counts into the Glove80's `glove80` row is the same violation as a pooled read, and it fails the same way. This is the guard the command exists for: the obvious hand-written `UPDATE bucket SET device_id = 1 WHERE device_id <> 1` has no such guard and silently does exactly that the moment a second keyboard exists.
 - **It requires the daemon stopped**, and takes the write lock itself as a backstop — a busy database fails cleanly rather than waiting.
 - **It backs the database up first** with `VACUUM INTO`, which writes one self-contained file with the write-ahead log already folded in, so the backup needs no `-wal` companion to be complete. The path and the roll-back command are printed. A merge is not reversible except from that file, which the command says before it writes rather than after.
-- **A collision sums, it never drops.** Since schema v5 a bucket is unique on `(ts, device_id, profile_id)`, so repointing can land on an identity the target already holds — both rows sealed in the same second under the same profile. The counts add, across the bucket and all six of its child tables, and the number of combined buckets is reported. Dropping one would be the defect v5 exists to remove, reintroduced by the back door. The merged row's `span_ms` and `active_ms` add too, so a combined bucket can cover more typing time than one second of wall clock — which is what happened.
+- **A collision sums, it never drops.** Since schema v5 a bucket is unique on `(ts, device_id, profile_id)`, so repointing can land on an identity the target already holds — both rows sealed in the same second under the same profile. The counts add, across the bucket and all seven of its child tables, including `layer_count`, and the number of combined buckets is reported. Dropping one would be the defect v5 exists to remove, reintroduced by the back door. The merged row's `span_ms` and `active_ms` add too, so a combined bucket can cover more typing time than one second of wall clock — which is what happened.
 
 ### Device scan tests
 
@@ -244,12 +249,19 @@ Known limitation, stated plainly: reaching for either control during a password 
 ```json
 {
   "paused": false,
-  "profile": "default",
-  "updated_at": 1785900000
+  "profile": "training-en",
+  "updated_at": 1785900000,
+  "profile_lease": {
+    "id": "opaque-session-id",
+    "restore_profile": "default",
+    "expires_at": 1785900060
+  }
 }
 ```
 
-It is user-writable by design — the daemon runs as `sascha`, not root, so a control socket would force removal of `SocketBindDeny=any` and buy nothing. Writers (`keylabctl`, the viewer, the daemon's own auto-revert) write to `control.json.tmp`, `fsync`, then `rename`, so a reader never sees a half-written file. The daemon `stat`s it on every 10 ms loop iteration and re-parses only when the modification time or size moved.
+`profile_lease` is optional. Lab uses a 60-second lease while training, renews it every ten seconds, and restores `restore_profile` when a session completes or is cancelled. The daemon itself restores an expired lease, including after a daemon restart, so a closed browser or crashed Lab process cannot leave a training profile active indefinitely. Pause/resume preserves the lease; an explicit profile change clears it and wins. Idle auto-revert is suppressed only while a valid lease exists.
+
+The file is user-writable by design — the daemon runs as `sascha`, not root, so a control socket would force removal of `SocketBindDeny=any` and buy nothing. Writers (`keylabctl`, Lab, the daemon's own lease/idle restoration) serialize through `control.json.lock`, write a unique sibling temporary file, `fsync`, then `rename`, so a reader never sees a half-written file and concurrent writers cannot truncate the same scratch file. Read/modify/write operations hold that lock throughout; daemon lease expiry and idle restoration additionally compare the current state before replacing it, so a newer external change wins. A dead writer's PID makes its lock recoverable. The daemon `stat`s the control file on every 10 ms loop iteration and re-parses only when the modification time or size moved.
 
 A malformed, unreadable, or unknown-profile file logs one warning and keeps the last known-good state. It never kills the daemon and never silently resumes capture.
 
@@ -272,7 +284,7 @@ SELECT updated_at, json FROM live_snapshot;
 SELECT p.name, SUM(b.keystrokes) FROM bucket b JOIN profile p ON p.id = b.profile_id GROUP BY 1;
 ```
 
-The schema is at version 5 and is migrated in place the first time the new daemon opens an older database:
+The schema is at version 6 and is migrated in place the first time the new daemon opens an older database:
 
 | from | adds | backfill |
 |---|---|---|
@@ -280,24 +292,27 @@ The schema is at version 5 and is migrated in place the first time the new daemo
 | v2 → v3 | `device.keymap_kind`, `device.keymap_hash` | every existing device to `glove80` |
 | v3 → v4 | `ngram_window`, `ngram`, `ngram_finger` | none — new tables |
 | v4 → v5 | `bucket.ts`, `UNIQUE (ts, device_id, profile_id)` | `ts = id` for every existing row |
+| v5 → v6 | `layer_count` | none — historical rows carry no layer measurement |
 
-The first two backfills are accurate rather than guesses: every pre-v3 row was captured on the Glove80 through evsieve during ordinary use, before profiles or multi-device support existed. v3 → v4 has nothing to backfill, because correction context that was never captured cannot be reconstructed. v4 → v5's backfill is accurate for the same kind of reason: under v4 the bucket id *was* the seal second, so copying it into `ts` restates what the row already meant.
+The first two backfills are accurate rather than guesses: every pre-v3 row was captured on the Glove80 through evsieve during ordinary use, before profiles or multi-device support existed. v3 → v4 has nothing to backfill, because correction context that was never captured cannot be reconstructed. v4 → v5's backfill is accurate for the same kind of reason: under v4 the bucket id *was* the seal second, so copying it into `ts` restates what the row already meant. v5 → v6 deliberately leaves `layer_count` empty for existing buckets, because those rows cannot be reconstructed without inventing a layer.
 
-**A bucket is identified by device and second, not by second alone.** Up to v4, `bucket.id` was the seal second and the whole primary key, so one second held one bucket for the entire machine. `id` is now a surrogate — the six child tables reference it and it is copied verbatim through the migration, so nothing is renumbered — and the seal second lives in `ts`. The unique index behind `(ts, device_id, profile_id)` leads with `ts`, which is what every range read filters on, so no separate index on `ts` is warranted.
+**A bucket is identified by device and second, not by second alone.** Up to v4, `bucket.id` was the seal second and the whole primary key, so one second held one bucket for the entire machine. `id` is now a surrogate — the seven child tables reference it and it is copied verbatim through the migration, so nothing is renumbered — and the seal second lives in `ts`. The unique index behind `(ts, device_id, profile_id)` leads with `ts`, which is what every range read filters on, so no separate index on `ts` is warranted.
 
 **What that cost before the fix.** On a machine with two keyboards, whenever both sealed a Tier A bucket in the same second, one of them was discarded: `seal_tier_a` found the id present and returned success having written nothing. The whole bucket went — keystrokes, per-finger counts, hold, gap and modifier histograms — with no log line, no counter, and no visible difference in any number that would let you notice. Those buckets are not recoverable, and the loss leaves no trace in the stored data. A single-keyboard installation never reached it. From v5 the two buckets are two rows; a genuine duplicate for one device, profile and second is refused loudly, logged with the device and the second, and counted into `refused_tier_a_seals` on the daemon's device-scan log lines.
 
-`packages/analysis`, `packages/viewer` and `packages/trainer` all open the database through `openKeylabDatabase`, which pins schema version 5. An older database is refused with a message that points at the daemon, which migrates it in place on its next start.
+`packages/analysis`, `packages/lab` and the trainer domain all open the database through `openKeylabDatabase`, which pins schema version 6. An older database is refused with a message that points at the daemon, which migrates it in place on its next start. Lab itself still starts in that condition so its health view can explain the incompatibility and its telemetry-independent history and benchmark functions remain usable.
+
+`pnpm analysis report` prints the per-layer split under Tier A. It names each stored numeric `layer_id` through the generated metadata table; a range from before the boundary has no rows and is reported as absent rather than as a measured zero.
 
 `pnpm analysis report` renders Tier C as a *correction context* block under "Correction tax": the top ordered trigrams with their base-layer characters, the fumble / ambiguous / edit split, the finger-transition rollup for whatever degraded, and the degraded and dropped shares. A trigram position renders as `?` when it is unattributed or has no base-layer binding and as `·` when the slot held no key at all — the two are never conflated. Ordered trigrams are geometric, so the read refuses to pool across position spaces exactly as Tier B does; select one device with `--device ID`. The block states when it is empty and why, because a silently absent section would read as "no corrections".
 
-`pnpm viewer` draws the same data on the keyboard. The heatmap has two layers: **key presses**, the Tier B frequency map it always had, and **correction rate**, the marginal of Tier C's `pos_c` — the key immediately before each backspace — divided by that key's presses in range.
+`bin/lab` draws the same data under **Insights**. The heatmap has two layers: **key presses**, the Tier B frequency map, and **correction rate**, the marginal of Tier C's `pos_c` — the key immediately before each backspace — divided by that key's presses in range.
 
 The division is the point. Corrections counted raw simply redraw the frequency map, because the keys pressed most are corrected most in absolute terms; the rate is the difference between "keys I use" and "keys I get wrong". A **press floor of 50 presses in range** goes with it: below that a key is drawn as no data rather than as a rate, because three corrections in four presses is the highest number on the board and four presses of evidence. The footnote says how many keys that hid.
 
 A correction-kind filter switches between all corrections, fumbles (under 400 ms since the last keystroke) and edits (over a second), on keylab's own latency buckets. Ambiguous corrections — 400 to 1000 ms — count only under *all*, since they are neither. `-1` and `-2` have no geometry to draw on, so their share is footnoted rather than dropped, and the layer refuses to pool across position spaces exactly as the report does.
 
-Tier C's on-disk position encoding extends `pos_count`'s convention: `0..79` is a physical position, `-1` is unattributed (deliberately the same value `pos_count` uses), and `-2` is *absent* — fewer than three keys preceded that correction, for example at the very start of a window. Finger columns use `0..9` and `-1` for absent, since a key with no base-layer position has no finger either.
+Tier C's on-disk position encoding extends `pos_count`'s convention: `0..79` is a physical position, `-1` is unattributed (deliberately the same value `pos_count` uses), and `-2` is *absent* — fewer than three keys preceded that correction, for example at the very start of a window. Finger columns use `0..9` and `-1` for absent, since a key with no resolved physical position has no finger either.
 
 Tier B's `pos_count` table contains diluted physical-position histograms, and Tier C's `ngram` table contains ordered position triples. Treat the entire database, including `keylab.db-wal` and `keylab.db-shm`, as privacy-sensitive.
 
@@ -313,9 +328,9 @@ Nothing in the analysis path needed changing. `crates/keylab/src/keymap.rs` sets
 
 **When analysing, the split only exists from the flash onward.** Everything captured before it is pooled into `L_ALT` and no read re-splits it, because the hand was never recorded. `R_ALT` in that older data counts only the dedicated `&kp RALT` key on the lower row. The daemon appends `{hash, from_ts}` to `meta.keymap_hash_history` when the keymap changes, but nothing reads that key automatically — slice the boundary yourself with `--since`.
 
-### Layer-shifted keys are unattributed until the firmware says otherwise
+### Layer signalling and attribution
 
-`9` typed from base row 2 and `9` produced from a layer emit the same keycode. The daemon attributes to the base-layer position where one exists and records everything else as position `-1`. The unattributed share is reported so the size of the blind spot is always visible.
+`9` typed from base row 2 and `9` produced from a layer emit the same keycode. Before per-layer tables, the daemon attributed such a code to the Base position where one existed and recorded everything else as position `-1`; both outcomes were a positional blind spot. Current metadata separates those resolutions by the reported layer, while the unattributed share continues to expose events that genuinely have no resolved position.
 
 **The firmware now tells the host which layer is active.** `zmk-modules/keylab-signal` subscribes to ZMK's `zmk_layer_state_changed` and taps one spare key whenever the *highest active* layer changes — highest-active because that is the layer a keypress resolves against, and because every report then restates absolute state rather than accumulating edges. The tap goes through `zmk_keycode_state_changed`, exactly as `&kp` does, so it inherits the existing HID path over both USB and BLE.
 
@@ -340,7 +355,7 @@ The daemon takes a signal before any counting or timing: it is not a keystroke, 
 
 **These are real key events the host sees.** Nothing binds `F14`–`F19` on this machine, but an application that did would see phantom taps. Set `enabled` to `false` and reflash to stop emitting them.
 
-Storing the layer alongside each keystroke — which is what actually closes the blind spot — is the next step and is not built yet. Until then the signal is visible in `live_snapshot` and nowhere else, and positional data still means base-layer typing.
+The generated metadata now carries one keycode table per layer. The daemon resolves ordinary key events through the last reported layer, feeds the resulting physical position into Tier A, Tier B and Tier C, and stores signalled keystrokes in `layer_count`; the report renders that split by metadata layer name. Before the first signal, on a board without signalling, or for an unknown layer index, resolution retains the previous Base behaviour. The exact data boundary and its effect on positional totals are documented above.
 
 ### Home row mod tap durations are not measurable host-side
 

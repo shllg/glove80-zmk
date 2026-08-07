@@ -41,7 +41,7 @@ pub const fn modifier_class_for_keycode(code: u16) -> Option<u8> {
 
 /// The length of a Tier C correction-context n-gram.
 pub const NGRAM_N: usize = 3;
-/// A key that resolved to no base-layer position. This is the existing Tier B convention, which
+/// A key that resolved to no physical position. This is the existing Tier B convention, which
 /// was previously the bare literal `80` in the aggregator.
 pub const POS_UNATTRIBUTED: u8 = 80;
 /// Fewer than `NGRAM_N` keys preceded the correction, so this slot holds no position at all.

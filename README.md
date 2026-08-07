@@ -30,7 +30,7 @@ This TypeScript-based build system takes a JSON configuration and generates:
 - Visual keyboard diagrams (SVG/PDF)
 - YAML for keymap-drawer visualization
 
-The repository also contains [keylab](docs/keylab.md), a local, privacy-reduced keystroke telemetry daemon for measuring ergonomic load on this keymap, and a [trainer](docs/trainer.md) that drills the weaknesses keylab measures.
+The repository also contains [keylab](docs/keylab.md), a local, privacy-reduced keystroke telemetry daemon, and **Glove80 Lab**, one local application for daemon health, ergonomic analysis, typing practice, history, and generated keymap artifacts. The [training guide](docs/trainer.md) explains how its two measurement instruments complement each other.
 
 ## Quick Start
 
@@ -236,25 +236,26 @@ If the keyboard has trouble pairing with your computer via Bluetooth:
 
 ### Install and start
 
-`pnpm build` must run first: the daemon reads `out/keymap-meta.json` to map Linux keycodes to physical positions, and refuses to start without it.
+Run the deployment helper as the normal user:
 
 ```bash
-pnpm build
-bash crates/keylab/verify-hardening.sh   # offline systemd hardening checks
-sudo crates/keylab/install.sh            # builds the release binary, installs unit + config
+bin/install-keylab
 ```
 
-The installer never enables or starts the service. Review `~/.config/glove80-lab/keylab.toml`, then:
+It runs `pnpm build`, builds locked release binaries, invokes the root installer for the binaries and unit, enables the service, restarts it, and verifies that it is active. Existing configuration is preserved. On the first run, it installs the example configuration but deliberately stops before enabling or starting the service; review `~/.config/glove80-lab/keylab.toml`, then rerun the same command.
+
+After changing the systemd unit or Rust dependency graph, run `bash crates/keylab/verify-hardening.sh` before deploying; that deeper check is intentionally not repeated by every routine install.
+
+The lower-level installer remains available for installation without service lifecycle changes:
 
 ```bash
-sudo systemctl enable keylab.service
-sudo systemctl start keylab.service
+sudo crates/keylab/install.sh
 ```
 
-After changing the keymap, rebuild and restart so the daemon picks up the new position mapping:
+After changing the keymap or daemon, run the same deployment helper so the daemon picks up the new binary and position mapping:
 
 ```bash
-pnpm build && sudo systemctl restart keylab.service
+bin/install-keylab
 ```
 
 ### Check that it runs
@@ -307,12 +308,14 @@ pnpm analysis report --since 7d --json     # machine-readable
 pnpm analysis report --since all --profile gaming   # one activity profile
 pnpm analysis report --since all --profile '*'      # pool every profile
 pnpm analysis report --since all --device 1         # one keyboard
-pnpm viewer                                # live dashboard on http://127.0.0.1:4123
+bin/lab                                    # complete suite on http://127.0.0.1:4123
 ```
 
-Reports and the viewer read the **`default`** profile unless told otherwise, so practice and gaming sessions never quietly inflate real-use numbers. The report header always names the profile it read.
+`bin/lab` is the daily entry point. It runs one foreground process, prints its URL, and does not open a browser. Overview, Insights, Train, History, and Keymap are all inside that application. It also reports whether `keylab.service` is running and whether its snapshot is fresh; the capture daemon remains the separate Rust process that writes telemetry.
 
-The viewer's time range defaults to `Live - 30m`. A 2000-keystroke Tier B window usually spans longer than that, so switch to `today` or `all` or the heatmap will look empty when it is not.
+Insights, Train, History, and Keymap keep their useful selections in the URL and `sessionStorage`, so reloads and copied local links preserve context. The Overview recommendation opens Train with a concrete weakness-driven family selected, and Keymap provides an explicit 50–200% SVG zoom control while remaining read-only.
+
+The command-line report reads the **`default`** profile unless told otherwise and always names its scope. Lab defaults the visual filter to all profiles and makes that selection visible. Insights starts at `Live - 30m`; a 2000-keystroke Tier B window usually spans longer, so switch to `today` or `all` when the heatmap is empty.
 
 ### Activity profiles
 
@@ -325,9 +328,9 @@ keylabctl profile set default
 keylabctl status               # service state, both pauses, profile, capture age
 ```
 
-Names come from `profiles` in `~/.config/glove80-lab/keylab.toml`. The first entry must be `default`, at most **8** are allowed, and only `[a-z0-9-]`. **A name outside that list is rejected** — by `keylabctl`, by the viewer, and by the daemon, which keeps its last known-good state rather than guessing. The cap is a privacy invariant: every profile carries its own positional histogram in RAM.
+Names come from `profiles` in `~/.config/glove80-lab/keylab.toml`. The first entry must be `default`, at most **8** are allowed, and only `[a-z0-9-]`. **A name outside that list is rejected** — by `keylabctl`, by Lab, and by the daemon, which keeps its last known-good state rather than guessing. The cap is a privacy invariant: every profile carries its own positional histogram in RAM.
 
-Forgetting to leave a profile is the failure that actually bites, so after 15 minutes with no keystrokes on any device the daemon reverts to `default` by itself (`auto_revert_idle_seconds`, `0` disables). The viewer's header chip is the second line of defence — it shows the profile the **daemon** reports, never the one last picked in the browser.
+Forgetting to leave a profile is the failure that actually bites, so after 15 minutes with no keystrokes on any device the daemon reverts to `default` by itself (`auto_revert_idle_seconds`, `0` disables). Lab's header shows the profile the **daemon** reports, never merely the browser's last selection. During a Lab training session an expiring daemon-owned lease temporarily selects `training-en`, `training-de`, or `training-code`, renews while the page remains active, and restores the prior profile after completion, cancellation, browser loss, or expiry.
 
 Check the split:
 
@@ -344,15 +347,13 @@ Tier A crosses keyboards — `finger_id`, `hand`, `row_idx`, and the hold histog
 
 ### Practice and drills
 
-```bash
-pnpm trainer serve                       # http://127.0.0.1:4124
-pnpm trainer weakness                    # ranked positions, bigrams, firmware mechanics
-pnpm trainer drill --family mechanic     # the family nothing else can do
-```
+Start `bin/lab` and use **Train**; no second server or command vocabulary is required. Benchmarks, weakness-driven position and bigram drills, language drills, and guided firmware-mechanic drills all live there. **History** contains completed results and correction attribution.
 
-The [trainer](docs/trainer.md) is a separate instrument with its own store: keylab measures physical effort, the trainer measures correctness against text it generated. A German `ä` is one character to the trainer and **eight keystrokes** to keylab — that gap is the German-versus-English finding, and it is why both run at once.
+The [trainer measurement](docs/trainer.md) keeps its own store: keylab measures physical effort, while the trainer measures correctness against text it generated. A German `ä` is one character to the trainer and **eight keystrokes** to keylab — that gap is the German-versus-English finding. One Lab session coordinates both instruments while the capture daemon remains independent.
 
 Benchmark corpora are frozen and versioned and are **never** fed by the weakness model; drills draw from a disjoint pool. Only benchmark runs are plotted, as a rolling median per language.
+
+An active prompt and its keystrokes stay in browser/server memory. A heartbeat keeps the server-side session alive; after browser loss it expires in 60 seconds and cannot block the next practice session. Nothing is added to `trainer.db` until completion; then the session, prompt, keystrokes, and corrections are committed in one SQLite transaction. Cancelling or closing an incomplete session stores no partial result.
 
 ### Pause
 
@@ -392,4 +393,3 @@ I'm deeply grateful to both of them for sharing their knowledge and code with th
 ## License
 
 MIT
-

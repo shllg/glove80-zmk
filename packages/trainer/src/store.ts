@@ -3,7 +3,7 @@ import { chmodSync, existsSync, lstatSync, mkdirSync, writeFileSync } from "node
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
-export const SUPPORTED_TRAINER_SCHEMA_VERSION = 2;
+export const SUPPORTED_TRAINER_SCHEMA_VERSION = 3;
 
 /**
  * The trainer's own database, separate from keylab's.
@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS session (
   seed           INTEGER NOT NULL,
   device_label   TEXT NOT NULL,
   keylab_profile TEXT,
-  text           TEXT
+  text           TEXT,
+  drill_family   TEXT CHECK (drill_family IS NULL OR drill_family IN ('position', 'bigram', 'mechanic', 'language'))
 );
 
 CREATE TABLE IF NOT EXISTS keystroke (
@@ -85,6 +86,7 @@ export interface SessionRecord {
    * typed, so the storage hygiene in the comment above is what protects both.
    */
   text: string | null;
+  drillFamily: "position" | "bigram" | "mechanic" | "language" | null;
 }
 
 export interface KeystrokeRecord {
@@ -114,10 +116,18 @@ export interface CorrectionRecord {
 
 export interface TrainerStore {
   database: Database;
-  startSession(session: Omit<SessionRecord, "id" | "endedTs" | "text"> & { text?: string | null }): number;
+  startSession(
+    session: Omit<SessionRecord, "id" | "endedTs" | "text" | "drillFamily">
+      & { text?: string | null; drillFamily?: SessionRecord["drillFamily"] },
+  ): number;
   finishSession(sessionId: number, endedTs: number): void;
   recordKeystrokes(sessionId: number, keystrokes: readonly KeystrokeRecord[]): void;
   recordCorrections(sessionId: number, corrections: readonly CorrectionRecord[]): void;
+  saveCompletedSession(
+    session: Omit<SessionRecord, "id" | "endedTs"> & { endedTs: number },
+    keystrokes: readonly KeystrokeRecord[],
+    corrections: readonly CorrectionRecord[],
+  ): number;
   sessions(mode?: SessionMode): SessionRecord[];
   session(sessionId: number): SessionRecord | null;
   keystrokes(sessionId: number): KeystrokeRecord[];
@@ -142,6 +152,9 @@ function toSessionRecord(row: Record<string, unknown>): SessionRecord {
     deviceLabel: String(row.device_label),
     keylabProfile: row.keylab_profile === null ? null : String(row.keylab_profile),
     text: row.text === null || row.text === undefined ? null : String(row.text),
+    drillFamily: row.drill_family === null || row.drill_family === undefined
+      ? null
+      : row.drill_family as SessionRecord["drillFamily"],
   };
 }
 
@@ -165,8 +178,9 @@ function preparePrivateStorage(databasePath: string): void {
  * Migrates an older database in place, in the same style as keylab's daemon: the user is never
  * asked to delete practice history to pick up a schema change.
  *
- * v1 -> v2 added the `correction` table, which the `CREATE TABLE IF NOT EXISTS` above has already
- * applied, and `session.text`, which it has not — `IF NOT EXISTS` does not add columns.
+ * v1 -> v2 added the `correction` table and `session.text`; v3 adds `session.drill_family` so
+ * history does not have to reverse-engineer a family from corpus names. `IF NOT EXISTS` does not
+ * add either column to an existing table, so both migrations remain explicit.
  */
 function migrate(database: Database, from: number): void {
   if (from > SUPPORTED_TRAINER_SCHEMA_VERSION) {
@@ -186,6 +200,12 @@ function migrate(database: Database, from: number): void {
     const columns = database.query("PRAGMA table_info(session)").all() as Array<{ name: string }>;
     if (!columns.some((column) => column.name === "text")) {
       database.exec("ALTER TABLE session ADD COLUMN text TEXT");
+    }
+  }
+  if (from < 3) {
+    const columns = database.query("PRAGMA table_info(session)").all() as Array<{ name: string }>;
+    if (!columns.some((column) => column.name === "drill_family")) {
+      database.exec("ALTER TABLE session ADD COLUMN drill_family TEXT");
     }
   }
   database.query("UPDATE meta SET value = ? WHERE key = 'schema_version'")
@@ -218,12 +238,12 @@ export function openTrainerStore(path = defaultTrainerPath()): TrainerStore {
     startSession(session) {
       database.query(`
         INSERT INTO session(started_ts, mode, language, corpus_id, corpus_version, seed,
-                            device_label, keylab_profile, text)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            device_label, keylab_profile, text, drill_family)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         session.startedTs, session.mode, session.language, session.corpusId,
         session.corpusVersion, session.seed, session.deviceLabel, session.keylabProfile,
-        session.text ?? null,
+        session.text ?? null, session.drillFamily ?? null,
       );
       const row = database.query("SELECT last_insert_rowid() AS id").get() as { id: number };
       return Number(row.id);
@@ -260,6 +280,43 @@ export function openTrainerStore(path = defaultTrainerPath()): TrainerStore {
             correction.runLength, correction.expectedCode,
           );
         }
+      })();
+    },
+    saveCompletedSession(session, keystrokes, corrections) {
+      const insertSession = database.query(`
+        INSERT INTO session(started_ts, ended_ts, mode, language, corpus_id, corpus_version, seed,
+                            device_label, keylab_profile, text, drill_family)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      const insertKeystroke = database.query(`
+        INSERT INTO keystroke(session_id, seq, ts_ms, code, expected_code, correct)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      const insertCorrection = database.query(`
+        INSERT INTO correction(session_id, seq, ts_ms, char_index, run_length, expected_code)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      return database.transaction(() => {
+        insertSession.run(
+          session.startedTs, session.endedTs, session.mode, session.language, session.corpusId,
+          session.corpusVersion, session.seed, session.deviceLabel, session.keylabProfile,
+          session.text, session.drillFamily,
+        );
+        const row = database.query("SELECT last_insert_rowid() AS id").get() as { id: number };
+        const sessionId = Number(row.id);
+        for (const keystroke of keystrokes) {
+          insertKeystroke.run(
+            sessionId, keystroke.seq, keystroke.tsMs, keystroke.code,
+            keystroke.expectedCode, keystroke.correct ? 1 : 0,
+          );
+        }
+        for (const correction of corrections) {
+          insertCorrection.run(
+            sessionId, correction.seq, correction.tsMs, correction.charIndex,
+            correction.runLength, correction.expectedCode,
+          );
+        }
+        return sessionId;
       })();
     },
     sessions(mode) {

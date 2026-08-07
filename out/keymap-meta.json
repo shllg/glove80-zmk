@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "keymapHash": "sha256:7cdf57983f1ad3faf7c935cd381b2153a41f1dc2116f63e2c7ea220beb90e9a5",
-  "gitCommit": "28a9755",
-  "generatedAt": "2026-08-07T10:33:41.344Z",
+  "keymapHash": "sha256:017cf6465bbf9893c3a07ba4a80a0206589e690125b885fdfea3c1f1241a4e04",
+  "gitCommit": "abdd482",
+  "generatedAt": "2026-08-07T13:28:34.424Z",
   "positions": [
     {
       "pos": 0,
@@ -969,6 +969,2372 @@
       "linuxKeycode": 109,
       "baseBinding": "&kp PG_DN",
       "isHrm": false
+    }
+  ],
+  "layers": [
+    {
+      "index": 0,
+      "name": "Base",
+      "positions": [
+        {
+          "pos": 0,
+          "linuxKeycode": 59,
+          "binding": "&kp F1"
+        },
+        {
+          "pos": 1,
+          "linuxKeycode": 60,
+          "binding": "&kp F2"
+        },
+        {
+          "pos": 2,
+          "linuxKeycode": 61,
+          "binding": "&kp F3"
+        },
+        {
+          "pos": 3,
+          "linuxKeycode": 62,
+          "binding": "&kp F4"
+        },
+        {
+          "pos": 4,
+          "linuxKeycode": 63,
+          "binding": "&kp F5"
+        },
+        {
+          "pos": 5,
+          "linuxKeycode": 64,
+          "binding": "&kp F6"
+        },
+        {
+          "pos": 6,
+          "linuxKeycode": 65,
+          "binding": "&kp F7"
+        },
+        {
+          "pos": 7,
+          "linuxKeycode": 66,
+          "binding": "&kp F8"
+        },
+        {
+          "pos": 8,
+          "linuxKeycode": 67,
+          "binding": "&kp F9"
+        },
+        {
+          "pos": 9,
+          "linuxKeycode": 68,
+          "binding": "&kp F10"
+        },
+        {
+          "pos": 10,
+          "linuxKeycode": 41,
+          "binding": "&kp GRAVE"
+        },
+        {
+          "pos": 11,
+          "linuxKeycode": 2,
+          "binding": "&kp N1"
+        },
+        {
+          "pos": 12,
+          "linuxKeycode": 3,
+          "binding": "&kp N2"
+        },
+        {
+          "pos": 13,
+          "linuxKeycode": 4,
+          "binding": "&kp N3"
+        },
+        {
+          "pos": 14,
+          "linuxKeycode": 5,
+          "binding": "&kp N4"
+        },
+        {
+          "pos": 15,
+          "linuxKeycode": 6,
+          "binding": "&kp N5"
+        },
+        {
+          "pos": 16,
+          "linuxKeycode": 7,
+          "binding": "&kp N6"
+        },
+        {
+          "pos": 17,
+          "linuxKeycode": 8,
+          "binding": "&kp N7"
+        },
+        {
+          "pos": 18,
+          "linuxKeycode": 9,
+          "binding": "&kp N8"
+        },
+        {
+          "pos": 19,
+          "linuxKeycode": 10,
+          "binding": "&kp N9"
+        },
+        {
+          "pos": 20,
+          "linuxKeycode": 11,
+          "binding": "&kp N0"
+        },
+        {
+          "pos": 21,
+          "linuxKeycode": 12,
+          "binding": "&kp MINUS"
+        },
+        {
+          "pos": 23,
+          "linuxKeycode": 16,
+          "binding": "&kp Q"
+        },
+        {
+          "pos": 24,
+          "linuxKeycode": 17,
+          "binding": "&kp W"
+        },
+        {
+          "pos": 25,
+          "linuxKeycode": 18,
+          "binding": "&kp E"
+        },
+        {
+          "pos": 26,
+          "linuxKeycode": 19,
+          "binding": "&kp R"
+        },
+        {
+          "pos": 27,
+          "linuxKeycode": 20,
+          "binding": "&kp T"
+        },
+        {
+          "pos": 28,
+          "linuxKeycode": 21,
+          "binding": "&kp Y"
+        },
+        {
+          "pos": 29,
+          "linuxKeycode": 22,
+          "binding": "&kp U"
+        },
+        {
+          "pos": 30,
+          "linuxKeycode": 23,
+          "binding": "&kp I"
+        },
+        {
+          "pos": 31,
+          "linuxKeycode": 24,
+          "binding": "&kp O"
+        },
+        {
+          "pos": 32,
+          "linuxKeycode": 25,
+          "binding": "&kp P"
+        },
+        {
+          "pos": 33,
+          "linuxKeycode": 43,
+          "binding": "&kp BSLH"
+        },
+        {
+          "pos": 35,
+          "linuxKeycode": 30,
+          "binding": "&hml LGUI A"
+        },
+        {
+          "pos": 35,
+          "linuxKeycode": 125,
+          "binding": "&hml LGUI A"
+        },
+        {
+          "pos": 36,
+          "linuxKeycode": 31,
+          "binding": "&hml LALT S"
+        },
+        {
+          "pos": 36,
+          "linuxKeycode": 56,
+          "binding": "&hml LALT S"
+        },
+        {
+          "pos": 37,
+          "linuxKeycode": 32,
+          "binding": "&kp D"
+        },
+        {
+          "pos": 38,
+          "linuxKeycode": 29,
+          "binding": "&hml LCTRL F"
+        },
+        {
+          "pos": 38,
+          "linuxKeycode": 33,
+          "binding": "&hml LCTRL F"
+        },
+        {
+          "pos": 39,
+          "linuxKeycode": 34,
+          "binding": "&kp G"
+        },
+        {
+          "pos": 40,
+          "linuxKeycode": 35,
+          "binding": "&kp H"
+        },
+        {
+          "pos": 41,
+          "linuxKeycode": 36,
+          "binding": "&hmr RCTRL J"
+        },
+        {
+          "pos": 41,
+          "linuxKeycode": 97,
+          "binding": "&hmr RCTRL J"
+        },
+        {
+          "pos": 42,
+          "linuxKeycode": 37,
+          "binding": "&kp K"
+        },
+        {
+          "pos": 43,
+          "linuxKeycode": 38,
+          "binding": "&hmr RALT L"
+        },
+        {
+          "pos": 44,
+          "linuxKeycode": 39,
+          "binding": "&hmr RGUI SEMI"
+        },
+        {
+          "pos": 44,
+          "linuxKeycode": 126,
+          "binding": "&hmr RGUI SEMI"
+        },
+        {
+          "pos": 45,
+          "linuxKeycode": 40,
+          "binding": "&kp SQT"
+        },
+        {
+          "pos": 47,
+          "linuxKeycode": 44,
+          "binding": "&kp Z"
+        },
+        {
+          "pos": 48,
+          "linuxKeycode": 45,
+          "binding": "&kp X"
+        },
+        {
+          "pos": 49,
+          "linuxKeycode": 46,
+          "binding": "&kp C"
+        },
+        {
+          "pos": 50,
+          "linuxKeycode": 47,
+          "binding": "&kp V"
+        },
+        {
+          "pos": 51,
+          "linuxKeycode": 48,
+          "binding": "&kp B"
+        },
+        {
+          "pos": 53,
+          "linuxKeycode": 1,
+          "binding": "&kp ESC"
+        },
+        {
+          "pos": 54,
+          "linuxKeycode": 183,
+          "binding": "&kp F13"
+        },
+        {
+          "pos": 57,
+          "linuxKeycode": 54,
+          "binding": "&kp RSHFT"
+        },
+        {
+          "pos": 58,
+          "linuxKeycode": 49,
+          "binding": "&kp N"
+        },
+        {
+          "pos": 59,
+          "linuxKeycode": 50,
+          "binding": "&kp M"
+        },
+        {
+          "pos": 60,
+          "linuxKeycode": 51,
+          "binding": "&kp COMMA"
+        },
+        {
+          "pos": 61,
+          "linuxKeycode": 52,
+          "binding": "&kp DOT"
+        },
+        {
+          "pos": 62,
+          "linuxKeycode": 53,
+          "binding": "&kp FSLH"
+        },
+        {
+          "pos": 63,
+          "linuxKeycode": 104,
+          "binding": "&kp PG_UP"
+        },
+        {
+          "pos": 64,
+          "linuxKeycode": 105,
+          "binding": "&kp LEFT"
+        },
+        {
+          "pos": 65,
+          "linuxKeycode": 106,
+          "binding": "&kp RIGHT"
+        },
+        {
+          "pos": 66,
+          "linuxKeycode": 103,
+          "binding": "&kp UP"
+        },
+        {
+          "pos": 67,
+          "linuxKeycode": 108,
+          "binding": "&kp DOWN"
+        },
+        {
+          "pos": 68,
+          "linuxKeycode": 193,
+          "binding": "&kp F23"
+        },
+        {
+          "pos": 69,
+          "linuxKeycode": 57,
+          "binding": "&thumb_left LAYER_Navigation SPACE"
+        },
+        {
+          "pos": 72,
+          "linuxKeycode": 58,
+          "binding": "&kp CAPS"
+        },
+        {
+          "pos": 73,
+          "linuxKeycode": 15,
+          "binding": "&lt LAYER_Media TAB"
+        },
+        {
+          "pos": 74,
+          "linuxKeycode": 28,
+          "binding": "&thumb_right LAYER_Chars RET"
+        },
+        {
+          "pos": 77,
+          "linuxKeycode": 26,
+          "binding": "&kp LBKT"
+        },
+        {
+          "pos": 78,
+          "linuxKeycode": 27,
+          "binding": "&kp RBKT"
+        },
+        {
+          "pos": 79,
+          "linuxKeycode": 109,
+          "binding": "&kp PG_DN"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "name": "Base_BT1",
+      "positions": [
+        {
+          "pos": 0,
+          "linuxKeycode": 59,
+          "binding": "&kp F1"
+        },
+        {
+          "pos": 1,
+          "linuxKeycode": 60,
+          "binding": "&kp F2"
+        },
+        {
+          "pos": 2,
+          "linuxKeycode": 61,
+          "binding": "&kp F3"
+        },
+        {
+          "pos": 3,
+          "linuxKeycode": 62,
+          "binding": "&kp F4"
+        },
+        {
+          "pos": 4,
+          "linuxKeycode": 63,
+          "binding": "&kp F5"
+        },
+        {
+          "pos": 5,
+          "linuxKeycode": 64,
+          "binding": "&kp F6"
+        },
+        {
+          "pos": 6,
+          "linuxKeycode": 65,
+          "binding": "&kp F7"
+        },
+        {
+          "pos": 7,
+          "linuxKeycode": 66,
+          "binding": "&kp F8"
+        },
+        {
+          "pos": 8,
+          "linuxKeycode": 67,
+          "binding": "&kp F9"
+        },
+        {
+          "pos": 9,
+          "linuxKeycode": 68,
+          "binding": "&kp F10"
+        },
+        {
+          "pos": 10,
+          "linuxKeycode": 41,
+          "binding": "&kp GRAVE"
+        },
+        {
+          "pos": 11,
+          "linuxKeycode": 2,
+          "binding": "&kp N1"
+        },
+        {
+          "pos": 12,
+          "linuxKeycode": 3,
+          "binding": "&kp N2"
+        },
+        {
+          "pos": 13,
+          "linuxKeycode": 4,
+          "binding": "&kp N3"
+        },
+        {
+          "pos": 14,
+          "linuxKeycode": 5,
+          "binding": "&kp N4"
+        },
+        {
+          "pos": 15,
+          "linuxKeycode": 6,
+          "binding": "&kp N5"
+        },
+        {
+          "pos": 16,
+          "linuxKeycode": 7,
+          "binding": "&kp N6"
+        },
+        {
+          "pos": 17,
+          "linuxKeycode": 8,
+          "binding": "&kp N7"
+        },
+        {
+          "pos": 18,
+          "linuxKeycode": 9,
+          "binding": "&kp N8"
+        },
+        {
+          "pos": 19,
+          "linuxKeycode": 10,
+          "binding": "&kp N9"
+        },
+        {
+          "pos": 20,
+          "linuxKeycode": 11,
+          "binding": "&kp N0"
+        },
+        {
+          "pos": 21,
+          "linuxKeycode": 12,
+          "binding": "&kp MINUS"
+        },
+        {
+          "pos": 23,
+          "linuxKeycode": 16,
+          "binding": "&kp Q"
+        },
+        {
+          "pos": 24,
+          "linuxKeycode": 17,
+          "binding": "&kp W"
+        },
+        {
+          "pos": 25,
+          "linuxKeycode": 18,
+          "binding": "&kp E"
+        },
+        {
+          "pos": 26,
+          "linuxKeycode": 19,
+          "binding": "&kp R"
+        },
+        {
+          "pos": 27,
+          "linuxKeycode": 20,
+          "binding": "&kp T"
+        },
+        {
+          "pos": 28,
+          "linuxKeycode": 21,
+          "binding": "&kp Y"
+        },
+        {
+          "pos": 29,
+          "linuxKeycode": 22,
+          "binding": "&kp U"
+        },
+        {
+          "pos": 30,
+          "linuxKeycode": 23,
+          "binding": "&kp I"
+        },
+        {
+          "pos": 31,
+          "linuxKeycode": 24,
+          "binding": "&kp O"
+        },
+        {
+          "pos": 32,
+          "linuxKeycode": 25,
+          "binding": "&kp P"
+        },
+        {
+          "pos": 33,
+          "linuxKeycode": 43,
+          "binding": "&kp BSLH"
+        },
+        {
+          "pos": 35,
+          "linuxKeycode": 30,
+          "binding": "&hml LGUI A"
+        },
+        {
+          "pos": 35,
+          "linuxKeycode": 125,
+          "binding": "&hml LGUI A"
+        },
+        {
+          "pos": 36,
+          "linuxKeycode": 31,
+          "binding": "&hml LALT S"
+        },
+        {
+          "pos": 36,
+          "linuxKeycode": 56,
+          "binding": "&hml LALT S"
+        },
+        {
+          "pos": 37,
+          "linuxKeycode": 32,
+          "binding": "&kp D"
+        },
+        {
+          "pos": 38,
+          "linuxKeycode": 29,
+          "binding": "&hml LCTRL F"
+        },
+        {
+          "pos": 38,
+          "linuxKeycode": 33,
+          "binding": "&hml LCTRL F"
+        },
+        {
+          "pos": 39,
+          "linuxKeycode": 34,
+          "binding": "&kp G"
+        },
+        {
+          "pos": 40,
+          "linuxKeycode": 35,
+          "binding": "&kp H"
+        },
+        {
+          "pos": 41,
+          "linuxKeycode": 36,
+          "binding": "&hmr RCTRL J"
+        },
+        {
+          "pos": 41,
+          "linuxKeycode": 97,
+          "binding": "&hmr RCTRL J"
+        },
+        {
+          "pos": 42,
+          "linuxKeycode": 37,
+          "binding": "&kp K"
+        },
+        {
+          "pos": 43,
+          "linuxKeycode": 38,
+          "binding": "&hmr RALT L"
+        },
+        {
+          "pos": 44,
+          "linuxKeycode": 39,
+          "binding": "&hmr RGUI SEMI"
+        },
+        {
+          "pos": 44,
+          "linuxKeycode": 126,
+          "binding": "&hmr RGUI SEMI"
+        },
+        {
+          "pos": 45,
+          "linuxKeycode": 40,
+          "binding": "&kp SQT"
+        },
+        {
+          "pos": 47,
+          "linuxKeycode": 44,
+          "binding": "&kp Z"
+        },
+        {
+          "pos": 48,
+          "linuxKeycode": 45,
+          "binding": "&kp X"
+        },
+        {
+          "pos": 49,
+          "linuxKeycode": 46,
+          "binding": "&kp C"
+        },
+        {
+          "pos": 50,
+          "linuxKeycode": 47,
+          "binding": "&kp V"
+        },
+        {
+          "pos": 51,
+          "linuxKeycode": 48,
+          "binding": "&kp B"
+        },
+        {
+          "pos": 53,
+          "linuxKeycode": 1,
+          "binding": "&kp ESC"
+        },
+        {
+          "pos": 54,
+          "linuxKeycode": 183,
+          "binding": "&kp F13"
+        },
+        {
+          "pos": 57,
+          "linuxKeycode": 54,
+          "binding": "&kp RSHFT"
+        },
+        {
+          "pos": 58,
+          "linuxKeycode": 49,
+          "binding": "&kp N"
+        },
+        {
+          "pos": 59,
+          "linuxKeycode": 50,
+          "binding": "&kp M"
+        },
+        {
+          "pos": 60,
+          "linuxKeycode": 51,
+          "binding": "&kp COMMA"
+        },
+        {
+          "pos": 61,
+          "linuxKeycode": 52,
+          "binding": "&kp DOT"
+        },
+        {
+          "pos": 62,
+          "linuxKeycode": 53,
+          "binding": "&kp FSLH"
+        },
+        {
+          "pos": 63,
+          "linuxKeycode": 104,
+          "binding": "&kp PG_UP"
+        },
+        {
+          "pos": 64,
+          "linuxKeycode": 105,
+          "binding": "&kp LEFT"
+        },
+        {
+          "pos": 65,
+          "linuxKeycode": 106,
+          "binding": "&kp RIGHT"
+        },
+        {
+          "pos": 66,
+          "linuxKeycode": 103,
+          "binding": "&kp UP"
+        },
+        {
+          "pos": 67,
+          "linuxKeycode": 108,
+          "binding": "&kp DOWN"
+        },
+        {
+          "pos": 68,
+          "linuxKeycode": 193,
+          "binding": "&kp F23"
+        },
+        {
+          "pos": 69,
+          "linuxKeycode": 57,
+          "binding": "&thumb_left LAYER_Navigation SPACE"
+        },
+        {
+          "pos": 72,
+          "linuxKeycode": 58,
+          "binding": "&kp CAPS"
+        },
+        {
+          "pos": 73,
+          "linuxKeycode": 15,
+          "binding": "&lt LAYER_Media TAB"
+        },
+        {
+          "pos": 74,
+          "linuxKeycode": 28,
+          "binding": "&thumb_right LAYER_Chars RET"
+        },
+        {
+          "pos": 77,
+          "linuxKeycode": 26,
+          "binding": "&kp LBKT"
+        },
+        {
+          "pos": 78,
+          "linuxKeycode": 27,
+          "binding": "&kp RBKT"
+        },
+        {
+          "pos": 79,
+          "linuxKeycode": 109,
+          "binding": "&kp PG_DN"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "name": "Base_BT2",
+      "positions": [
+        {
+          "pos": 0,
+          "linuxKeycode": 59,
+          "binding": "&kp F1"
+        },
+        {
+          "pos": 1,
+          "linuxKeycode": 60,
+          "binding": "&kp F2"
+        },
+        {
+          "pos": 2,
+          "linuxKeycode": 61,
+          "binding": "&kp F3"
+        },
+        {
+          "pos": 3,
+          "linuxKeycode": 62,
+          "binding": "&kp F4"
+        },
+        {
+          "pos": 4,
+          "linuxKeycode": 63,
+          "binding": "&kp F5"
+        },
+        {
+          "pos": 5,
+          "linuxKeycode": 64,
+          "binding": "&kp F6"
+        },
+        {
+          "pos": 6,
+          "linuxKeycode": 65,
+          "binding": "&kp F7"
+        },
+        {
+          "pos": 7,
+          "linuxKeycode": 66,
+          "binding": "&kp F8"
+        },
+        {
+          "pos": 8,
+          "linuxKeycode": 67,
+          "binding": "&kp F9"
+        },
+        {
+          "pos": 9,
+          "linuxKeycode": 68,
+          "binding": "&kp F10"
+        },
+        {
+          "pos": 10,
+          "linuxKeycode": 41,
+          "binding": "&kp GRAVE"
+        },
+        {
+          "pos": 11,
+          "linuxKeycode": 2,
+          "binding": "&kp N1"
+        },
+        {
+          "pos": 12,
+          "linuxKeycode": 3,
+          "binding": "&kp N2"
+        },
+        {
+          "pos": 13,
+          "linuxKeycode": 4,
+          "binding": "&kp N3"
+        },
+        {
+          "pos": 14,
+          "linuxKeycode": 5,
+          "binding": "&kp N4"
+        },
+        {
+          "pos": 15,
+          "linuxKeycode": 6,
+          "binding": "&kp N5"
+        },
+        {
+          "pos": 16,
+          "linuxKeycode": 7,
+          "binding": "&kp N6"
+        },
+        {
+          "pos": 17,
+          "linuxKeycode": 8,
+          "binding": "&kp N7"
+        },
+        {
+          "pos": 18,
+          "linuxKeycode": 9,
+          "binding": "&kp N8"
+        },
+        {
+          "pos": 19,
+          "linuxKeycode": 10,
+          "binding": "&kp N9"
+        },
+        {
+          "pos": 20,
+          "linuxKeycode": 11,
+          "binding": "&kp N0"
+        },
+        {
+          "pos": 21,
+          "linuxKeycode": 12,
+          "binding": "&kp MINUS"
+        },
+        {
+          "pos": 23,
+          "linuxKeycode": 16,
+          "binding": "&kp Q"
+        },
+        {
+          "pos": 24,
+          "linuxKeycode": 17,
+          "binding": "&kp W"
+        },
+        {
+          "pos": 25,
+          "linuxKeycode": 18,
+          "binding": "&kp E"
+        },
+        {
+          "pos": 26,
+          "linuxKeycode": 19,
+          "binding": "&kp R"
+        },
+        {
+          "pos": 27,
+          "linuxKeycode": 20,
+          "binding": "&kp T"
+        },
+        {
+          "pos": 28,
+          "linuxKeycode": 21,
+          "binding": "&kp Y"
+        },
+        {
+          "pos": 29,
+          "linuxKeycode": 22,
+          "binding": "&kp U"
+        },
+        {
+          "pos": 30,
+          "linuxKeycode": 23,
+          "binding": "&kp I"
+        },
+        {
+          "pos": 31,
+          "linuxKeycode": 24,
+          "binding": "&kp O"
+        },
+        {
+          "pos": 32,
+          "linuxKeycode": 25,
+          "binding": "&kp P"
+        },
+        {
+          "pos": 33,
+          "linuxKeycode": 43,
+          "binding": "&kp BSLH"
+        },
+        {
+          "pos": 35,
+          "linuxKeycode": 30,
+          "binding": "&hml LGUI A"
+        },
+        {
+          "pos": 35,
+          "linuxKeycode": 125,
+          "binding": "&hml LGUI A"
+        },
+        {
+          "pos": 36,
+          "linuxKeycode": 31,
+          "binding": "&hml LALT S"
+        },
+        {
+          "pos": 36,
+          "linuxKeycode": 56,
+          "binding": "&hml LALT S"
+        },
+        {
+          "pos": 37,
+          "linuxKeycode": 32,
+          "binding": "&kp D"
+        },
+        {
+          "pos": 38,
+          "linuxKeycode": 29,
+          "binding": "&hml LCTRL F"
+        },
+        {
+          "pos": 38,
+          "linuxKeycode": 33,
+          "binding": "&hml LCTRL F"
+        },
+        {
+          "pos": 39,
+          "linuxKeycode": 34,
+          "binding": "&kp G"
+        },
+        {
+          "pos": 40,
+          "linuxKeycode": 35,
+          "binding": "&kp H"
+        },
+        {
+          "pos": 41,
+          "linuxKeycode": 36,
+          "binding": "&hmr RCTRL J"
+        },
+        {
+          "pos": 41,
+          "linuxKeycode": 97,
+          "binding": "&hmr RCTRL J"
+        },
+        {
+          "pos": 42,
+          "linuxKeycode": 37,
+          "binding": "&kp K"
+        },
+        {
+          "pos": 43,
+          "linuxKeycode": 38,
+          "binding": "&hmr RALT L"
+        },
+        {
+          "pos": 44,
+          "linuxKeycode": 39,
+          "binding": "&hmr RGUI SEMI"
+        },
+        {
+          "pos": 44,
+          "linuxKeycode": 126,
+          "binding": "&hmr RGUI SEMI"
+        },
+        {
+          "pos": 45,
+          "linuxKeycode": 40,
+          "binding": "&kp SQT"
+        },
+        {
+          "pos": 47,
+          "linuxKeycode": 44,
+          "binding": "&kp Z"
+        },
+        {
+          "pos": 48,
+          "linuxKeycode": 45,
+          "binding": "&kp X"
+        },
+        {
+          "pos": 49,
+          "linuxKeycode": 46,
+          "binding": "&kp C"
+        },
+        {
+          "pos": 50,
+          "linuxKeycode": 47,
+          "binding": "&kp V"
+        },
+        {
+          "pos": 51,
+          "linuxKeycode": 48,
+          "binding": "&kp B"
+        },
+        {
+          "pos": 53,
+          "linuxKeycode": 1,
+          "binding": "&kp ESC"
+        },
+        {
+          "pos": 54,
+          "linuxKeycode": 183,
+          "binding": "&kp F13"
+        },
+        {
+          "pos": 57,
+          "linuxKeycode": 54,
+          "binding": "&kp RSHFT"
+        },
+        {
+          "pos": 58,
+          "linuxKeycode": 49,
+          "binding": "&kp N"
+        },
+        {
+          "pos": 59,
+          "linuxKeycode": 50,
+          "binding": "&kp M"
+        },
+        {
+          "pos": 60,
+          "linuxKeycode": 51,
+          "binding": "&kp COMMA"
+        },
+        {
+          "pos": 61,
+          "linuxKeycode": 52,
+          "binding": "&kp DOT"
+        },
+        {
+          "pos": 62,
+          "linuxKeycode": 53,
+          "binding": "&kp FSLH"
+        },
+        {
+          "pos": 63,
+          "linuxKeycode": 104,
+          "binding": "&kp PG_UP"
+        },
+        {
+          "pos": 64,
+          "linuxKeycode": 105,
+          "binding": "&kp LEFT"
+        },
+        {
+          "pos": 65,
+          "linuxKeycode": 106,
+          "binding": "&kp RIGHT"
+        },
+        {
+          "pos": 66,
+          "linuxKeycode": 103,
+          "binding": "&kp UP"
+        },
+        {
+          "pos": 67,
+          "linuxKeycode": 108,
+          "binding": "&kp DOWN"
+        },
+        {
+          "pos": 68,
+          "linuxKeycode": 193,
+          "binding": "&kp F23"
+        },
+        {
+          "pos": 69,
+          "linuxKeycode": 57,
+          "binding": "&thumb_left LAYER_Navigation SPACE"
+        },
+        {
+          "pos": 72,
+          "linuxKeycode": 58,
+          "binding": "&kp CAPS"
+        },
+        {
+          "pos": 73,
+          "linuxKeycode": 15,
+          "binding": "&lt LAYER_Media TAB"
+        },
+        {
+          "pos": 74,
+          "linuxKeycode": 28,
+          "binding": "&thumb_right LAYER_Chars RET"
+        },
+        {
+          "pos": 77,
+          "linuxKeycode": 26,
+          "binding": "&kp LBKT"
+        },
+        {
+          "pos": 78,
+          "linuxKeycode": 27,
+          "binding": "&kp RBKT"
+        },
+        {
+          "pos": 79,
+          "linuxKeycode": 109,
+          "binding": "&kp PG_DN"
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "name": "Base_BT3",
+      "positions": [
+        {
+          "pos": 0,
+          "linuxKeycode": 59,
+          "binding": "&kp F1"
+        },
+        {
+          "pos": 1,
+          "linuxKeycode": 60,
+          "binding": "&kp F2"
+        },
+        {
+          "pos": 2,
+          "linuxKeycode": 61,
+          "binding": "&kp F3"
+        },
+        {
+          "pos": 3,
+          "linuxKeycode": 62,
+          "binding": "&kp F4"
+        },
+        {
+          "pos": 4,
+          "linuxKeycode": 63,
+          "binding": "&kp F5"
+        },
+        {
+          "pos": 5,
+          "linuxKeycode": 64,
+          "binding": "&kp F6"
+        },
+        {
+          "pos": 6,
+          "linuxKeycode": 65,
+          "binding": "&kp F7"
+        },
+        {
+          "pos": 7,
+          "linuxKeycode": 66,
+          "binding": "&kp F8"
+        },
+        {
+          "pos": 8,
+          "linuxKeycode": 67,
+          "binding": "&kp F9"
+        },
+        {
+          "pos": 9,
+          "linuxKeycode": 68,
+          "binding": "&kp F10"
+        },
+        {
+          "pos": 10,
+          "linuxKeycode": 41,
+          "binding": "&kp GRAVE"
+        },
+        {
+          "pos": 11,
+          "linuxKeycode": 2,
+          "binding": "&kp N1"
+        },
+        {
+          "pos": 12,
+          "linuxKeycode": 3,
+          "binding": "&kp N2"
+        },
+        {
+          "pos": 13,
+          "linuxKeycode": 4,
+          "binding": "&kp N3"
+        },
+        {
+          "pos": 14,
+          "linuxKeycode": 5,
+          "binding": "&kp N4"
+        },
+        {
+          "pos": 15,
+          "linuxKeycode": 6,
+          "binding": "&kp N5"
+        },
+        {
+          "pos": 16,
+          "linuxKeycode": 7,
+          "binding": "&kp N6"
+        },
+        {
+          "pos": 17,
+          "linuxKeycode": 8,
+          "binding": "&kp N7"
+        },
+        {
+          "pos": 18,
+          "linuxKeycode": 9,
+          "binding": "&kp N8"
+        },
+        {
+          "pos": 19,
+          "linuxKeycode": 10,
+          "binding": "&kp N9"
+        },
+        {
+          "pos": 20,
+          "linuxKeycode": 11,
+          "binding": "&kp N0"
+        },
+        {
+          "pos": 21,
+          "linuxKeycode": 12,
+          "binding": "&kp MINUS"
+        },
+        {
+          "pos": 23,
+          "linuxKeycode": 16,
+          "binding": "&kp Q"
+        },
+        {
+          "pos": 24,
+          "linuxKeycode": 17,
+          "binding": "&kp W"
+        },
+        {
+          "pos": 25,
+          "linuxKeycode": 18,
+          "binding": "&kp E"
+        },
+        {
+          "pos": 26,
+          "linuxKeycode": 19,
+          "binding": "&kp R"
+        },
+        {
+          "pos": 27,
+          "linuxKeycode": 20,
+          "binding": "&kp T"
+        },
+        {
+          "pos": 28,
+          "linuxKeycode": 21,
+          "binding": "&kp Y"
+        },
+        {
+          "pos": 29,
+          "linuxKeycode": 22,
+          "binding": "&kp U"
+        },
+        {
+          "pos": 30,
+          "linuxKeycode": 23,
+          "binding": "&kp I"
+        },
+        {
+          "pos": 31,
+          "linuxKeycode": 24,
+          "binding": "&kp O"
+        },
+        {
+          "pos": 32,
+          "linuxKeycode": 25,
+          "binding": "&kp P"
+        },
+        {
+          "pos": 33,
+          "linuxKeycode": 43,
+          "binding": "&kp BSLH"
+        },
+        {
+          "pos": 35,
+          "linuxKeycode": 30,
+          "binding": "&hml LGUI A"
+        },
+        {
+          "pos": 35,
+          "linuxKeycode": 125,
+          "binding": "&hml LGUI A"
+        },
+        {
+          "pos": 36,
+          "linuxKeycode": 31,
+          "binding": "&hml LALT S"
+        },
+        {
+          "pos": 36,
+          "linuxKeycode": 56,
+          "binding": "&hml LALT S"
+        },
+        {
+          "pos": 37,
+          "linuxKeycode": 32,
+          "binding": "&kp D"
+        },
+        {
+          "pos": 38,
+          "linuxKeycode": 29,
+          "binding": "&hml LCTRL F"
+        },
+        {
+          "pos": 38,
+          "linuxKeycode": 33,
+          "binding": "&hml LCTRL F"
+        },
+        {
+          "pos": 39,
+          "linuxKeycode": 34,
+          "binding": "&kp G"
+        },
+        {
+          "pos": 40,
+          "linuxKeycode": 35,
+          "binding": "&kp H"
+        },
+        {
+          "pos": 41,
+          "linuxKeycode": 36,
+          "binding": "&hmr RCTRL J"
+        },
+        {
+          "pos": 41,
+          "linuxKeycode": 97,
+          "binding": "&hmr RCTRL J"
+        },
+        {
+          "pos": 42,
+          "linuxKeycode": 37,
+          "binding": "&kp K"
+        },
+        {
+          "pos": 43,
+          "linuxKeycode": 38,
+          "binding": "&hmr RALT L"
+        },
+        {
+          "pos": 44,
+          "linuxKeycode": 39,
+          "binding": "&hmr RGUI SEMI"
+        },
+        {
+          "pos": 44,
+          "linuxKeycode": 126,
+          "binding": "&hmr RGUI SEMI"
+        },
+        {
+          "pos": 45,
+          "linuxKeycode": 40,
+          "binding": "&kp SQT"
+        },
+        {
+          "pos": 47,
+          "linuxKeycode": 44,
+          "binding": "&kp Z"
+        },
+        {
+          "pos": 48,
+          "linuxKeycode": 45,
+          "binding": "&kp X"
+        },
+        {
+          "pos": 49,
+          "linuxKeycode": 46,
+          "binding": "&kp C"
+        },
+        {
+          "pos": 50,
+          "linuxKeycode": 47,
+          "binding": "&kp V"
+        },
+        {
+          "pos": 51,
+          "linuxKeycode": 48,
+          "binding": "&kp B"
+        },
+        {
+          "pos": 53,
+          "linuxKeycode": 1,
+          "binding": "&kp ESC"
+        },
+        {
+          "pos": 54,
+          "linuxKeycode": 183,
+          "binding": "&kp F13"
+        },
+        {
+          "pos": 57,
+          "linuxKeycode": 54,
+          "binding": "&kp RSHFT"
+        },
+        {
+          "pos": 58,
+          "linuxKeycode": 49,
+          "binding": "&kp N"
+        },
+        {
+          "pos": 59,
+          "linuxKeycode": 50,
+          "binding": "&kp M"
+        },
+        {
+          "pos": 60,
+          "linuxKeycode": 51,
+          "binding": "&kp COMMA"
+        },
+        {
+          "pos": 61,
+          "linuxKeycode": 52,
+          "binding": "&kp DOT"
+        },
+        {
+          "pos": 62,
+          "linuxKeycode": 53,
+          "binding": "&kp FSLH"
+        },
+        {
+          "pos": 63,
+          "linuxKeycode": 104,
+          "binding": "&kp PG_UP"
+        },
+        {
+          "pos": 64,
+          "linuxKeycode": 105,
+          "binding": "&kp LEFT"
+        },
+        {
+          "pos": 65,
+          "linuxKeycode": 106,
+          "binding": "&kp RIGHT"
+        },
+        {
+          "pos": 66,
+          "linuxKeycode": 103,
+          "binding": "&kp UP"
+        },
+        {
+          "pos": 67,
+          "linuxKeycode": 108,
+          "binding": "&kp DOWN"
+        },
+        {
+          "pos": 68,
+          "linuxKeycode": 193,
+          "binding": "&kp F23"
+        },
+        {
+          "pos": 69,
+          "linuxKeycode": 57,
+          "binding": "&thumb_left LAYER_Navigation SPACE"
+        },
+        {
+          "pos": 72,
+          "linuxKeycode": 58,
+          "binding": "&kp CAPS"
+        },
+        {
+          "pos": 73,
+          "linuxKeycode": 15,
+          "binding": "&lt LAYER_Media TAB"
+        },
+        {
+          "pos": 74,
+          "linuxKeycode": 28,
+          "binding": "&thumb_right LAYER_Chars RET"
+        },
+        {
+          "pos": 77,
+          "linuxKeycode": 26,
+          "binding": "&kp LBKT"
+        },
+        {
+          "pos": 78,
+          "linuxKeycode": 27,
+          "binding": "&kp RBKT"
+        },
+        {
+          "pos": 79,
+          "linuxKeycode": 109,
+          "binding": "&kp PG_DN"
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "name": "Base_BT4",
+      "positions": [
+        {
+          "pos": 0,
+          "linuxKeycode": 59,
+          "binding": "&kp F1"
+        },
+        {
+          "pos": 1,
+          "linuxKeycode": 60,
+          "binding": "&kp F2"
+        },
+        {
+          "pos": 2,
+          "linuxKeycode": 61,
+          "binding": "&kp F3"
+        },
+        {
+          "pos": 3,
+          "linuxKeycode": 62,
+          "binding": "&kp F4"
+        },
+        {
+          "pos": 4,
+          "linuxKeycode": 63,
+          "binding": "&kp F5"
+        },
+        {
+          "pos": 5,
+          "linuxKeycode": 64,
+          "binding": "&kp F6"
+        },
+        {
+          "pos": 6,
+          "linuxKeycode": 65,
+          "binding": "&kp F7"
+        },
+        {
+          "pos": 7,
+          "linuxKeycode": 66,
+          "binding": "&kp F8"
+        },
+        {
+          "pos": 8,
+          "linuxKeycode": 67,
+          "binding": "&kp F9"
+        },
+        {
+          "pos": 9,
+          "linuxKeycode": 68,
+          "binding": "&kp F10"
+        },
+        {
+          "pos": 10,
+          "linuxKeycode": 41,
+          "binding": "&kp GRAVE"
+        },
+        {
+          "pos": 11,
+          "linuxKeycode": 2,
+          "binding": "&kp N1"
+        },
+        {
+          "pos": 12,
+          "linuxKeycode": 3,
+          "binding": "&kp N2"
+        },
+        {
+          "pos": 13,
+          "linuxKeycode": 4,
+          "binding": "&kp N3"
+        },
+        {
+          "pos": 14,
+          "linuxKeycode": 5,
+          "binding": "&kp N4"
+        },
+        {
+          "pos": 15,
+          "linuxKeycode": 6,
+          "binding": "&kp N5"
+        },
+        {
+          "pos": 16,
+          "linuxKeycode": 7,
+          "binding": "&kp N6"
+        },
+        {
+          "pos": 17,
+          "linuxKeycode": 8,
+          "binding": "&kp N7"
+        },
+        {
+          "pos": 18,
+          "linuxKeycode": 9,
+          "binding": "&kp N8"
+        },
+        {
+          "pos": 19,
+          "linuxKeycode": 10,
+          "binding": "&kp N9"
+        },
+        {
+          "pos": 20,
+          "linuxKeycode": 11,
+          "binding": "&kp N0"
+        },
+        {
+          "pos": 21,
+          "linuxKeycode": 12,
+          "binding": "&kp MINUS"
+        },
+        {
+          "pos": 23,
+          "linuxKeycode": 16,
+          "binding": "&kp Q"
+        },
+        {
+          "pos": 24,
+          "linuxKeycode": 17,
+          "binding": "&kp W"
+        },
+        {
+          "pos": 25,
+          "linuxKeycode": 18,
+          "binding": "&kp E"
+        },
+        {
+          "pos": 26,
+          "linuxKeycode": 19,
+          "binding": "&kp R"
+        },
+        {
+          "pos": 27,
+          "linuxKeycode": 20,
+          "binding": "&kp T"
+        },
+        {
+          "pos": 28,
+          "linuxKeycode": 21,
+          "binding": "&kp Y"
+        },
+        {
+          "pos": 29,
+          "linuxKeycode": 22,
+          "binding": "&kp U"
+        },
+        {
+          "pos": 30,
+          "linuxKeycode": 23,
+          "binding": "&kp I"
+        },
+        {
+          "pos": 31,
+          "linuxKeycode": 24,
+          "binding": "&kp O"
+        },
+        {
+          "pos": 32,
+          "linuxKeycode": 25,
+          "binding": "&kp P"
+        },
+        {
+          "pos": 33,
+          "linuxKeycode": 43,
+          "binding": "&kp BSLH"
+        },
+        {
+          "pos": 35,
+          "linuxKeycode": 30,
+          "binding": "&hml LGUI A"
+        },
+        {
+          "pos": 35,
+          "linuxKeycode": 125,
+          "binding": "&hml LGUI A"
+        },
+        {
+          "pos": 36,
+          "linuxKeycode": 31,
+          "binding": "&hml LALT S"
+        },
+        {
+          "pos": 36,
+          "linuxKeycode": 56,
+          "binding": "&hml LALT S"
+        },
+        {
+          "pos": 37,
+          "linuxKeycode": 32,
+          "binding": "&kp D"
+        },
+        {
+          "pos": 38,
+          "linuxKeycode": 29,
+          "binding": "&hml LCTRL F"
+        },
+        {
+          "pos": 38,
+          "linuxKeycode": 33,
+          "binding": "&hml LCTRL F"
+        },
+        {
+          "pos": 39,
+          "linuxKeycode": 34,
+          "binding": "&kp G"
+        },
+        {
+          "pos": 40,
+          "linuxKeycode": 35,
+          "binding": "&kp H"
+        },
+        {
+          "pos": 41,
+          "linuxKeycode": 36,
+          "binding": "&hmr RCTRL J"
+        },
+        {
+          "pos": 41,
+          "linuxKeycode": 97,
+          "binding": "&hmr RCTRL J"
+        },
+        {
+          "pos": 42,
+          "linuxKeycode": 37,
+          "binding": "&kp K"
+        },
+        {
+          "pos": 43,
+          "linuxKeycode": 38,
+          "binding": "&hmr RALT L"
+        },
+        {
+          "pos": 44,
+          "linuxKeycode": 39,
+          "binding": "&hmr RGUI SEMI"
+        },
+        {
+          "pos": 44,
+          "linuxKeycode": 126,
+          "binding": "&hmr RGUI SEMI"
+        },
+        {
+          "pos": 45,
+          "linuxKeycode": 40,
+          "binding": "&kp SQT"
+        },
+        {
+          "pos": 47,
+          "linuxKeycode": 44,
+          "binding": "&kp Z"
+        },
+        {
+          "pos": 48,
+          "linuxKeycode": 45,
+          "binding": "&kp X"
+        },
+        {
+          "pos": 49,
+          "linuxKeycode": 46,
+          "binding": "&kp C"
+        },
+        {
+          "pos": 50,
+          "linuxKeycode": 47,
+          "binding": "&kp V"
+        },
+        {
+          "pos": 51,
+          "linuxKeycode": 48,
+          "binding": "&kp B"
+        },
+        {
+          "pos": 53,
+          "linuxKeycode": 1,
+          "binding": "&kp ESC"
+        },
+        {
+          "pos": 54,
+          "linuxKeycode": 183,
+          "binding": "&kp F13"
+        },
+        {
+          "pos": 57,
+          "linuxKeycode": 54,
+          "binding": "&kp RSHFT"
+        },
+        {
+          "pos": 58,
+          "linuxKeycode": 49,
+          "binding": "&kp N"
+        },
+        {
+          "pos": 59,
+          "linuxKeycode": 50,
+          "binding": "&kp M"
+        },
+        {
+          "pos": 60,
+          "linuxKeycode": 51,
+          "binding": "&kp COMMA"
+        },
+        {
+          "pos": 61,
+          "linuxKeycode": 52,
+          "binding": "&kp DOT"
+        },
+        {
+          "pos": 62,
+          "linuxKeycode": 53,
+          "binding": "&kp FSLH"
+        },
+        {
+          "pos": 63,
+          "linuxKeycode": 104,
+          "binding": "&kp PG_UP"
+        },
+        {
+          "pos": 64,
+          "linuxKeycode": 105,
+          "binding": "&kp LEFT"
+        },
+        {
+          "pos": 65,
+          "linuxKeycode": 106,
+          "binding": "&kp RIGHT"
+        },
+        {
+          "pos": 66,
+          "linuxKeycode": 103,
+          "binding": "&kp UP"
+        },
+        {
+          "pos": 67,
+          "linuxKeycode": 108,
+          "binding": "&kp DOWN"
+        },
+        {
+          "pos": 68,
+          "linuxKeycode": 193,
+          "binding": "&kp F23"
+        },
+        {
+          "pos": 69,
+          "linuxKeycode": 57,
+          "binding": "&thumb_left LAYER_Navigation SPACE"
+        },
+        {
+          "pos": 72,
+          "linuxKeycode": 58,
+          "binding": "&kp CAPS"
+        },
+        {
+          "pos": 73,
+          "linuxKeycode": 15,
+          "binding": "&lt LAYER_Media TAB"
+        },
+        {
+          "pos": 74,
+          "linuxKeycode": 28,
+          "binding": "&thumb_right LAYER_Chars RET"
+        },
+        {
+          "pos": 77,
+          "linuxKeycode": 26,
+          "binding": "&kp LBKT"
+        },
+        {
+          "pos": 78,
+          "linuxKeycode": 27,
+          "binding": "&kp RBKT"
+        },
+        {
+          "pos": 79,
+          "linuxKeycode": 109,
+          "binding": "&kp PG_DN"
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "name": "Navigation",
+      "positions": [
+        {
+          "pos": 25,
+          "linuxKeycode": 18,
+          "binding": "&kp LC(LA(E))"
+        },
+        {
+          "pos": 28,
+          "linuxKeycode": 102,
+          "binding": "&kp HOME"
+        },
+        {
+          "pos": 35,
+          "linuxKeycode": 125,
+          "binding": "&kp LGUI"
+        },
+        {
+          "pos": 36,
+          "linuxKeycode": 56,
+          "binding": "&kp LALT"
+        },
+        {
+          "pos": 38,
+          "linuxKeycode": 29,
+          "binding": "&kp LCTRL"
+        },
+        {
+          "pos": 40,
+          "linuxKeycode": 105,
+          "binding": "&kp LEFT"
+        },
+        {
+          "pos": 41,
+          "linuxKeycode": 108,
+          "binding": "&kp DOWN"
+        },
+        {
+          "pos": 42,
+          "linuxKeycode": 103,
+          "binding": "&kp UP"
+        },
+        {
+          "pos": 43,
+          "linuxKeycode": 106,
+          "binding": "&kp RIGHT"
+        },
+        {
+          "pos": 53,
+          "linuxKeycode": 1,
+          "binding": "&kp ESC"
+        },
+        {
+          "pos": 54,
+          "linuxKeycode": 183,
+          "binding": "&kp F13"
+        },
+        {
+          "pos": 55,
+          "linuxKeycode": 111,
+          "binding": "&kp DEL"
+        },
+        {
+          "pos": 56,
+          "linuxKeycode": 14,
+          "binding": "&kp BSPC"
+        },
+        {
+          "pos": 57,
+          "linuxKeycode": 54,
+          "binding": "&kp RSHFT"
+        },
+        {
+          "pos": 72,
+          "linuxKeycode": 58,
+          "binding": "&kp CAPS"
+        },
+        {
+          "pos": 73,
+          "linuxKeycode": 15,
+          "binding": "&kp TAB"
+        },
+        {
+          "pos": 74,
+          "linuxKeycode": 28,
+          "binding": "&kp RET"
+        },
+        {
+          "pos": 76,
+          "linuxKeycode": 99,
+          "binding": "&kp PSCRN"
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "name": "Chars",
+      "positions": [
+        {
+          "pos": 11,
+          "linuxKeycode": 2,
+          "binding": "&kp EXCL"
+        },
+        {
+          "pos": 12,
+          "linuxKeycode": 10,
+          "binding": "&kp LPAR"
+        },
+        {
+          "pos": 13,
+          "linuxKeycode": 11,
+          "binding": "&kp RPAR"
+        },
+        {
+          "pos": 22,
+          "linuxKeycode": 6,
+          "binding": "&kp PRCNT"
+        },
+        {
+          "pos": 30,
+          "linuxKeycode": 3,
+          "binding": "&kp AT"
+        },
+        {
+          "pos": 34,
+          "linuxKeycode": 4,
+          "binding": "&kp HASH"
+        },
+        {
+          "pos": 35,
+          "linuxKeycode": 7,
+          "binding": "&hml LGUI CARET"
+        },
+        {
+          "pos": 35,
+          "linuxKeycode": 125,
+          "binding": "&hml LGUI CARET"
+        },
+        {
+          "pos": 36,
+          "linuxKeycode": 56,
+          "binding": "&hml LALT EQUAL"
+        },
+        {
+          "pos": 38,
+          "linuxKeycode": 5,
+          "binding": "&hml LCTRL DLLR"
+        },
+        {
+          "pos": 38,
+          "linuxKeycode": 29,
+          "binding": "&hml LCTRL DLLR"
+        },
+        {
+          "pos": 39,
+          "linuxKeycode": 9,
+          "binding": "&kp ASTRK"
+        },
+        {
+          "pos": 40,
+          "linuxKeycode": 105,
+          "binding": "&kp LEFT"
+        },
+        {
+          "pos": 41,
+          "linuxKeycode": 108,
+          "binding": "&kp DOWN"
+        },
+        {
+          "pos": 42,
+          "linuxKeycode": 103,
+          "binding": "&kp UP"
+        },
+        {
+          "pos": 43,
+          "linuxKeycode": 106,
+          "binding": "&kp RIGHT"
+        },
+        {
+          "pos": 54,
+          "linuxKeycode": 183,
+          "binding": "&kp F13"
+        },
+        {
+          "pos": 55,
+          "linuxKeycode": 111,
+          "binding": "&kp DEL"
+        },
+        {
+          "pos": 56,
+          "linuxKeycode": 14,
+          "binding": "&kp BSPC"
+        },
+        {
+          "pos": 57,
+          "linuxKeycode": 54,
+          "binding": "&kp RSHFT"
+        },
+        {
+          "pos": 59,
+          "linuxKeycode": 97,
+          "binding": "&kp RCTRL"
+        },
+        {
+          "pos": 65,
+          "linuxKeycode": 8,
+          "binding": "&kp AMPS"
+        },
+        {
+          "pos": 69,
+          "linuxKeycode": 57,
+          "binding": "&kp SPACE"
+        },
+        {
+          "pos": 72,
+          "linuxKeycode": 58,
+          "binding": "&kp CAPS"
+        },
+        {
+          "pos": 76,
+          "linuxKeycode": 28,
+          "binding": "&kp RET"
+        }
+      ]
+    },
+    {
+      "index": 7,
+      "name": "Special",
+      "positions": [
+        {
+          "pos": 40,
+          "linuxKeycode": 105,
+          "binding": "&kp LEFT"
+        },
+        {
+          "pos": 41,
+          "linuxKeycode": 108,
+          "binding": "&kp DOWN"
+        },
+        {
+          "pos": 42,
+          "linuxKeycode": 103,
+          "binding": "&kp UP"
+        },
+        {
+          "pos": 43,
+          "linuxKeycode": 106,
+          "binding": "&kp RIGHT"
+        },
+        {
+          "pos": 52,
+          "linuxKeycode": 42,
+          "binding": "&kp LSHFT"
+        },
+        {
+          "pos": 53,
+          "linuxKeycode": 1,
+          "binding": "&kp ESC"
+        },
+        {
+          "pos": 54,
+          "linuxKeycode": 183,
+          "binding": "&kp F13"
+        },
+        {
+          "pos": 55,
+          "linuxKeycode": 111,
+          "binding": "&kp DEL"
+        },
+        {
+          "pos": 56,
+          "linuxKeycode": 14,
+          "binding": "&kp BSPC"
+        },
+        {
+          "pos": 57,
+          "linuxKeycode": 54,
+          "binding": "&kp RSHFT"
+        },
+        {
+          "pos": 72,
+          "linuxKeycode": 58,
+          "binding": "&kp CAPS"
+        },
+        {
+          "pos": 73,
+          "linuxKeycode": 15,
+          "binding": "&kp TAB"
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "name": "Media",
+      "positions": [
+        {
+          "pos": 0,
+          "linuxKeycode": 224,
+          "binding": "&kp C_BRI_DN"
+        },
+        {
+          "pos": 1,
+          "linuxKeycode": 225,
+          "binding": "&kp C_BRI_UP"
+        },
+        {
+          "pos": 2,
+          "linuxKeycode": 165,
+          "binding": "&kp C_PREV"
+        },
+        {
+          "pos": 3,
+          "linuxKeycode": 164,
+          "binding": "&kp C_PP"
+        },
+        {
+          "pos": 4,
+          "linuxKeycode": 163,
+          "binding": "&kp C_NEXT"
+        },
+        {
+          "pos": 8,
+          "linuxKeycode": 87,
+          "binding": "&kp F11"
+        },
+        {
+          "pos": 9,
+          "linuxKeycode": 88,
+          "binding": "&kp F12"
+        },
+        {
+          "pos": 12,
+          "linuxKeycode": 114,
+          "binding": "&kp C_VOL_DN"
+        },
+        {
+          "pos": 13,
+          "linuxKeycode": 113,
+          "binding": "&kp C_MUTE"
+        },
+        {
+          "pos": 14,
+          "linuxKeycode": 115,
+          "binding": "&kp C_VOL_UP"
+        },
+        {
+          "pos": 15,
+          "linuxKeycode": 51,
+          "binding": "&kp COMMA"
+        },
+        {
+          "pos": 24,
+          "linuxKeycode": 8,
+          "binding": "&kp N7"
+        },
+        {
+          "pos": 27,
+          "linuxKeycode": 12,
+          "binding": "&kp MINUS"
+        },
+        {
+          "pos": 36,
+          "linuxKeycode": 5,
+          "binding": "&kp N4"
+        },
+        {
+          "pos": 37,
+          "linuxKeycode": 6,
+          "binding": "&kp N5"
+        },
+        {
+          "pos": 38,
+          "linuxKeycode": 7,
+          "binding": "&kp N6"
+        },
+        {
+          "pos": 40,
+          "linuxKeycode": 105,
+          "binding": "&kp LEFT"
+        },
+        {
+          "pos": 41,
+          "linuxKeycode": 108,
+          "binding": "&kp DOWN"
+        },
+        {
+          "pos": 42,
+          "linuxKeycode": 103,
+          "binding": "&kp UP"
+        },
+        {
+          "pos": 43,
+          "linuxKeycode": 106,
+          "binding": "&kp RIGHT"
+        },
+        {
+          "pos": 48,
+          "linuxKeycode": 2,
+          "binding": "&kp N1"
+        },
+        {
+          "pos": 49,
+          "linuxKeycode": 3,
+          "binding": "&kp N2"
+        },
+        {
+          "pos": 50,
+          "linuxKeycode": 4,
+          "binding": "&kp N3"
+        },
+        {
+          "pos": 51,
+          "linuxKeycode": 53,
+          "binding": "&kp FSLH"
+        },
+        {
+          "pos": 53,
+          "linuxKeycode": 52,
+          "binding": "&kp DOT"
+        },
+        {
+          "pos": 56,
+          "linuxKeycode": 111,
+          "binding": "&kp DEL"
+        },
+        {
+          "pos": 57,
+          "linuxKeycode": 14,
+          "binding": "&kp BSPC"
+        },
+        {
+          "pos": 69,
+          "linuxKeycode": 57,
+          "binding": "&kp SPACE"
+        },
+        {
+          "pos": 71,
+          "linuxKeycode": 1,
+          "binding": "&kp ESC"
+        },
+        {
+          "pos": 72,
+          "linuxKeycode": 54,
+          "binding": "&kp RSHFT"
+        },
+        {
+          "pos": 74,
+          "linuxKeycode": 28,
+          "binding": "&kp RET"
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "name": "Magic",
+      "positions": []
     }
   ],
   "layerSignals": [

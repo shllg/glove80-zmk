@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { Layout } from "./schema";
 import { toPhysicalRows } from "./layout";
 import { resolveLayerSignals, type LayerSignal } from "./layerSignal";
+import { resolveLayers } from "./generateDtsi";
 
 const HandSchema = z.enum(["L", "R"]);
 const FingerNameSchema = z.enum(["index", "middle", "ring", "pinky", "thumb"]);
@@ -52,12 +53,26 @@ export const LayerSignalSchema = z.object({
   linuxKeycode: z.number().int().positive(),
 }).strict();
 
+export const LayerPositionSchema = z.object({
+  pos: z.number().int().min(0).max(79),
+  linuxKeycode: z.number().int().nonnegative(),
+  binding: z.string().min(1),
+}).strict();
+
+export const KeymapLayerSchema = z.object({
+  index: z.number().int().min(0).max(15),
+  name: z.string().min(1),
+  positions: z.array(LayerPositionSchema).max(160),
+}).strict();
+
 export const KeymapMetaSchema = z.object({
   schemaVersion: z.literal(1),
   keymapHash: z.string().regex(/^sha256:[0-9a-f]{64}$/),
   gitCommit: z.string().min(1),
   generatedAt: z.string().datetime(),
   positions: z.array(KeymapPositionSchema).length(80),
+  // Optional so metadata generated before per-layer attribution remains readable.
+  layers: z.array(KeymapLayerSchema).min(1).max(16).optional(),
   // Absent when the firmware does not signal layers, which is the state every database recorded
   // before 2026-08-07. Optional rather than empty so an older consumer sees no new field at all.
   layerSignals: z.array(LayerSignalSchema).min(1).optional(),
@@ -67,6 +82,8 @@ export type Hand = z.infer<typeof HandSchema>;
 export type FingerName = z.infer<typeof FingerNameSchema>;
 export type ModClass = z.infer<typeof ModClassSchema>;
 export type KeymapPosition = z.infer<typeof KeymapPositionSchema>;
+export type LayerPosition = z.infer<typeof LayerPositionSchema>;
+export type KeymapLayer = z.infer<typeof KeymapLayerSchema>;
 export type KeymapMeta = z.infer<typeof KeymapMetaSchema>;
 
 export interface PositionDefinition {
@@ -173,7 +190,10 @@ const ZMK_TO_LINUX: Readonly<Record<string, LinuxKeycode>> = {
   F8: { baseKeycode: "KEY_F8", linuxKeycode: 66 },
   F9: { baseKeycode: "KEY_F9", linuxKeycode: 67 },
   F10: { baseKeycode: "KEY_F10", linuxKeycode: 68 },
+  F11: { baseKeycode: "KEY_F11", linuxKeycode: 87 },
+  F12: { baseKeycode: "KEY_F12", linuxKeycode: 88 },
   RCTRL: { baseKeycode: "KEY_RIGHTCTRL", linuxKeycode: 97 },
+  PSCRN: { baseKeycode: "KEY_SYSRQ", linuxKeycode: 99 },
   RALT: { baseKeycode: "KEY_RIGHTALT", linuxKeycode: 100 },
   HOME: { baseKeycode: "KEY_HOME", linuxKeycode: 102 },
   UP: { baseKeycode: "KEY_UP", linuxKeycode: 103 },
@@ -187,6 +207,9 @@ const ZMK_TO_LINUX: Readonly<Record<string, LinuxKeycode>> = {
   DEL: { baseKeycode: "KEY_DELETE", linuxKeycode: 111 },
   LGUI: { baseKeycode: "KEY_LEFTMETA", linuxKeycode: 125 },
   RGUI: { baseKeycode: "KEY_RIGHTMETA", linuxKeycode: 126 },
+  C_NEXT: { baseKeycode: "KEY_NEXTSONG", linuxKeycode: 163 },
+  C_PP: { baseKeycode: "KEY_PLAYPAUSE", linuxKeycode: 164 },
+  C_PREV: { baseKeycode: "KEY_PREVIOUSSONG", linuxKeycode: 165 },
   F13: { baseKeycode: "KEY_F13", linuxKeycode: 183 },
   F14: { baseKeycode: "KEY_F14", linuxKeycode: 184 },
   F15: { baseKeycode: "KEY_F15", linuxKeycode: 185 },
@@ -199,6 +222,34 @@ const ZMK_TO_LINUX: Readonly<Record<string, LinuxKeycode>> = {
   F22: { baseKeycode: "KEY_F22", linuxKeycode: 192 },
   F23: { baseKeycode: "KEY_F23", linuxKeycode: 193 },
   F24: { baseKeycode: "KEY_F24", linuxKeycode: 194 },
+  C_BRI_DN: { baseKeycode: "KEY_BRIGHTNESSDOWN", linuxKeycode: 224 },
+  C_BRI_UP: { baseKeycode: "KEY_BRIGHTNESSUP", linuxKeycode: 225 },
+
+  // Shifted ZMK aliases emit the same Linux keycode as their unshifted physical key.
+  EXCL: { baseKeycode: "KEY_1", linuxKeycode: 2 },
+  AT: { baseKeycode: "KEY_2", linuxKeycode: 3 },
+  HASH: { baseKeycode: "KEY_3", linuxKeycode: 4 },
+  DLLR: { baseKeycode: "KEY_4", linuxKeycode: 5 },
+  PRCNT: { baseKeycode: "KEY_5", linuxKeycode: 6 },
+  CARET: { baseKeycode: "KEY_6", linuxKeycode: 7 },
+  AMPS: { baseKeycode: "KEY_7", linuxKeycode: 8 },
+  ASTRK: { baseKeycode: "KEY_8", linuxKeycode: 9 },
+  LPAR: { baseKeycode: "KEY_9", linuxKeycode: 10 },
+  RPAR: { baseKeycode: "KEY_0", linuxKeycode: 11 },
+  UNDER: { baseKeycode: "KEY_MINUS", linuxKeycode: 12 },
+  PLUS: { baseKeycode: "KEY_EQUAL", linuxKeycode: 13 },
+  LBRC: { baseKeycode: "KEY_LEFTBRACE", linuxKeycode: 26 },
+  RBRC: { baseKeycode: "KEY_RIGHTBRACE", linuxKeycode: 27 },
+  COLON: { baseKeycode: "KEY_SEMICOLON", linuxKeycode: 39 },
+  DQT: { baseKeycode: "KEY_APOSTROPHE", linuxKeycode: 40 },
+  TILDE: { baseKeycode: "KEY_GRAVE", linuxKeycode: 41 },
+  PIPE: { baseKeycode: "KEY_BACKSLASH", linuxKeycode: 43 },
+  LT: { baseKeycode: "KEY_COMMA", linuxKeycode: 51 },
+  GT: { baseKeycode: "KEY_DOT", linuxKeycode: 52 },
+  QMARK: { baseKeycode: "KEY_SLASH", linuxKeycode: 53 },
+  C_MUTE: { baseKeycode: "KEY_MUTE", linuxKeycode: 113 },
+  C_VOL_DN: { baseKeycode: "KEY_VOLUMEDOWN", linuxKeycode: 114 },
+  C_VOL_UP: { baseKeycode: "KEY_VOLUMEUP", linuxKeycode: 115 },
 };
 
 export function zmkKeycode(code: string): LinuxKeycode | undefined {
@@ -313,11 +364,16 @@ function nullBinding(): BindingResolution {
 }
 
 export function resolveBaseBinding(binding: string): BindingResolution {
+  if (/^&trans(?:\s|$)/.test(binding)) {
+    throw new Error(
+      `Transparent binding '${binding}' cannot be attributed without resolving the layer stack`,
+    );
+  }
   if (
     binding === "&none"
     || binding === "&bootloader"
     || binding === "&sys_reset"
-    || /^&(mo|magic)(?:\s|$)/.test(binding)
+    || /^&(mo|magic|bt|msc|rgb_ug)(?:\s|$)/.test(binding)
   ) {
     return nullBinding();
   }
@@ -330,7 +386,7 @@ export function resolveBaseBinding(binding: string): BindingResolution {
     if (!behavior || !modifier || !tapExpression) {
       throw new Error(`Malformed home-row-mod binding '${binding}'`);
     }
-    const modifierName = modifier.replace(/^[LR]/, "");
+    const modifierName = modifier.replace(/^[LR]/, "").replace("SHFT", "SHIFT");
     if (!/^(CTRL|ALT|GUI|SHIFT)$/.test(modifierName)) {
       throw new Error(`Unknown home-row modifier '${modifier}' in '${binding}'`);
     }
@@ -382,15 +438,55 @@ function canonicalJson(value: unknown): string {
 export function computeKeymapHash(
   positions: KeymapPosition[],
   layerSignals: LayerSignal[] = [],
+  layers: KeymapLayer[] = [],
 ): string {
   // The signals are hashed with the positions because they change what the firmware emits. A
   // recorded keymap boundary that ignored them would put data captured under two different
   // signalling schemes on the same side of the line.
-  const source = layerSignals.length === 0
+  const source = layerSignals.length === 0 && layers.length === 0
     ? canonicalJson(positions)
-    : canonicalJson({ positions, layerSignals });
+    : canonicalJson({ positions, layerSignals, layers });
   const digest = createHash("sha256").update(source).digest("hex");
   return `sha256:${digest}`;
+}
+
+function emittedLinuxKeycodes(binding: string): number[] {
+  const resolved = resolveBaseBinding(binding);
+  const keycodes: number[] = [];
+  if (resolved.linuxKeycode !== null) {
+    keycodes.push(resolved.linuxKeycode);
+  }
+
+  const modifier = binding.match(/^&(?:hml|hmr)\s+(\S+)\s+/)?.[1];
+  if (modifier) {
+    const modifierKeycode = linuxKeycodeFor(modifier).linuxKeycode;
+    if (!keycodes.includes(modifierKeycode)) {
+      keycodes.push(modifierKeycode);
+    }
+  }
+  return keycodes;
+}
+
+function createLayerPositions(bindings: string[], layerName: string): LayerPosition[] {
+  if (bindings.length !== 80) {
+    throw new Error(`Expected layer '${layerName}' to flatten to 80 bindings; found ${bindings.length}`);
+  }
+
+  const byKeycode = new Map<number, LayerPosition | null>();
+  for (const [pos, binding] of bindings.entries()) {
+    for (const linuxKeycode of emittedLinuxKeycodes(binding)) {
+      const existing = byKeycode.get(linuxKeycode);
+      if (existing === undefined) {
+        byKeycode.set(linuxKeycode, { pos, linuxKeycode, binding });
+      } else if (existing !== null && existing.pos !== pos) {
+        byKeycode.set(linuxKeycode, null);
+      }
+    }
+  }
+
+  return [...byKeycode.values()]
+    .filter((entry): entry is LayerPosition => entry !== null)
+    .sort((left, right) => left.pos - right.pos || left.linuxKeycode - right.linuxKeycode);
 }
 
 function currentGitCommit(): string {
@@ -447,13 +543,19 @@ export function createKeymapMeta(
     return position;
   });
 
+  const layers = resolveLayers(layout).map((layer, index): KeymapLayer => ({
+    index,
+    name: layer.name,
+    positions: createLayerPositions(toPhysicalRows(layer.keys).flat(), layer.name),
+  }));
   const layerSignals = resolveLayerSignals(layout, zmkKeycode);
   return KeymapMetaSchema.parse({
     schemaVersion: 1,
-    keymapHash: computeKeymapHash(positions, layerSignals),
+    keymapHash: computeKeymapHash(positions, layerSignals, layers),
     gitCommit: options.gitCommit ?? currentGitCommit(),
     generatedAt: options.generatedAt ?? new Date().toISOString(),
     positions,
+    layers,
     ...(layerSignals.length > 0 ? { layerSignals } : {}),
   });
 }

@@ -15,12 +15,13 @@ use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
-/// The six tables that hang off `bucket(id)`: the key columns other than `bucket_id`, and the
+/// The seven tables that hang off `bucket(id)`: the key columns other than `bucket_id`, and the
 /// column carrying the count. A collision merges them key by key and the counts add, because
 /// dropping one side is the defect schema v5 exists to remove, reintroduced by the back door.
-const BUCKET_CHILDREN: [(&str, &[&str], &str); 6] = [
+const BUCKET_CHILDREN: [(&str, &[&str], &str); 7] = [
     ("finger_count", &["finger_id"], "presses"),
     ("row_count", &["hand", "row_idx"], "presses"),
+    ("layer_count", &["layer_id"], "presses"),
     ("hold_hist", &["finger_id", "dur_bucket"], "n"),
     ("mod_hold_hist", &["mod_class", "dur_bucket"], "n"),
     ("gap_hist", &["hand", "gap_bucket"], "n"),
@@ -53,7 +54,7 @@ impl DeviceRow {
 }
 
 /// Every registered device, including rows that hold nothing at all — a merge has to be able to
-/// name them, and the viewer's menu deliberately hides them.
+/// name them, and Lab's menu deliberately hides them.
 pub fn list_devices(connection: &Connection) -> Result<Vec<DeviceRow>> {
     let mut statement = connection
         .prepare(
@@ -308,7 +309,7 @@ pub fn apply_merge(connection: &mut Connection, plan: &MergePlan) -> Result<Merg
     Ok(report)
 }
 
-/// Adds one bucket into another, key by key across all six child tables, then removes the source.
+/// Adds one bucket into another, key by key across all seven child tables, then removes the source.
 /// Both rows sealed in the same second under the same profile, so both counted real keystrokes.
 fn combine_buckets(
     transaction: &rusqlite::Transaction<'_>,
@@ -449,6 +450,7 @@ mod tests {
         for (statement, value) in [
             ("INSERT INTO finger_count(bucket_id, finger_id, presses) VALUES (?1, 3, ?2)", keystrokes),
             ("INSERT INTO row_count(bucket_id, hand, row_idx, presses) VALUES (?1, 0, 4, ?2)", keystrokes),
+            ("INSERT INTO layer_count(bucket_id, layer_id, presses) VALUES (?1, 1, ?2)", keystrokes),
             ("INSERT INTO hold_hist(bucket_id, finger_id, dur_bucket, n) VALUES (?1, 3, 2, ?2)", keystrokes),
             ("INSERT INTO mod_hold_hist(bucket_id, mod_class, dur_bucket, n) VALUES (?1, 0, 1, ?2)", 4),
             ("INSERT INTO gap_hist(bucket_id, hand, gap_bucket, n) VALUES (?1, 0, 5, ?2)", keystrokes),
@@ -623,6 +625,7 @@ mod tests {
             3,
             "child rows follow their bucket id, which the merge never rewrites"
         );
+        assert_eq!(scalar(&fixture, "SELECT COUNT(*) FROM layer_count"), 3);
         assert_eq!(
             scalar(&fixture, "SELECT COUNT(*) FROM pos_count"),
             2,
@@ -716,6 +719,13 @@ mod tests {
         assert_eq!(
             scalar(&fixture, "SELECT n FROM event_count WHERE bucket_id = 10"),
             14
+        );
+        assert_eq!(
+            scalar(
+                &fixture,
+                "SELECT presses FROM layer_count WHERE bucket_id = 10"
+            ),
+            390
         );
         assert_eq!(
             scalar(

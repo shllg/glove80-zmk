@@ -18,15 +18,32 @@ pub struct KeyInfo {
     pub row_idx: u8,
 }
 
+#[derive(Clone, Copy)]
+pub struct KeyResolution {
+    pub info: KeyInfo,
+    /// Present only when resolution used the table for the reported layer. `None` means Base
+    /// fallback, which preserves positional behavior but must not fabricate a layer measurement.
+    pub attributed_layer: Option<u8>,
+}
+
+struct LayerSignal {
+    name: String,
+    index: u8,
+}
+
 pub struct Keymap {
     pub hash: String,
     pub git_commit: String,
     pub alt_hand_ambiguous: bool,
-    /// Keycode to layer name, for the spare keys the firmware taps when the active layer changes.
-    /// Several indices share one code — the Base clones the BT profile indicators generate are
-    /// Base — so the mapping is to the name, which is what attribution cares about.
-    layer_signals: HashMap<u16, String>,
+    /// Keycode to reported layer and canonical index, for the spare keys the firmware taps when
+    /// the active layer changes. Several indices share one code — the Base clones the BT profile
+    /// indicators generate are Base — so the first Base index is retained for attribution while
+    /// the shared display name remains `Base`.
+    layer_signals: HashMap<u16, LayerSignal>,
     by_keycode: HashMap<u16, KeyInfo>,
+    /// Per-layer keycode tables indexed directly by the firmware's layer index. A missing slot
+    /// selects `by_keycode`, preserving the behavior of metadata written before layer tables.
+    by_layer: Vec<Option<HashMap<u16, KeyInfo>>>,
     /// Position to `finger_id`, indexed by physical position. Tier C degrades a rare ordered
     /// position trigram to its finger-level projection, which needs this direction of the map.
     finger_by_position: [Option<u8>; 80],
@@ -39,6 +56,8 @@ struct KeymapFile {
     keymap_hash: String,
     git_commit: String,
     positions: Positions,
+    #[serde(default)]
+    layers: Vec<LayerEntry>,
     /// Absent for every keymap generated before 2026-08-07, and for any board whose firmware does
     /// not signal layers at all — the laptop keyboard, for one.
     #[serde(default)]
@@ -51,6 +70,23 @@ struct LayerSignalEntry {
     layer: String,
     index: u8,
     linux_keycode: u16,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct LayerEntry {
+    index: u8,
+    name: String,
+    positions: Vec<LayerPosition>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct LayerPosition {
+    pos: u8,
+    linux_keycode: u16,
+    #[serde(rename = "binding")]
+    _binding: String,
 }
 
 struct Positions(HashMap<u8, Position>);
@@ -120,7 +156,7 @@ impl Keymap {
     }
 
     fn from_file(file: KeymapFile) -> Result<Self> {
-        let mut layer_signals: HashMap<u16, String> = HashMap::new();
+        let mut layer_signals: HashMap<u16, LayerSignal> = HashMap::new();
         for entry in file.layer_signals {
             if entry.index > 15 {
                 bail!("keymap metadata contains a layer signal above the ZMK layer limit");
@@ -129,21 +165,28 @@ impl Keymap {
                 // The Base clones the profile indicators generate share Base's code, which is
                 // correct. Two *different* layers behind one code is not: it would attribute
                 // whatever follows to whichever name happened to be read last.
-                Some(existing) if existing != &entry.layer => bail!(
+                Some(existing) if existing.name != entry.layer => bail!(
                     "keymap metadata maps keycode {} to both '{}' and '{}'",
                     entry.linux_keycode,
-                    existing,
+                    existing.name,
                     entry.layer
                 ),
                 Some(_) => {}
                 None => {
-                    layer_signals.insert(entry.linux_keycode, entry.layer);
+                    layer_signals.insert(
+                        entry.linux_keycode,
+                        LayerSignal {
+                            name: entry.layer,
+                            index: entry.index,
+                        },
+                    );
                 }
             }
         }
 
         let mut by_keycode = HashMap::with_capacity(80);
         let mut finger_by_position: [Option<u8>; 80] = [None; 80];
+        let mut info_by_position: [Option<KeyInfo>; 80] = [None; 80];
         let mut ambiguous_keycodes = HashSet::new();
         let mut left_alt_codes = HashSet::new();
         let mut right_alt_codes = HashSet::new();
@@ -189,22 +232,67 @@ impl Keymap {
                 }
             }
 
-            let Some(code) = position.linux_keycode else {
-                continue;
-            };
-            if ambiguous_keycodes.contains(&code) {
-                continue;
-            }
             let info = KeyInfo {
                 pos: position.pos,
                 hand,
                 finger_id: position.finger_id,
                 row_idx: position.row,
             };
+            info_by_position[usize::from(position.pos)] = Some(info);
+            let Some(code) = position.linux_keycode else {
+                continue;
+            };
+            if ambiguous_keycodes.contains(&code) {
+                continue;
+            }
             if by_keycode.insert(code, info).is_some() {
                 by_keycode.remove(&code);
                 ambiguous_keycodes.insert(code);
             }
+        }
+
+        let mut by_layer: Vec<Option<HashMap<u16, KeyInfo>>> = Vec::new();
+        for layer in file.layers {
+            if layer.index > 15 {
+                bail!("keymap metadata contains a layer above the ZMK layer limit");
+            }
+            if layer.name.is_empty() {
+                bail!("keymap metadata contains an unnamed layer");
+            }
+            let index = usize::from(layer.index);
+            if by_layer.len() <= index {
+                by_layer.resize_with(index + 1, || None);
+            }
+            if by_layer[index].is_some() {
+                bail!(
+                    "keymap metadata contains duplicate layer index {}",
+                    layer.index
+                );
+            }
+
+            let mut table = HashMap::with_capacity(layer.positions.len());
+            let mut ambiguous = HashSet::new();
+            for position in layer.positions {
+                let info = info_by_position
+                    .get(usize::from(position.pos))
+                    .copied()
+                    .flatten()
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "layer '{}' references undeclared physical position {}",
+                            layer.name,
+                            position.pos
+                        )
+                    })?;
+                if ambiguous.contains(&position.linux_keycode) {
+                    continue;
+                }
+                if table.insert(position.linux_keycode, info).is_some() {
+                    table.remove(&position.linux_keycode);
+                    ambiguous.insert(position.linux_keycode);
+                }
+            }
+            by_layer[index] = Some(table);
         }
 
         let alt_hand_ambiguous = left_alt_codes
@@ -213,10 +301,13 @@ impl Keymap {
         // A signal code that the board also types would make a real keystroke look like a layer
         // change, and the keystroke would then go uncounted. The generator refuses to emit one;
         // this is the second lock, because the metadata can also be hand-written.
-        if let Some(code) = layer_signals
-            .keys()
-            .find(|code| by_keycode.contains_key(code))
-        {
+        if let Some(code) = layer_signals.keys().find(|code| {
+            by_keycode.contains_key(code)
+                || by_layer
+                    .iter()
+                    .flatten()
+                    .any(|table| table.contains_key(code))
+        }) {
             bail!("keycode {code} is both a layer signal and a typed key");
         }
 
@@ -226,18 +317,36 @@ impl Keymap {
             alt_hand_ambiguous,
             layer_signals,
             by_keycode,
+            by_layer,
             finger_by_position,
         })
     }
 
-    pub fn resolve(&self, code: u16) -> Option<KeyInfo> {
-        self.by_keycode.get(&code).copied()
+    pub fn resolve(&self, code: u16, active_layer: Option<u8>) -> Option<KeyResolution> {
+        let (attributed_layer, table) = active_layer
+            .and_then(|index| {
+                self.by_layer
+                    .get(usize::from(index))
+                    .and_then(Option::as_ref)
+                    .map(|table| (Some(index), table))
+            })
+            .unwrap_or((None, &self.by_keycode));
+        table.get(&code).copied().map(|info| KeyResolution {
+            info,
+            attributed_layer,
+        })
     }
 
     /// The layer a keycode reports, for the spare keys the firmware taps on a layer change. `None`
     /// for every ordinary key, which is the answer for every board that does not signal layers.
     pub fn layer_signal(&self, code: u16) -> Option<&str> {
-        self.layer_signals.get(&code).map(String::as_str)
+        self.layer_signals
+            .get(&code)
+            .map(|signal| signal.name.as_str())
+    }
+
+    pub fn layer_index(&self, code: u16) -> Option<u8> {
+        self.layer_signals.get(&code).map(|signal| signal.index)
     }
 
     pub fn signals_layers(&self) -> bool {
@@ -283,6 +392,7 @@ impl Keymap {
             alt_hand_ambiguous: false,
             layer_signals: HashMap::new(),
             by_keycode: entries.iter().copied().collect(),
+            by_layer: Vec::new(),
             finger_by_position,
         }
     }
@@ -290,8 +400,26 @@ impl Keymap {
     pub(crate) fn with_layer_signals(mut self, signals: &[(u16, &str)]) -> Self {
         self.layer_signals = signals
             .iter()
-            .map(|(code, layer)| (*code, (*layer).to_owned()))
+            .enumerate()
+            .map(|(index, (code, layer))| {
+                (
+                    *code,
+                    LayerSignal {
+                        name: (*layer).to_owned(),
+                        index: u8::try_from(index).unwrap_or(u8::MAX),
+                    },
+                )
+            })
             .collect();
+        self
+    }
+
+    pub(crate) fn with_layer(mut self, index: u8, entries: &[(u16, KeyInfo)]) -> Self {
+        let index = usize::from(index);
+        if self.by_layer.len() <= index {
+            self.by_layer.resize_with(index + 1, || None);
+        }
+        self.by_layer[index] = Some(entries.iter().copied().collect());
         self
     }
 }
@@ -308,7 +436,10 @@ mod tests {
             !keymap.alt_hand_ambiguous,
             "the right home row mod binds RALT since 2026-08-07, so the hands are distinguishable"
         );
-        assert_eq!(keymap.resolve(30).map(|info| info.pos), Some(35));
+        assert_eq!(
+            keymap.resolve(30, None).map(|resolved| resolved.info.pos),
+            Some(35)
+        );
     }
 
     #[test]
@@ -323,15 +454,19 @@ mod tests {
         assert_eq!(keymap.layer_signal(189), Some("Magic"));
         // An ordinary key is never a signal, and a signal is never an ordinary key.
         assert_eq!(keymap.layer_signal(30), None);
-        assert!(keymap.resolve(184).is_none());
+        assert!(keymap.resolve(184, None).is_none());
     }
 
     #[test]
-    fn a_board_that_does_not_signal_layers_loads_unchanged() {
+    fn a_board_without_layer_signals_is_unchanged() {
         let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../config/qwerty-ansi-meta.json");
         let keymap = Keymap::load(&path).unwrap_or_else(|error| panic!("{error:#}"));
         assert!(!keymap.signals_layers());
         assert_eq!(keymap.layer_signal(184), None);
+        assert_eq!(
+            keymap.resolve(33, None).map(|resolved| resolved.info.pos),
+            Some(33)
+        );
     }
 
     #[test]
@@ -420,16 +555,25 @@ mod tests {
         );
         // KEY_F is the right index home key; KEY_102ND exists for a DE ISO laptop.
         let f = keymap
-            .resolve(33)
+            .resolve(33, None)
             .unwrap_or_else(|| unreachable!("KEY_F must resolve"));
-        assert_eq!((f.hand, f.finger_id, f.row_idx), (HAND_LEFT, 0, 3));
+        assert_eq!(
+            (f.info.hand, f.info.finger_id, f.info.row_idx),
+            (HAND_LEFT, 0, 3)
+        );
         let j = keymap
-            .resolve(36)
+            .resolve(36, None)
             .unwrap_or_else(|| unreachable!("KEY_J must resolve"));
-        assert_eq!((j.hand, j.finger_id, j.row_idx), (HAND_RIGHT, 5, 3));
-        assert!(keymap.resolve(86).is_some(), "KEY_102ND must be mapped");
+        assert_eq!(
+            (j.info.hand, j.info.finger_id, j.info.row_idx),
+            (HAND_RIGHT, 5, 3)
+        );
+        assert!(
+            keymap.resolve(86, None).is_some(),
+            "KEY_102ND must be mapped"
+        );
         // Nothing from the Glove80's F-row exists on this board.
-        assert!(keymap.resolve(59).is_none());
+        assert!(keymap.resolve(59, None).is_none());
     }
 
     #[test]
@@ -437,9 +581,12 @@ mod tests {
         let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../out/keymap-meta.json");
         let keymap = Keymap::load(&path).unwrap_or_else(|error| panic!("{error:#}"));
         let a = keymap
-            .resolve(30)
+            .resolve(30, None)
             .unwrap_or_else(|| unreachable!("KEY_A must resolve"));
-        assert_eq!(keymap.finger_for_position(a.pos), Some(a.finger_id));
+        assert_eq!(
+            keymap.finger_for_position(a.info.pos),
+            Some(a.info.finger_id)
+        );
         assert_eq!(keymap.finger_for_position(200), None);
     }
 
@@ -449,5 +596,65 @@ mod tests {
         assert_eq!(modifier_keycode_from_binding("&hmr LALT L"), Some(56));
         assert_eq!(modifier_keycode_from_binding("&hmr RALT L"), Some(100));
         assert_eq!(modifier_keycode_from_binding("&kp A"), None);
+    }
+
+    fn layered_file() -> KeymapFile {
+        serde_json::from_str(
+            r#"{
+                "schemaVersion": 1,
+                "keymapHash": "sha256:0",
+                "gitCommit": "test",
+                "positions": [
+                    {"pos": 0, "hand": "L", "row": 3, "finger": "L_index", "fingerId": 0,
+                     "linuxKeycode": 18, "baseBinding": "&kp E", "isHrm": false},
+                    {"pos": 1, "hand": "L", "row": 4, "finger": "L_index", "fingerId": 0,
+                     "linuxKeycode": 33, "baseBinding": "&hml LCTRL F", "isHrm": true,
+                     "modClass": "L_CTRL"}
+                ],
+                "layers": [
+                    {"index": 0, "name": "Base", "positions": [
+                        {"pos": 0, "linuxKeycode": 18, "binding": "&kp E"},
+                        {"pos": 1, "linuxKeycode": 33, "binding": "&hml LCTRL F"},
+                        {"pos": 1, "linuxKeycode": 29, "binding": "&hml LCTRL F"}
+                    ]},
+                    {"index": 1, "name": "Navigation", "positions": [
+                        {"pos": 1, "linuxKeycode": 18, "binding": "&kp LC(LA(E))"}
+                    ]}
+                ],
+                "layerSignals": [
+                    {"layer": "Base", "index": 0, "code": "F14", "linuxKeycode": 184},
+                    {"layer": "Navigation", "index": 1, "code": "F15", "linuxKeycode": 185}
+                ]
+            }"#,
+        )
+        .unwrap_or_else(|error| panic!("{error:#}"))
+    }
+
+    #[test]
+    fn a_key_pressed_on_a_layer_resolves_to_its_physical_position() {
+        let keymap = Keymap::from_file(layered_file()).unwrap_or_else(|error| panic!("{error:#}"));
+        let layer = keymap.layer_index(185);
+        let resolved = keymap
+            .resolve(18, layer)
+            .unwrap_or_else(|| unreachable!("Navigation E must resolve"));
+        assert_eq!((resolved.info.pos, resolved.attributed_layer), (1, Some(1)));
+    }
+
+    #[test]
+    fn a_modifier_hold_resolves_to_the_home_row_position_that_emitted_it() {
+        let keymap = Keymap::from_file(layered_file()).unwrap_or_else(|error| panic!("{error:#}"));
+        let resolved = keymap
+            .resolve(29, keymap.layer_index(184))
+            .unwrap_or_else(|| unreachable!("the home-row CTRL hold must resolve"));
+        assert_eq!((resolved.info.pos, resolved.attributed_layer), (1, Some(0)));
+    }
+
+    #[test]
+    fn an_unknown_layer_falls_back_to_the_base_layer() {
+        let keymap = Keymap::from_file(layered_file()).unwrap_or_else(|error| panic!("{error:#}"));
+        let resolved = keymap
+            .resolve(18, Some(15))
+            .unwrap_or_else(|| unreachable!("the base E must remain the fallback"));
+        assert_eq!((resolved.info.pos, resolved.attributed_layer), (0, None));
     }
 }

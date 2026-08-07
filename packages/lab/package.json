@@ -1,11 +1,12 @@
 {
-  "name": "@glove80/viewer",
+  "name": "@glove80/lab",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "bun test"
   },
   "dependencies": {
-    "@glove80/analysis": "workspace:*"
+    "@glove80/analysis": "workspace:*",
+    "@glove80/trainer": "workspace:*"
   }
 }

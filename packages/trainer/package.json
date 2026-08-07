@@ -10,7 +10,11 @@
     "./corpus": "./src/corpus.ts",
     "./drills": "./src/drills.ts",
     "./weakness": "./src/weakness.ts",
-    "./server": "./src/server.ts"
+    "./history": "./src/history.ts",
+    "./corrections": "./src/corrections.ts",
+    "./scoring": "./src/scoring.ts",
+    "./session": "./src/session.ts",
+    "./typing-session": "./src/typing-session.js"
   },
   "dependencies": {
     "@glove80/analysis": "workspace:*"

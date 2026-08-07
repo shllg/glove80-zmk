@@ -28,6 +28,10 @@ CREATE TABLE row_count (
   bucket_id INTEGER NOT NULL REFERENCES bucket(id), hand INTEGER NOT NULL, row_idx INTEGER NOT NULL,
   presses INTEGER NOT NULL, PRIMARY KEY (bucket_id, hand, row_idx)
 ) WITHOUT ROWID;
+CREATE TABLE layer_count (
+  bucket_id INTEGER NOT NULL REFERENCES bucket(id), layer_id INTEGER NOT NULL,
+  presses INTEGER NOT NULL, PRIMARY KEY (bucket_id, layer_id)
+) WITHOUT ROWID;
 CREATE TABLE hold_hist (
   bucket_id INTEGER NOT NULL REFERENCES bucket(id), finger_id INTEGER NOT NULL, dur_bucket INTEGER NOT NULL,
   n INTEGER NOT NULL, PRIMARY KEY (bucket_id, finger_id, dur_bucket)
@@ -106,7 +110,7 @@ const SECOND_DEVICE_BUCKET = 2;
 const GAMING_BUCKET = 2;
 
 export function createFixture(
-  options: { empty?: boolean; schemaVersion?: number; future?: boolean } = {},
+  options: { empty?: boolean; schemaVersion?: number; future?: boolean; layerCounts?: boolean } = {},
 ): SeededFixture {
   const directory = mkdtempSync(join(tmpdir(), "keylab-analysis-"));
   const path = join(directory, "keylab.db");
@@ -115,7 +119,7 @@ export function createFixture(
   const database = new Database(path, { create: true });
   database.exec(SCHEMA);
   database.query("INSERT INTO meta(key, value) VALUES (?, ?)").run(
-    "schema_version", String(options.schemaVersion ?? 5),
+    "schema_version", String(options.schemaVersion ?? 6),
   );
   database.query("INSERT INTO meta(key, value) VALUES (?, ?)").run("alt_hand_ambiguous", "1");
   database.query("INSERT INTO device(id, name, uniq, first_ts, keymap_kind, keymap_hash) VALUES (1, 'fixture', NULL, ?, 'glove80', 'fixture')")
@@ -151,6 +155,14 @@ export function createFixture(
       insertRow.run(RECENT_BUCKET, hand, row, presses);
     }
     insertRow.run(OLD_BUCKET, 0, 1, 1_000);
+
+    if (options.layerCounts !== false) {
+      const insertLayer = database.query(
+        "INSERT INTO layer_count(bucket_id, layer_id, presses) VALUES (?, ?, ?)",
+      );
+      insertLayer.run(RECENT_BUCKET, 0, 80);
+      insertLayer.run(RECENT_BUCKET, 5, 20);
+    }
 
     const insertHold = database.query(
       "INSERT INTO hold_hist(bucket_id, finger_id, dur_bucket, n) VALUES (?, ?, ?, ?)",
@@ -280,7 +292,7 @@ export function createMultiDeviceFixture(): SeededFixture {
   const metaPath = resolve(dirname(fileURLToPath(import.meta.url)), "../../../out/keymap-meta.json");
   const database = new Database(path, { create: true });
   database.exec(SCHEMA);
-  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '5')").run();
+  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '6')").run();
   database.query("INSERT INTO meta(key, value) VALUES ('alt_hand_ambiguous', '0')").run();
   database.query(`
     INSERT INTO device(id, name, uniq, first_ts, keymap_kind, keymap_hash) VALUES
@@ -369,7 +381,7 @@ export function createCorrectionFixture(
   };
   const database = new Database(path, { create: true });
   database.exec(SCHEMA);
-  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '5')").run();
+  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '6')").run();
   database.query("INSERT INTO meta(key, value) VALUES ('alt_hand_ambiguous', '0')").run();
   database.query("INSERT INTO device(id, name, uniq, first_ts, keymap_kind, keymap_hash) VALUES (1, 'fixture', NULL, ?, 'glove80', 'fixture')")
     .run(FIXTURE_NOW - 1_000_000);
@@ -454,7 +466,7 @@ export function createProfileFixture(): SeededFixture {
   const metaPath = resolve(dirname(fileURLToPath(import.meta.url)), "../../../out/keymap-meta.json");
   const database = new Database(path, { create: true });
   database.exec(SCHEMA);
-  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '5')").run();
+  database.query("INSERT INTO meta(key, value) VALUES ('schema_version', '6')").run();
   database.query("INSERT INTO meta(key, value) VALUES ('alt_hand_ambiguous', '0')").run();
   database.query("INSERT INTO device(id, name, uniq, first_ts, keymap_kind, keymap_hash) VALUES (1, 'fixture', NULL, ?, 'glove80', 'fixture')")
     .run(FIXTURE_NOW - 1_000_000);

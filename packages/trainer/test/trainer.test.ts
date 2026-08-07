@@ -34,23 +34,20 @@ import {
 } from "../src/corrections";
 import { codeIdentifiers, commitSubjects, proseWords } from "../src/ownMaterial";
 import { COMPOSED_CODE, rollingMedian, scoreSession } from "../src/scoring";
-import { benchmarkHistory, createTrainerServer, type TrainerApp } from "../src/server";
+import { benchmarkHistory } from "../src/history";
 import {
   openTrainerStore,
   SUPPORTED_TRAINER_SCHEMA_VERSION,
   type TrainerStore,
 } from "../src/store";
 import { browserCodeToKeyName, buildWeaknessModel } from "../src/weakness";
-import { applyInput, createTypingSession, noteKeydown } from "../public/typing-session.js";
+import { applyInput, createTypingSession, noteKeydown } from "../src/typing-session.js";
 
 const directories: string[] = [];
 const stores: TrainerStore[] = [];
 const fixtures: SeededFixture[] = [];
-const apps: TrainerApp[] = [];
-const silentLogger = { log() {}, error() {} };
 
 afterEach(() => {
-  for (const app of apps.splice(0)) app.stop();
   for (const store of stores.splice(0)) {
     try {
       store.close();
@@ -126,6 +123,42 @@ describe("trainer store", () => {
       startedTs: 1, mode: "freestyle" as "drill", language: "en", corpusId: "x",
       corpusVersion: "1", seed: 1, deviceLabel: "t", keylabProfile: null,
     })).toThrow();
+  });
+
+  test("stores a completed session and every child row in one transaction", () => {
+    const { store } = trainerStore();
+    const id = store.saveCompletedSession({
+      startedTs: 1_000, endedTs: 1_060, mode: "drill", language: "en",
+      corpusId: "en-drill", corpusVersion: "1", seed: 7, deviceLabel: "test",
+      keylabProfile: "training-en", text: "ab", drillFamily: "position",
+    }, [
+      { seq: 0, tsMs: 0, code: "KeyA", expectedCode: "KeyA", correct: true },
+      { seq: 1, tsMs: 100, code: "KeyB", expectedCode: "KeyB", correct: true },
+    ], [
+      { seq: 0, tsMs: 50, charIndex: 1, runLength: 1, expectedCode: "KeyB" },
+    ]);
+
+    expect(store.session(id)).toMatchObject({
+      endedTs: 1_060, drillFamily: "position", keylabProfile: "training-en",
+    });
+    expect(store.keystrokes(id)).toHaveLength(2);
+    expect(store.corrections(id)).toHaveLength(1);
+  });
+
+  test("rolls back the session and earlier child rows when atomic completion fails", () => {
+    const { store } = trainerStore();
+    expect(() => store.saveCompletedSession({
+      startedTs: 1_000, endedTs: 1_060, mode: "benchmark", language: "en",
+      corpusId: "en-common", corpusVersion: "1", seed: 7, deviceLabel: "test",
+      keylabProfile: "training-en", text: "ab", drillFamily: null,
+    }, [
+      { seq: 0, tsMs: 0, code: "KeyA", expectedCode: "KeyA", correct: true },
+      { seq: 0, tsMs: 100, code: "KeyB", expectedCode: "KeyB", correct: true },
+    ], [])).toThrow();
+
+    expect(store.sessions()).toHaveLength(0);
+    const rows = store.database.query("SELECT COUNT(*) AS n FROM keystroke").get() as { n: number };
+    expect(Number(rows.n)).toBe(0);
   });
 });
 
@@ -450,248 +483,6 @@ describe("own-material corpus", () => {
   });
 });
 
-describe("trainer server", () => {
-  function startTrainer() {
-    const directory = mkdtempSync(join(tmpdir(), "keylab-trainer-app-"));
-    directories.push(directory);
-    const fixture = createFixture();
-    fixtures.push(fixture);
-    const app = createTrainerServer({
-      port: 0,
-      trainerPath: join(directory, "data", "trainer.db"),
-      keylabPath: fixture.path,
-      metaPath: fixture.metaPath,
-      now: () => FIXTURE_NOW,
-      logger: silentLogger,
-    });
-    apps.push(app);
-    return { app, fixture };
-  }
-
-  test("starts a benchmark session and returns reproducible text", async () => {
-    const { app } = startTrainer();
-    const response = await fetch(`${app.url}/api/session/start`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ mode: "benchmark", corpusId: "en-common", seed: 4, wordCount: 10 }),
-    });
-    expect(response.status).toBe(200);
-    const started = await response.json();
-    expect(started.text).toBe(generateBenchmark("en-common", 4, 10).text);
-    expect(started.corpusVersion).toBe(BENCHMARK_CORPUS_VERSION);
-    expect(started.sessionId).toBe(1);
-  });
-
-  test("accepts a session POST from the localhost spelling of its own origin", async () => {
-    const { app } = startTrainer();
-    const response = await fetch(`${app.url}/api/session/start`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        origin: `http://localhost:${new URL(app.url).port}`,
-      },
-      body: JSON.stringify({ mode: "benchmark", corpusId: "en-common", seed: 4, wordCount: 10 }),
-    });
-    expect(response.status).toBe(200);
-  });
-
-  test("rejects a cross-origin POST and a non-JSON body", async () => {
-    const { app } = startTrainer();
-    const foreign = await fetch(`${app.url}/api/session/start`, {
-      method: "POST",
-      headers: { "content-type": "application/json", origin: "https://evil.example" },
-      body: "{}",
-    });
-    expect(foreign.status).toBe(403);
-    const plain = await fetch(`${app.url}/api/session/start`, {
-      method: "POST",
-      headers: { "content-type": "text/plain" },
-      body: "mode=benchmark",
-    });
-    expect(plain.status).toBe(415);
-  });
-
-  test("finishing a session scores it and files it under the benchmark trend", async () => {
-    const { app } = startTrainer();
-    const started = await (await fetch(`${app.url}/api/session/start`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ mode: "benchmark", corpusId: "en-common", seed: 4, wordCount: 4 }),
-    })).json();
-
-    const keystrokes = [...started.text].map((character: string, index: number) => ({
-      tsMs: index * 200,
-      code: /[a-z]/.test(character) ? `Key${character.toUpperCase()}` : "Space",
-      expectedCode: /[a-z]/.test(character) ? `Key${character.toUpperCase()}` : "Space",
-      correct: true,
-    }));
-    const finished = await fetch(`${app.url}/api/session/finish`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ sessionId: started.sessionId, keystrokes }),
-    });
-    expect(finished.status).toBe(200);
-    const score = await finished.json();
-    expect(score.keystrokes).toBe(keystrokes.length);
-    expect(score.accuracy).toBe(1);
-
-    const history = await (await fetch(`${app.url}/api/history`)).json();
-    expect(history.points).toHaveLength(1);
-    expect(history.rollingMedianWpm.en).toHaveLength(1);
-  });
-
-  test("a drill session is never plotted as a benchmark", async () => {
-    const { app } = startTrainer();
-    const started = await (await fetch(`${app.url}/api/session/start`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ mode: "drill", family: "position", seed: 8 }),
-    })).json();
-    expect(started.mode).toBe("drill");
-    expect(started.rationale).toBeTruthy();
-    await fetch(`${app.url}/api/session/finish`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        sessionId: started.sessionId,
-        keystrokes: [{ tsMs: 0, code: "KeyA", expectedCode: "KeyA", correct: true }],
-      }),
-    });
-    const history = await (await fetch(`${app.url}/api/history`)).json();
-    expect(history.points).toHaveLength(0);
-  });
-
-  test("records a composed character as unattributed rather than inventing a key", async () => {
-    const { app } = startTrainer();
-    const started = await (await fetch(`${app.url}/api/session/start`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ mode: "benchmark", corpusId: "de-common", seed: 2, wordCount: 3 }),
-    })).json();
-    const finished = await (await fetch(`${app.url}/api/session/finish`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        sessionId: started.sessionId,
-        keystrokes: [
-          { tsMs: 0, code: "KeyA", expectedCode: "KeyA", correct: true },
-          { tsMs: 100, code: COMPOSED_CODE, expectedCode: null, correct: true },
-        ],
-      }),
-    })).json();
-    expect(finished.unattributedCharacters).toBe(1);
-  });
-
-  test("serves the weakness model over HTTP", async () => {
-    const { app } = startTrainer();
-    const model = await (await fetch(`${app.url}/api/weakness`)).json();
-    expect(model.confidence).toBe("bootstrap");
-    expect(Array.isArray(model.positions)).toBe(true);
-  });
-
-  test("serves the typing-session module the page imports", async () => {
-    const { app } = startTrainer();
-    const module = await fetch(`${app.url}/typing-session.js`);
-    expect(module.status).toBe(200);
-    expect(module.headers.get("content-type")).toContain("text/javascript");
-    expect(await module.text()).toContain("export function applyInput");
-  });
-
-  test("unknown routes and methods are refused", async () => {
-    const { app } = startTrainer();
-    expect((await fetch(`${app.url}/nope`)).status).toBe(404);
-    expect((await fetch(`${app.url}/api/history`, { method: "DELETE" })).status).toBe(405);
-  });
-
-  test("rejects a malformed correction payload instead of coercing it", async () => {
-    const { app } = startTrainer();
-    const started = await (await fetch(`${app.url}/api/session/start`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ mode: "benchmark", corpusId: "en-common", seed: 4, wordCount: 4 }),
-    })).json();
-
-    for (const corrections of [
-      "not-an-array",
-      [{ tsMs: 10, charIndex: -1, runLength: 1 }],
-      [{ tsMs: 10, charIndex: 0, runLength: 0 }],
-      [{ tsMs: 10, charIndex: 1.5, runLength: 1 }],
-      [{ charIndex: 0, runLength: 1 }],
-    ]) {
-      const response = await fetch(`${app.url}/api/session/finish`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ sessionId: started.sessionId, keystrokes: [], corrections }),
-      });
-      expect(response.status).toBe(500);
-    }
-    const stored = app.store.database
-      .query("SELECT COUNT(*) AS n FROM correction").get() as { n: number };
-    expect(Number(stored.n)).toBe(0);
-  });
-
-  test("a finished session returns its corrections, attributed to words", async () => {
-    const { app } = startTrainer();
-    const started = await (await fetch(`${app.url}/api/session/start`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ mode: "benchmark", corpusId: "en-common", seed: 4, wordCount: 4 }),
-    })).json();
-    const text: string = started.text;
-    const secondWordStart = text.indexOf(" ") + 1;
-
-    const keystrokes = [...text].map((character, index) => ({
-      tsMs: index * 200,
-      code: /[a-z]/.test(character) ? `Key${character.toUpperCase()}` : "Space",
-      expectedCode: /[a-z]/.test(character) ? `Key${character.toUpperCase()}` : "Space",
-      correct: true,
-    }));
-    const finished = await (await fetch(`${app.url}/api/session/finish`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        sessionId: started.sessionId,
-        keystrokes,
-        corrections: [
-          { tsMs: 10_000, charIndex: 1, runLength: 1, expectedCode: "KeyX" },
-          { tsMs: 10_100, charIndex: secondWordStart, runLength: 2, expectedCode: null },
-        ],
-      }),
-    })).json();
-
-    expect(finished.corrections.corrections).toBe(2);
-    expect(finished.corrections.charactersRemoved).toBe(3);
-    const attributed = finished.corrections.words as Array<{ word: string; corrections: number }>;
-    const [firstWord, secondWord] = text.split(" ") as [string, string];
-    expect(attributed.map((word) => word.word)).toContain(firstWord);
-    expect(attributed.map((word) => word.word)).toContain(secondWord);
-    expect(attributed.reduce((sum, word) => sum + word.corrections, 0)).toBe(2);
-    // Corrections must never reach the score's denominators.
-    expect(finished.keystrokes).toBe(keystrokes.length);
-    expect(finished.accuracy).toBe(1);
-
-    const history = await (await fetch(`${app.url}/api/history`)).json();
-    expect(history.points[0].corrections.corrections).toBe(2);
-    expect(history.points[0].corrections.charactersRemoved).toBe(3);
-  });
-
-  test("history is a benchmark-only trend even with drills present", () => {
-    const { store } = trainerStore();
-    for (const mode of ["benchmark", "drill"] as const) {
-      const id = store.startSession({
-        startedTs: 1, mode, language: "en", corpusId: "x", corpusVersion: "1",
-        seed: 1, deviceLabel: "t", keylabProfile: null,
-      });
-      store.recordKeystrokes(id, [
-        { seq: 0, tsMs: 0, code: "KeyA", expectedCode: "KeyA", correct: true },
-        { seq: 1, tsMs: 60_000, code: "KeyB", expectedCode: "KeyB", correct: true },
-      ]);
-      store.finishSession(id, 2);
-    }
-    expect(benchmarkHistory(store).points).toHaveLength(1);
-  });
-});
-
 describe("typing session capture", () => {
   function type(session: ReturnType<typeof createTypingSession>, typed: string, tsMs: number) {
     const character = typed.slice(-1);
@@ -782,6 +573,41 @@ describe("typing session capture", () => {
     expect(type(session, "ab", 100).complete).toBe(true);
     expect(backspace(session, "a", 200).complete).toBe(false);
   });
+
+  test("paste and replacement input cannot complete or corrupt a physical-keystroke session", () => {
+    const session = createTypingSession(1, "hello");
+    noteKeydown(session, { key: "v", code: "KeyV" });
+    const pasted = applyInput(session, "hello", 100);
+    expect(pasted).toEqual({ kind: "unsupported", complete: false, acceptedValue: "" });
+    expect(session.keystrokes).toEqual([]);
+    expect(session.value).toBe("");
+
+    type(session, "h", 200);
+    const replaced = applyInput(session, "x", 300);
+    expect(replaced).toEqual({ kind: "unsupported", complete: false, acceptedValue: "h" });
+    expect(session.keystrokes).toHaveLength(1);
+    expect(session.value).toBe("h");
+  });
+
+  test("rejects one-character autofill but preserves a genuine composed input", () => {
+    const autofill = createTypingSession(1, "a");
+    expect(applyInput(autofill, "a", 100, {
+      inputType: "insertReplacementText", isComposing: false, trusted: true,
+    })).toEqual({ kind: "unsupported", complete: false, acceptedValue: "" });
+    expect(autofill.keystrokes).toEqual([]);
+
+    const unkeyed = createTypingSession(2, "a");
+    expect(applyInput(unkeyed, "a", 100, {
+      inputType: "insertText", isComposing: false, trusted: true,
+    }).kind).toBe("unsupported");
+
+    const composed = createTypingSession(3, "ä");
+    const outcome = applyInput(composed, "ä", 100, {
+      inputType: "insertCompositionText", isComposing: true, trusted: true,
+    });
+    expect(outcome.complete).toBe(true);
+    expect(composed.keystrokes[0]).toMatchObject({ code: COMPOSED_CODE });
+  });
 });
 
 describe("correction storage", () => {
@@ -806,6 +632,40 @@ describe("correction storage", () => {
     // Corrections live in their own table so they can never move a scoring denominator.
     expect(store.keystrokes(id)).toHaveLength(1);
     expect(store.sessions()[0]?.text).toBe("the cat");
+  });
+
+  test("the retained corrections diagnostic ignores legacy incomplete sessions", () => {
+    const { directory, store } = trainerStore();
+    const incomplete = store.startSession({
+      startedTs: 1, mode: "drill", language: "en", corpusId: "old-drill",
+      corpusVersion: "1", seed: 1, deviceLabel: "test", keylabProfile: null,
+      text: "ab", drillFamily: "position",
+    });
+    store.recordCorrections(incomplete, [
+      { seq: 0, tsMs: 100, charIndex: 0, runLength: 1, expectedCode: "KeyA" },
+    ]);
+    const completed = store.saveCompletedSession({
+      startedTs: 2, endedTs: 3, mode: "drill", language: "en", corpusId: "new-drill",
+      corpusVersion: "1", seed: 2, deviceLabel: "test", keylabProfile: null,
+      text: "ab", drillFamily: "position",
+    }, [
+      { seq: 0, tsMs: 0, code: "KeyA", expectedCode: "KeyA", correct: false },
+    ], [
+      { seq: 0, tsMs: 100, charIndex: 0, runLength: 1, expectedCode: "KeyA" },
+    ]);
+    store.close();
+
+    const result = Bun.spawnSync([
+      process.execPath,
+      join(import.meta.dir, "../bin/trainer.ts"),
+      "corrections",
+      "--trainer",
+      join(directory, "trainer.db"),
+    ]);
+    const output = result.stdout.toString();
+    expect(result.exitCode).toBe(0);
+    expect(output).toContain(`session ${completed}`);
+    expect(output).not.toContain(`session ${incomplete}  `);
   });
 
   test("migrates a v1 trainer database in place", () => {
@@ -842,6 +702,7 @@ describe("correction storage", () => {
     // The history survives the migration; only its prompt text is unknowable after the fact.
     expect(store.sessions()).toHaveLength(1);
     expect(store.sessions()[0]?.text).toBeNull();
+    expect(store.sessions()[0]?.drillFamily).toBeNull();
     expect(store.keystrokes(1)).toHaveLength(1);
     expect(store.corrections(1)).toEqual([]);
     store.recordCorrections(1, [

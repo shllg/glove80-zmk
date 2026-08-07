@@ -198,10 +198,14 @@ function renderProfileBehaviors(): string {
  * signal table, above all — has to resolve the order the same way rather than reading
  * `layout.layers` and being wrong by four.
  */
-export function resolveLayerNames(layout: Layout): string[] {
+export function resolveLayers(layout: Layout): Layout["layers"] {
   const workingLayout = structuredClone(layout);
   applyProfileIndicators(workingLayout);
-  return workingLayout.layers.map((layer) => layer.name);
+  return workingLayout.layers;
+}
+
+export function resolveLayerNames(layout: Layout): string[] {
+  return resolveLayers(layout).map((layer) => layer.name);
 }
 
 export function generateKeymapDtsi(layout: Layout): string {

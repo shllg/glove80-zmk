@@ -18,19 +18,28 @@ export interface PositionMeta {
   modClass?: string;
 }
 
+export interface LayerMeta {
+  index: number;
+  name: string;
+}
+
 interface KeymapMetaFile {
   schemaVersion: number;
   positions: PositionMeta[];
+  layers?: unknown[];
 }
 
 export interface AnalysisMeta {
   positions: readonly PositionMeta[];
   positionsByPos: ReadonlyMap<number, PositionMeta>;
+  layers: readonly LayerMeta[];
+  layersByIndex: ReadonlyMap<number, LayerMeta>;
   altHandAmbiguous: boolean;
   position(pos: number): PositionMeta | undefined;
   finger(pos: number): string | undefined;
   row(pos: number): number | undefined;
   col(pos: number): number | null | undefined;
+  layer(index: number): LayerMeta | undefined;
 }
 
 interface MetaRow {
@@ -63,8 +72,25 @@ function parsePosition(value: unknown, index: number): PositionMeta {
   return position as unknown as PositionMeta;
 }
 
+function parseLayer(value: unknown, index: number): LayerMeta {
+  if (!value || typeof value !== "object") {
+    throw new Error(`keymap metadata layer ${index} is not an object`);
+  }
+  const layer = value as Record<string, unknown>;
+  if (
+    !Number.isInteger(layer.index)
+    || Number(layer.index) < 0
+    || Number(layer.index) > 15
+    || typeof layer.name !== "string"
+    || layer.name.length === 0
+  ) {
+    throw new Error(`keymap metadata layer ${index} is invalid`);
+  }
+  return { index: Number(layer.index), name: layer.name };
+}
+
 export function loadAnalysisMeta(
-  database: Database,
+  database: Database | null,
   path = resolve(dirname(fileURLToPath(import.meta.url)), "../../../out/keymap-meta.json"),
 ): AnalysisMeta {
   let parsed: KeymapMetaFile;
@@ -95,17 +121,30 @@ export function loadAnalysisMeta(
     positionsByPos.set(position.pos, position);
   }
 
+  const layers = (parsed.layers ?? []).map(parseLayer).sort((left, right) => left.index - right.index);
+  const layersByIndex = new Map<number, LayerMeta>();
+  for (const layer of layers) {
+    if (layersByIndex.has(layer.index)) {
+      throw new Error(`Duplicate keymap layer index ${layer.index}`);
+    }
+    layersByIndex.set(layer.index, layer);
+  }
+
   const altRow = database
-    .query("SELECT value FROM meta WHERE key = 'alt_hand_ambiguous'")
-    .get() as MetaRow | null;
+    ? database.query("SELECT value FROM meta WHERE key = 'alt_hand_ambiguous'")
+      .get() as MetaRow | null
+    : null;
 
   return {
     positions,
     positionsByPos,
+    layers,
+    layersByIndex,
     altHandAmbiguous: altRow?.value === "1",
     position: (pos) => positionsByPos.get(pos),
     finger: (pos) => positionsByPos.get(pos)?.finger,
     row: (pos) => positionsByPos.get(pos)?.row,
     col: (pos) => positionsByPos.get(pos)?.col,
+    layer: (index) => layersByIndex.get(index),
   };
 }
