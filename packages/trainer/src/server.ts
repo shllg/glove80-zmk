@@ -50,6 +50,11 @@ export interface TrainerApp {
   stop(): void;
 }
 
+/** The two origins that are this server: `127.0.0.1` and `localhost` on the port it bound. */
+function isSameServerOrigin(origin: string, port: number | undefined): boolean {
+  return origin === `http://${HOST}:${port}` || origin === `http://localhost:${port}`;
+}
+
 function responseHeaders(contentType: string): Headers {
   const headers = new Headers(SECURITY_HEADERS);
   headers.set("Content-Type", contentType);
@@ -168,7 +173,7 @@ export function createTrainerServer(options: TrainerServerOptions): TrainerApp {
             // Same CSRF guard as the viewer: a localhost server otherwise accepts simple
             // cross-origin POSTs from any page the browser has open.
             const origin = request.headers.get("origin");
-            if (origin !== null && origin !== `http://${HOST}:${server.port}`) {
+            if (origin !== null && !isSameServerOrigin(origin, server.port)) {
               return textResponse("Forbidden", 403);
             }
             if (request.headers.get("content-type") !== "application/json") {

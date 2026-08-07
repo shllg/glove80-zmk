@@ -482,6 +482,19 @@ describe("trainer server", () => {
     expect(started.sessionId).toBe(1);
   });
 
+  test("accepts a session POST from the localhost spelling of its own origin", async () => {
+    const { app } = startTrainer();
+    const response = await fetch(`${app.url}/api/session/start`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        origin: `http://localhost:${new URL(app.url).port}`,
+      },
+      body: JSON.stringify({ mode: "benchmark", corpusId: "en-common", seed: 4, wordCount: 10 }),
+    });
+    expect(response.status).toBe(200);
+  });
+
   test("rejects a cross-origin POST and a non-JSON body", async () => {
     const { app } = startTrainer();
     const foreign = await fetch(`${app.url}/api/session/start`, {
