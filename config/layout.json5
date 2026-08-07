@@ -34,6 +34,22 @@
     "BT3": "RED",
     "BT4": "ORN_RGB"
   },
+  // The firmware taps one of these whenever a layer becomes the highest active one, which is the
+  // only way the host can tell a layer-shifted key from its base-layer twin — both emit the same
+  // keycode. keylab reads the same table out of out/keymap-meta.json and never counts these as
+  // keystrokes. The codes must be keys no layer types: F13 and F23 are taken, F14-F19 are not.
+  // Set enabled to false and reflash to stop emitting them entirely.
+  "layerSignal": {
+    "enabled": true,
+    "codes": {
+      "Base": "F14",
+      "Navigation": "F15",
+      "Chars": "F16",
+      "Special": "F17",
+      "Media": "F18",
+      "Magic": "F19"
+    }
+  },
   "layers": [
     {
       "name": "Base",
@@ -50,7 +66,7 @@
           ["&kp F6", "&kp F7", "&kp F8", "&kp F9", "&kp F10"],
           ["&kp N6", "&kp N7", "&kp N8", "&kp N9", "&kp N0", "&kp MINUS"],
           ["&kp Y", "&kp U", "&kp I", "&kp O", "&kp P", "&kp BSLH"],
-          ["&kp H", "&hmr RCTRL J", "&kp K", "&hmr LALT L", "&hmr RGUI SEMI", "&kp SQT"],
+          ["&kp H", "&hmr RCTRL J", "&kp K", "&hmr RALT L", "&hmr RGUI SEMI", "&kp SQT"],
           ["&kp N", "&kp M", "&kp COMMA", "&kp DOT", "&kp FSLH", "&kp PG_UP"],
           ["&none", "&kp RALT", "&kp LBKT", "&kp RBKT", "&kp PG_DN"]
         ],

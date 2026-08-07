@@ -192,6 +192,18 @@ function renderProfileBehaviors(): string {
   return lines.join("\n");
 }
 
+/**
+ * The layer names in the order the generated keymap defines them, including the Base clones that
+ * `profileIndicators` inserts at indices 1-4. Anything that has to agree with `LAYER_*` — the layer
+ * signal table, above all — has to resolve the order the same way rather than reading
+ * `layout.layers` and being wrong by four.
+ */
+export function resolveLayerNames(layout: Layout): string[] {
+  const workingLayout = structuredClone(layout);
+  applyProfileIndicators(workingLayout);
+  return workingLayout.layers.map((layer) => layer.name);
+}
+
 export function generateKeymapDtsi(layout: Layout): string {
   // Read the template
   const templatePath = path.join(process.cwd(), "config", "glove80.keymap");

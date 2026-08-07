@@ -12,6 +12,9 @@ import {
   serializeKeymapMeta,
 } from "../../src/keymapMeta";
 import type { FingerName, KeymapMeta, KeymapPosition } from "../../src/keymapMeta";
+import { zmkKeycode } from "../../src/keymapMeta";
+import { renderLayerSignalHeader, resolveLayerSignals } from "../../src/layerSignal";
+import { resolveLayerNames } from "../../src/generateDtsi";
 
 const repositoryRoot = process.cwd();
 const layoutSource = fs.readFileSync(path.join(repositoryRoot, "config/layout.json5"), "utf8");
@@ -169,4 +172,82 @@ test("serialized keymap metadata round-trips through the zod schema", () => {
   const meta = generateMeta();
   const roundTripped = KeymapMetaSchema.parse(JSON.parse(serializeKeymapMeta(meta)));
   assert.deepEqual(roundTripped, meta);
+});
+
+test("every generated layer index carries a signal, and the Base clones share Base's", () => {
+  const signals = resolveLayerSignals(layout, zmkKeycode);
+  // One entry per `#define LAYER_*` in the generated keymap, in the same order, or the firmware
+  // would index the table with a layer the host knows by a different name.
+  assert.equal(signals.length, resolveLayerNames(layout).length);
+  assert.deepEqual(signals.map(({ index }) => index), signals.map((_, index) => index));
+
+  const base = signals.filter(({ layer }) => layer === "Base");
+  assert.equal(base.length, 5, "Base plus the four BT profile clones");
+  assert.equal(new Set(base.map(({ code }) => code)).size, 1);
+  assert.deepEqual(
+    signals.find(({ layer }) => layer === "Navigation"),
+    { layer: "Navigation", index: 5, code: "F15", linuxKeycode: 185 },
+  );
+});
+
+test("a signal code the keymap also types is refused", () => {
+  // F13 is on the left thumb cluster. Emitting it as a layer signal would make a real keystroke
+  // indistinguishable from a layer change, and the daemon would stop counting that key.
+  const collides = structuredClone(layout);
+  assert.ok(collides.layerSignal);
+  collides.layerSignal.codes.Navigation = "F13";
+  assert.throws(
+    () => resolveLayerSignals(collides, zmkKeycode),
+    /F13, which the keymap also types/,
+  );
+});
+
+test("a layer with no signal code is refused rather than silently inheriting one", () => {
+  const incomplete = structuredClone(layout);
+  assert.ok(incomplete.layerSignal);
+  delete incomplete.layerSignal.codes.Magic;
+  assert.throws(() => resolveLayerSignals(incomplete, zmkKeycode), /layer 'Magic' has no code/);
+});
+
+test("two layers cannot share one signal code", () => {
+  const shared = structuredClone(layout);
+  assert.ok(shared.layerSignal);
+  shared.layerSignal.codes.Magic = shared.layerSignal.codes.Media as string;
+  assert.throws(() => resolveLayerSignals(shared, zmkKeycode), /cannot report two layers/);
+});
+
+test("disabling the signal emits an empty table rather than no header", () => {
+  const disabled = structuredClone(layout);
+  assert.ok(disabled.layerSignal);
+  disabled.layerSignal.enabled = false;
+  const signals = resolveLayerSignals(disabled, zmkKeycode);
+  assert.deepEqual(signals, []);
+  // The module still has to compile, so turning the feature off is a rebuild rather than a break.
+  const header = renderLayerSignalHeader(signals);
+  assert.match(header, /#define KEYLAB_LAYER_SIGNAL_ENABLED 0/);
+  assert.match(header, /keylab_layer_signal_usage/);
+});
+
+test("the generated header indexes the table by layer index", () => {
+  const header = renderLayerSignalHeader(resolveLayerSignals(layout, zmkKeycode));
+  assert.match(header, /#define KEYLAB_LAYER_SIGNAL_ENABLED 1/);
+  assert.match(header, /#define KEYLAB_LAYER_SIGNAL_LAYERS 10/);
+  assert.match(header, /\/\*\s+0 Base \*\/ F14,/);
+  assert.match(header, /\/\*\s+5 Navigation \*\/ F15,/);
+});
+
+test("the keymap hash follows the signal table, not only the positions", () => {
+  // A signal change alters what the firmware emits, so it has to move the hash the daemon records
+  // as a keymap boundary. Otherwise data captured under two schemes lands on one side of the line.
+  const meta = generateMeta();
+  const quiet = structuredClone(layout);
+  assert.ok(quiet.layerSignal);
+  quiet.layerSignal.enabled = false;
+  const without = createKeymapMeta(quiet, positionDefineSource, {
+    generatedAt: "2026-08-04T00:00:00.000Z",
+    gitCommit: "test",
+  });
+  assert.notEqual(meta.keymapHash, without.keymapHash);
+  assert.equal(without.layerSignals, undefined);
+  assert.ok(meta.layerSignals);
 });

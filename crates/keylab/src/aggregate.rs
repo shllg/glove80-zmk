@@ -306,6 +306,10 @@ pub struct Aggregator {
     ngram_events: [u32; MAX_PROFILES],
     ngram_dropped: [u32; MAX_PROFILES],
     ngram_start_ts: [Option<u64>; MAX_PROFILES],
+    /// The keycode of the last layer signal the firmware sent, or `None` before the first one. It
+    /// is the code rather than the name so the aggregator stays free of allocations on the event
+    /// path; `Keymap::layer_signal` turns it back into a layer.
+    active_layer_code: Option<u16>,
 }
 
 impl Aggregator {
@@ -336,6 +340,7 @@ impl Aggregator {
             ngram_events: [0; MAX_PROFILES],
             ngram_dropped: [0; MAX_PROFILES],
             ngram_start_ts: [None; MAX_PROFILES],
+            active_layer_code: None,
         }
     }
 
@@ -357,6 +362,19 @@ impl Aggregator {
         policy: &SealPolicy,
     ) -> SealBatch {
         let mut batch = SealBatch::default();
+
+        // A layer signal is the firmware telling the host which layer is active, not something the
+        // user typed. It is taken before any timing or counting: counting it would inflate every
+        // Tier A total by one per layer change, and letting it set `last_event_ts` would charge
+        // the gap before it to active time and split backspace runs that never paused.
+        if keymap.layer_signal(code).is_some() {
+            // Press only. The release is the other half of the same tap and says nothing new.
+            if value == 1 {
+                self.active_layer_code = Some(code);
+            }
+            return batch;
+        }
+
         if let Some(event_gap) = (self.last_event_ts != NO_EVENT_TS)
             .then(|| t_ms.checked_sub(self.last_event_ts))
             .flatten()
@@ -719,6 +737,12 @@ impl Aggregator {
 
     pub fn live_keystrokes(&self) -> u32 {
         self.tier_a.keystrokes
+    }
+
+    /// The keycode of the last layer signal seen, for callers that want to name the active layer.
+    /// `None` until the firmware sends one, which for a board that never signals is forever.
+    pub fn active_layer_code(&self) -> Option<u16> {
+        self.active_layer_code
     }
 
     pub fn live_span_ms(&self, current_bucket_elapsed_ms: u64) -> u64 {
@@ -1513,6 +1537,52 @@ mod tests {
         assert_eq!(aggregate.tier_a.finger_count, [0; 10]);
         assert_eq!(aggregate.tier_a.row_count, [0; 12]);
         assert_eq!(aggregate.tier_b_total(), 0);
+    }
+
+    #[test]
+    fn a_layer_signal_is_recorded_and_never_counted() {
+        // The firmware taps a spare key when the active layer changes. It is not typing, and
+        // counting it would add one keystroke per layer change to every Tier A total — on this
+        // keymap, one per space bar hold, which is thousands a day.
+        let keymap = keymap().with_layer_signals(&[(184, "Base"), (185, "Navigation")]);
+        let mut aggregate = Aggregator::new(0, 1);
+        assert_eq!(aggregate.active_layer_code(), None);
+
+        assert!(aggregate
+            .handle_event(100, 185, 1, &keymap, &policy())
+            .is_empty());
+        assert!(aggregate
+            .handle_event(100, 185, 0, &keymap, &policy())
+            .is_empty());
+        assert_eq!(aggregate.active_layer_code(), Some(185));
+        assert_eq!(keymap.layer_signal(185), Some("Navigation"));
+        assert_eq!(aggregate.tier_a.keystrokes, 0);
+        assert_eq!(aggregate.tier_a.autorepeats, 0);
+        assert_eq!(aggregate.tier_a.active_ms, 0);
+        assert_eq!(aggregate.tier_b_total(), 0);
+
+        // A real key still counts, and the gap it is charged runs from the last real event rather
+        // than from the signal that happened to arrive in between.
+        assert!(aggregate
+            .handle_event(200, 30, 1, &keymap, &policy())
+            .is_empty());
+        assert_eq!(aggregate.tier_a.keystrokes, 1);
+        assert_eq!(
+            aggregate.tier_a.active_ms, 0,
+            "the first real key opens the span"
+        );
+        assert!(aggregate
+            .handle_event(300, 184, 1, &keymap, &policy())
+            .is_empty());
+        assert!(aggregate
+            .handle_event(400, 31, 1, &keymap, &policy())
+            .is_empty());
+        assert_eq!(aggregate.active_layer_code(), Some(184));
+        assert_eq!(aggregate.tier_a.keystrokes, 2);
+        assert_eq!(
+            aggregate.tier_a.active_ms, 200,
+            "the gap spans both real keys; the signal between them adds nothing and hides nothing"
+        );
     }
 
     #[test]

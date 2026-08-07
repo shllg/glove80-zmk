@@ -303,24 +303,44 @@ Tier B's `pos_count` table contains diluted physical-position histograms, and Ti
 
 ## Known limitations
 
-### LALT is hand-ambiguous
+### ALT was hand-ambiguous until 2026-08-07
 
-`config/layout.json5` has `&hml LALT S` (left ring) and `&hmr LALT L` (right ring). Both emit `KEY_LEFTALT`. evdev cannot distinguish them, so **right-hand ALT load — one of the two prime pain suspects — is unmeasurable as currently configured**.
+`config/layout.json5` had `&hml LALT S` (left ring) and `&hmr LALT L` (right ring). Both emit `KEY_LEFTALT`, evdev cannot distinguish them, and right-hand ALT load — one of the two prime pain suspects — was therefore unmeasurable. `LCTRL`/`RCTRL` (F / J) and `LGUI`/`RGUI` (A / SEMI) were already distinct; ALT was the only collision.
 
-`LCTRL`/`RCTRL` (F / J) and `LGUI`/`RGUI` (A / SEMI) are already distinct. ALT is the only collision.
+**Resolved by binding the right side to `&hmr RALT L`.** The risk that kept this open is that `RALT` is `ISO_Level3_Shift` under any XKB layout that maps level 3; this host runs `us`, where it is a plain Alt. Switching the host layout to `de` or `us(intl)` would make the right ring emit level-3 characters instead of holding a modifier — check `hyprctl getoption input:kb_layout` before changing layouts, not after.
 
-Options:
-1. Change the right binding to `RALT`. One word. Risk: `RALT` is AltGr and some applications treat it differently.
-2. Accept the ambiguity in v1 and report ALT as hand-unattributed.
-3. Wait for firmware layer signalling (v2), which resolves it fully.
+Nothing in the analysis path needed changing. `crates/keylab/src/keymap.rs` sets `meta.alt_hand_ambiguous` whenever one ALT keycode appears on both hands, and `pnpm analysis report` prints an `ALT HAND AMBIGUITY` banner while it is set; both follow the keymap on the daemon's next start after `pnpm build`.
 
-**Decision pending — user's call.** The plan below implements option 2 and leaves option 1 as a one-line config change that can be made at any time.
+**When analysing, the split only exists from the flash onward.** Everything captured before it is pooled into `L_ALT` and no read re-splits it, because the hand was never recorded. `R_ALT` in that older data counts only the dedicated `&kp RALT` key on the lower row. The daemon appends `{hash, from_ts}` to `meta.keymap_hash_history` when the keymap changes, but nothing reads that key automatically — slice the boundary yourself with `--since`.
 
-### Layer-shifted keys are unattributed in v1
+### Layer-shifted keys are unattributed until the firmware says otherwise
 
-`9` typed from base row 2 and `9` produced from a layer emit the same keycode. v1 attributes to the base-layer position where one exists and records everything else as position `-1`. The unattributed share is reported so the size of the blind spot is always visible.
+`9` typed from base row 2 and `9` produced from a layer emit the same keycode. The daemon attributes to the base-layer position where one exists and records everything else as position `-1`. The unattributed share is reported so the size of the blind spot is always visible.
 
-Adequate for v1 because the reach and modifier questions are base-layer phenomena. Firmware layer signalling (v2) removes this limitation.
+**The firmware now tells the host which layer is active.** `zmk-modules/keylab-signal` subscribes to ZMK's `zmk_layer_state_changed` and taps one spare key whenever the *highest active* layer changes — highest-active because that is the layer a keypress resolves against, and because every report then restates absolute state rather than accumulating edges. The tap goes through `zmk_keycode_state_changed`, exactly as `&kp` does, so it inherits the existing HID path over both USB and BLE.
+
+The table lives in `config/layout.json5` under `layerSignal` and is generated into two places by `pnpm build`: `out/layer-signal.h`, which the module compiles against, and `layerSignals` in `out/keymap-meta.json`, which the daemon reads. One source, because two hand-maintained copies of this mapping is a silent mis-attribution waiting to happen.
+
+```json5
+"layerSignal": {
+  "enabled": true,
+  "codes": { "Base": "F14", "Navigation": "F15", "Chars": "F16",
+             "Special": "F17", "Media": "F18", "Magic": "F19" }
+}
+```
+
+Rules the generator enforces, each because breaking it corrupts data rather than failing:
+
+- **A signal code may not be a key the keymap types.** Otherwise a real keystroke is indistinguishable from a layer change, and that key stops being counted. `F13` and `F23` are on the thumb clusters, which is why the codes start at `F14`. `Keymap::load` refuses the same collision a second time, because metadata can also be hand-written.
+- **Every layer needs a code.** A layer without one leaves its keys attributed to whichever layer was reported last.
+- **The Base clones share Base's code.** A BT profile indicator is a different LED colour, not a different layer to type on.
+- **The signal table is part of `keymapHash`.** It changes what the firmware emits, so it has to move the boundary the daemon records in `meta.keymap_hash_history`.
+
+The daemon takes a signal before any counting or timing: it is not a keystroke, it does not open or extend a Tier A span, and it does not split a backspace run. It sets the active layer, which appears as `layer` in `live_snapshot`. Only the central half emits — the peripheral has no HID endpoints, so the module's Kconfig excludes it there.
+
+**These are real key events the host sees.** Nothing binds `F14`–`F19` on this machine, but an application that did would see phantom taps. Set `enabled` to `false` and reflash to stop emitting them.
+
+Storing the layer alongside each keystroke — which is what actually closes the blind spot — is the next step and is not built yet. Until then the signal is visible in `live_snapshot` and nowhere else, and positional data still means base-layer typing.
 
 ### Home row mod tap durations are not measurable host-side
 

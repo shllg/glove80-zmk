@@ -35,9 +35,21 @@ const ProfileIndicators = z.object({
   BT4: z.string().optional()
 }).strict().optional();
 
+/**
+ * Which spare key the firmware taps when a layer becomes the highest active one. The host cannot
+ * otherwise tell a layer-shifted key from its base-layer twin — both emit the same keycode — so
+ * everything typed from a layer is recorded as position-unattributed.
+ */
+const LayerSignal = z.object({
+  enabled: z.boolean(),
+  // Layer name -> ZMK keycode. Base clones (Base_BT1..4) inherit Base's code.
+  codes: z.record(z.string())
+}).strict().optional();
+
 // Full layout with 80 keys per layer
 export const Layout = z.object({
   keyboard: z.literal("glove80"),
+  layerSignal: LayerSignal,
   colorDefinitions: z.record(z.array(z.number()).length(3)).optional(), // Color name -> [R, G, B]
   layers: z.array(z.object({
     name: z.string(),

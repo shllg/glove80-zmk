@@ -16,6 +16,7 @@ echo ""
 CONFIG_PATH="$(pwd)/config"
 OUT_PATH="$(pwd)/out"
 FIRMWARE_PATH="$(pwd)/firmware"
+MODULES_PATH="$(pwd)/zmk-modules"
 DOCKER_IMAGE="zmkfirmware/zmk-build-arm:stable"
 CONTAINER_NAME="glove80-zmk-compiler"
 PINNED_SHA="453d2d8536106c1b5ba2ae68d6a2267965c16935"
@@ -41,6 +42,14 @@ if [ ! -f "$OUT_PATH/keymap.dtsi" ]; then
   exit 1
 fi
 
+# The layer signal module compiles against this table. It is generated alongside keymap.dtsi, so a
+# missing file means a stale out/ directory rather than a configuration choice.
+if [ ! -f "$OUT_PATH/layer-signal.h" ]; then
+  echo -e "${RED}No layer-signal.h found in out/ directory!${NC}"
+  echo "Run: pnpm build"
+  exit 1
+fi
+
 # Create directories
 mkdir -p "$FIRMWARE_PATH"
 mkdir -p "$CONFIG_PATH"
@@ -56,6 +65,16 @@ fi
 
 # Check if container exists
 if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+  # A container created before the module mount existed cannot see zmk-modules/, and the build
+  # would fail deep inside CMake with nothing pointing at the cause. Recreate it instead.
+  if ! docker inspect -f '{{range .Mounts}}{{.Destination}} {{end}}' "$CONTAINER_NAME" |
+    grep -q "/zmk-modules"; then
+    echo -e "${YELLOW}Existing container predates the module mount, recreating...${NC}"
+    docker rm -f "$CONTAINER_NAME" >/dev/null
+  fi
+fi
+
+if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
   echo -e "${YELLOW}Found existing compiler container${NC}"
   # Start container if not running
   if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
@@ -68,6 +87,7 @@ else
   docker run -d --name "$CONTAINER_NAME" \
     -v "$CONFIG_PATH":/config:ro \
     -v "$OUT_PATH":/out:ro \
+    -v "$MODULES_PATH":/zmk-modules:ro \
     -v "$FIRMWARE_PATH":/firmware \
     "$DOCKER_IMAGE" \
     sleep infinity
@@ -114,7 +134,9 @@ echo -e "${GREEN}Building left half...${NC}"
 exec_in_container "cd /tmp/zmk-workspace/zmk && rm -rf build && \
     west build -p auto -b glove80_lh -d build -s app -- \
     -DZMK_CONFIG=/config \
-    -DKEYMAP_FILE=/out/keymap.dtsi"
+    -DKEYMAP_FILE=/out/keymap.dtsi \
+    -DZMK_EXTRA_MODULES=/zmk-modules/keylab-signal \
+    -DKEYLAB_LAYER_SIGNAL_INCLUDE_DIR=/out"
 
 # Copy left firmware
 exec_in_container "cp /tmp/zmk-workspace/zmk/build/zephyr/zmk.uf2 /firmware/glove80_left.uf2"
@@ -126,7 +148,9 @@ echo -e "${GREEN}Building right half...${NC}"
 exec_in_container "cd /tmp/zmk-workspace/zmk && rm -rf build && \
     west build -p auto -b glove80_rh -d build -s app -- \
     -DZMK_CONFIG=/config \
-    -DKEYMAP_FILE=/out/keymap.dtsi"
+    -DKEYMAP_FILE=/out/keymap.dtsi \
+    -DZMK_EXTRA_MODULES=/zmk-modules/keylab-signal \
+    -DKEYLAB_LAYER_SIGNAL_INCLUDE_DIR=/out"
 
 # Copy right firmware
 exec_in_container "cp /tmp/zmk-workspace/zmk/build/zephyr/zmk.uf2 /firmware/glove80_right.uf2"

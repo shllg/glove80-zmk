@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "keymapHash": "sha256:2b0dfaf3a90f78ae05fc0f7a8bcfd4499d2135346627cef83a27f8eb4102acd6",
-  "gitCommit": "158261f",
-  "generatedAt": "2026-08-04T13:19:44.848Z",
+  "keymapHash": "sha256:7cdf57983f1ad3faf7c935cd381b2153a41f1dc2116f63e2c7ea220beb90e9a5",
+  "gitCommit": "28a9755",
+  "generatedAt": "2026-08-07T10:33:41.344Z",
   "positions": [
     {
       "pos": 0,
@@ -533,7 +533,7 @@
       "fingerId": 7,
       "baseKeycode": "KEY_L",
       "linuxKeycode": 38,
-      "baseBinding": "&hmr LALT L",
+      "baseBinding": "&hmr RALT L",
       "isHrm": true,
       "modClass": "R_ALT"
     },
@@ -969,6 +969,68 @@
       "linuxKeycode": 109,
       "baseBinding": "&kp PG_DN",
       "isHrm": false
+    }
+  ],
+  "layerSignals": [
+    {
+      "layer": "Base",
+      "index": 0,
+      "code": "F14",
+      "linuxKeycode": 184
+    },
+    {
+      "layer": "Base",
+      "index": 1,
+      "code": "F14",
+      "linuxKeycode": 184
+    },
+    {
+      "layer": "Base",
+      "index": 2,
+      "code": "F14",
+      "linuxKeycode": 184
+    },
+    {
+      "layer": "Base",
+      "index": 3,
+      "code": "F14",
+      "linuxKeycode": 184
+    },
+    {
+      "layer": "Base",
+      "index": 4,
+      "code": "F14",
+      "linuxKeycode": 184
+    },
+    {
+      "layer": "Navigation",
+      "index": 5,
+      "code": "F15",
+      "linuxKeycode": 185
+    },
+    {
+      "layer": "Chars",
+      "index": 6,
+      "code": "F16",
+      "linuxKeycode": 186
+    },
+    {
+      "layer": "Special",
+      "index": 7,
+      "code": "F17",
+      "linuxKeycode": 187
+    },
+    {
+      "layer": "Media",
+      "index": 8,
+      "code": "F18",
+      "linuxKeycode": 188
+    },
+    {
+      "layer": "Magic",
+      "index": 9,
+      "code": "F19",
+      "linuxKeycode": 189
     }
   ]
 }

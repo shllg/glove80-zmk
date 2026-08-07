@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { z } from "zod";
 import type { Layout } from "./schema";
 import { toPhysicalRows } from "./layout";
+import { resolveLayerSignals, type LayerSignal } from "./layerSignal";
 
 const HandSchema = z.enum(["L", "R"]);
 const FingerNameSchema = z.enum(["index", "middle", "ring", "pinky", "thumb"]);
@@ -43,12 +44,23 @@ export const KeymapPositionSchema = z.object({
   modClass: ModClassSchema.optional(),
 }).strict();
 
+/** One entry per layer index, so the daemon can name the layer a signal keycode reports. */
+export const LayerSignalSchema = z.object({
+  layer: z.string().min(1),
+  index: z.number().int().min(0).max(15),
+  code: z.string().min(1),
+  linuxKeycode: z.number().int().positive(),
+}).strict();
+
 export const KeymapMetaSchema = z.object({
   schemaVersion: z.literal(1),
   keymapHash: z.string().regex(/^sha256:[0-9a-f]{64}$/),
   gitCommit: z.string().min(1),
   generatedAt: z.string().datetime(),
   positions: z.array(KeymapPositionSchema).length(80),
+  // Absent when the firmware does not signal layers, which is the state every database recorded
+  // before 2026-08-07. Optional rather than empty so an older consumer sees no new field at all.
+  layerSignals: z.array(LayerSignalSchema).min(1).optional(),
 }).strict();
 
 export type Hand = z.infer<typeof HandSchema>;
@@ -176,8 +188,22 @@ const ZMK_TO_LINUX: Readonly<Record<string, LinuxKeycode>> = {
   LGUI: { baseKeycode: "KEY_LEFTMETA", linuxKeycode: 125 },
   RGUI: { baseKeycode: "KEY_RIGHTMETA", linuxKeycode: 126 },
   F13: { baseKeycode: "KEY_F13", linuxKeycode: 183 },
+  F14: { baseKeycode: "KEY_F14", linuxKeycode: 184 },
+  F15: { baseKeycode: "KEY_F15", linuxKeycode: 185 },
+  F16: { baseKeycode: "KEY_F16", linuxKeycode: 186 },
+  F17: { baseKeycode: "KEY_F17", linuxKeycode: 187 },
+  F18: { baseKeycode: "KEY_F18", linuxKeycode: 188 },
+  F19: { baseKeycode: "KEY_F19", linuxKeycode: 189 },
+  F20: { baseKeycode: "KEY_F20", linuxKeycode: 190 },
+  F21: { baseKeycode: "KEY_F21", linuxKeycode: 191 },
+  F22: { baseKeycode: "KEY_F22", linuxKeycode: 192 },
   F23: { baseKeycode: "KEY_F23", linuxKeycode: 193 },
+  F24: { baseKeycode: "KEY_F24", linuxKeycode: 194 },
 };
+
+export function zmkKeycode(code: string): LinuxKeycode | undefined {
+  return ZMK_TO_LINUX[code];
+}
 
 function fingerId(hand: Hand, finger: FingerName): number {
   return (hand === "L" ? 0 : 1) * 5 + FINGER_INDEX[finger];
@@ -353,8 +379,17 @@ function canonicalJson(value: unknown): string {
   return JSON.stringify(value);
 }
 
-export function computeKeymapHash(positions: KeymapPosition[]): string {
-  const digest = createHash("sha256").update(canonicalJson(positions)).digest("hex");
+export function computeKeymapHash(
+  positions: KeymapPosition[],
+  layerSignals: LayerSignal[] = [],
+): string {
+  // The signals are hashed with the positions because they change what the firmware emits. A
+  // recorded keymap boundary that ignored them would put data captured under two different
+  // signalling schemes on the same side of the line.
+  const source = layerSignals.length === 0
+    ? canonicalJson(positions)
+    : canonicalJson({ positions, layerSignals });
+  const digest = createHash("sha256").update(source).digest("hex");
   return `sha256:${digest}`;
 }
 
@@ -412,12 +447,14 @@ export function createKeymapMeta(
     return position;
   });
 
+  const layerSignals = resolveLayerSignals(layout, zmkKeycode);
   return KeymapMetaSchema.parse({
     schemaVersion: 1,
-    keymapHash: computeKeymapHash(positions),
+    keymapHash: computeKeymapHash(positions, layerSignals),
     gitCommit: options.gitCommit ?? currentGitCommit(),
     generatedAt: options.generatedAt ?? new Date().toISOString(),
     positions,
+    ...(layerSignals.length > 0 ? { layerSignals } : {}),
   });
 }
 

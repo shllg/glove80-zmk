@@ -41,6 +41,9 @@ pub struct LiveControl<'a> {
     pub paused: bool,
     pub profile: &'a str,
     pub profiles: &'a [String],
+    /// The layer the firmware last reported, on a board that signals layers. `None` says the
+    /// question cannot be answered, which is different from saying the keyboard is on Base.
+    pub layer: Option<&'a str>,
 }
 
 /// A Tier A seal whose `(ts, device_id, profile_id)` identity is already on disk.
@@ -372,6 +375,7 @@ impl Store {
             paused,
             profile,
             profiles,
+            layer,
         } = *control;
         let rate = if elapsed_ms == 0 {
             0.0
@@ -387,6 +391,7 @@ impl Store {
             "paused": paused,
             "profile": profile,
             "profiles": profiles,
+            "layer": layer,
         }))
         .context("failed to encode live snapshot")?;
         self.connection
@@ -1489,6 +1494,7 @@ mod tests {
                     paused: false,
                     profile: "default",
                     profiles: &[],
+                    layer: None,
                 },
             )
             .unwrap();
@@ -1500,8 +1506,10 @@ mod tests {
             .unwrap();
         let snapshot: Value = serde_json::from_str(&encoded).unwrap();
         let object = snapshot.as_object().unwrap_or_else(|| unreachable!());
-        assert_eq!(object.len(), 5);
+        assert_eq!(object.len(), 6);
         assert_eq!(snapshot["finger_count"][2], 12);
+        // A board that does not signal layers reports null, which is not the same as Base.
+        assert!(snapshot["layer"].is_null());
         assert_eq!(snapshot["keystrokes_per_minute"], 180.0);
         assert!(snapshot.get("pos").is_none());
         assert!(snapshot.get("keycode").is_none());
@@ -1521,6 +1529,7 @@ mod tests {
                     paused: true,
                     profile: "gaming",
                     profiles: &["default".to_owned(), "gaming".to_owned()],
+                    layer: Some("Navigation"),
                 },
             )
             .unwrap_or_else(|error| panic!("{error:#}"));
@@ -1533,6 +1542,7 @@ mod tests {
         assert!(json.contains("\"paused\":true"));
         assert!(json.contains("\"profile\":\"gaming\""));
         assert!(json.contains("\"profiles\":[\"default\",\"gaming\"]"));
+        assert!(json.contains("\"layer\":\"Navigation\""));
     }
 
     #[test]

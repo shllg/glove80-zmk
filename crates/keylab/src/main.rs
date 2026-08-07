@@ -178,6 +178,7 @@ fn selftest_hold_database(path: &Path) -> Result<()> {
             paused: false,
             profile: config::DEFAULT_PROFILE,
             profiles: &[config::DEFAULT_PROFILE.to_owned()],
+            layer: None,
         },
     )?;
     println!("SELFTEST_DB_READY aggregate_rows=1");
@@ -425,7 +426,7 @@ fn event_loop(
             )?;
             // The snapshot is written even while paused, with zeroed live figures. Freezing it
             // would leave the viewer showing a stale profile chip with no way to tell.
-            replace_live_snapshot(config, store, &devices, &state, now)?;
+            replace_live_snapshot(config, keymaps, store, &devices, &state, now)?;
             next_live_tick = now + live_duration;
         }
 
@@ -480,6 +481,12 @@ fn discover_devices(
                 device_name = %input.name,
                 event_path = %path.display(),
                 keymap_kind = %rule.name,
+                // Whether this board tells the host which layer is active. Worth one word at
+                // startup: it is the difference between positional data that covers every layer
+                // and positional data that covers the base layer only.
+                layer_signals = keymaps
+                    .get(rule_index)
+                    .is_some_and(Keymap::signals_layers),
                 "matched input device"
             );
         }
@@ -837,6 +844,7 @@ fn translate_tier_c_timestamps(seal: &mut aggregate::TierCSeal) -> Result<()> {
 
 fn replace_live_snapshot(
     config: &Config,
+    keymaps: &[Keymap],
     store: &mut Store,
     devices: &HashMap<PathBuf, RuntimeDevice>,
     state: &ResolvedControl,
@@ -845,6 +853,20 @@ fn replace_live_snapshot(
     let mut finger_counts = [0_u32; 10];
     let mut keystrokes = 0_u32;
     let mut aggregate_span_ms = 0_u64;
+    // Only a board that signals layers can answer this, and only one board does. Reporting the
+    // first answer found rather than merging is deliberate: layers are per keyboard, and a merged
+    // "current layer" across two of them would be a fiction.
+    let mut layer = None;
+    for runtime in devices.values() {
+        if let Some(name) = runtime.aggregate.active_layer_code().and_then(|code| {
+            keymaps
+                .get(runtime.rule_index)
+                .and_then(|keymap| keymap.layer_signal(code))
+        }) {
+            layer = Some(name);
+            break;
+        }
+    }
     for runtime in devices.values().filter(|_| !state.paused()) {
         for (target, value) in finger_counts
             .iter_mut()
@@ -867,6 +889,7 @@ fn replace_live_snapshot(
             paused: state.paused(),
             profile: &state.profile,
             profiles: &config.profiles,
+            layer,
         },
     )
 }

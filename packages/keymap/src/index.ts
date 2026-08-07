@@ -9,7 +9,8 @@ import { generateKeymapDtsi } from "./generateDtsi";
 import { toDrawerYaml } from "./drawer";
 import { parseCombos } from "./combos";
 import type { Combo } from "./combos";
-import { createKeymapMeta, serializeKeymapMeta } from "./keymapMeta";
+import { createKeymapMeta, serializeKeymapMeta, zmkKeycode } from "./keymapMeta";
+import { renderLayerSignalHeader, resolveLayerSignals } from "./layerSignal";
 
 const root = (...p: string[]) => path.join(process.cwd(), ...p);
 
@@ -76,11 +77,20 @@ async function main() {
   const keymapMeta = createKeymapMeta(layout, positionDefineSource);
   fs.writeFileSync(root("out/keymap-meta.json"), serializeKeymapMeta(keymapMeta));
 
+  // The firmware side of the same table. Written unconditionally, including the disabled form, so
+  // the module always has a header to compile against and turning the feature off is a rebuild
+  // rather than a build error.
+  const layerSignals = resolveLayerSignals(layout, zmkKeycode);
+  fs.writeFileSync(root("out/layer-signal.h"), renderLayerSignalHeader(layerSignals));
+
   // Generate YAML + SVG
   const yaml = toDrawerYaml(layout, combos);
   fs.writeFileSync(root("out/keymap.yaml"), yaml);
   await execa("keymap", ["draw", "out/keymap.yaml", "--output", "out/keymap.svg"], { stdio: "inherit" });
-  console.log("✅ Built: out/keymap.dtsi, out/keymap.yaml, out/keymap.svg, out/keymap-meta.json");
+  console.log(
+    "✅ Built: out/keymap.dtsi, out/keymap.yaml, out/keymap.svg, out/keymap-meta.json, "
+    + `out/layer-signal.h (${layerSignals.length} layer signals)`,
+  );
 
   // Generate multi-page PDF
   await generatePdf(layout, combos);
