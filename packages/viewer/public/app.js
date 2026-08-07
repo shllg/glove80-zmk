@@ -1,4 +1,10 @@
 import { createRefreshScheduler } from "/refresh-scheduler.js";
+import {
+  correctionFootnote,
+  createControlTracker,
+  percentage,
+  rateLevel,
+} from "/view-model.js";
 
 const rangeSelect = document.querySelector("#range");
 const profileSelect = document.querySelector("#profile");
@@ -20,39 +26,21 @@ let control = { paused: false, profile: "default", profiles: [] };
 let profileOptions = "";
 let viewProfileOptions = "";
 let deviceOptions = "";
-// A switch the daemon has accepted but not yet published. It writes `live_snapshot` once a second,
-// so for up to that long the server still reports the old profile; overwriting the select in that
-// window makes an accepted switch look rejected, and the user switches again into the same window.
-let pendingProfile = null;
-const PROFILE_CONFIRM_MS = 5_000;
+// The pending switch and the status text it produces live in `view-model.js`, where they can be
+// driven without a DOM.
+const controlTracker = createControlTracker();
 // The last summary, so switching layers redraws what is already loaded. The correction *kind*
 // filter is applied server-side and does refetch, because the rate depends on which rows count.
 let summary = null;
 
-function percentage(value) {
-  return `${(value * 100).toFixed(2)}%`;
-}
-
-/**
- * The status line is derived from state rather than assigned from three places, or the last writer
- * of the second wins and a pending switch or a real error is erased by the next refresh tick.
- */
 function setStatus(text, isError = false) {
   status.textContent = text;
   status.classList.toggle("error", isError);
 }
 
-/** Set when the daemon never confirmed a switch. Survives refresh ticks until the user tries again. */
-let controlError = null;
-
-function liveStatus() {
-  if (controlError) return controlError;
-  if (pendingProfile) return `Switching to ${pendingProfile.profile}…`;
-  return "Live connection active";
-}
-
 function showLiveStatus() {
-  setStatus(liveStatus(), controlError !== null);
+  const line = controlTracker.status();
+  setStatus(line.text, line.isError);
 }
 
 /**
@@ -112,15 +100,6 @@ function pressCell(position, maximum) {
   return key;
 }
 
-/**
- * A rate scales linearly against the worst rate on the board. `level()`'s log curve is right for
- * counts spanning orders of magnitude and wrong here: it would push every mid rate to the top.
- */
-function rateLevel(rate, maximum) {
-  if (rate <= 0 || maximum <= 0) return 0;
-  return Math.max(1, Math.min(10, Math.ceil(rate / maximum * 10)));
-}
-
 function correctionCell(position, entry, maximum) {
   const rate = entry?.rate ?? null;
   const key = element("div", rate === null ? "key-cell no-data" : `key-cell heat-${rateLevel(rate, maximum)}`);
@@ -153,30 +132,6 @@ function renderHeatmap(positions, layer) {
     }
     heatmap.append(key);
   }
-}
-
-/**
- * The footnote is not decoration: a correction layer that silently omits the positions it cannot
- * rate, and the corrections that never had a position, reads as a complete picture of corrections.
- */
-function correctionFootnote(layer) {
-  const parts = [
-    `Corrections per press. ${layer.corrections.toLocaleString()} corrections on drawable positions`
-    + ` in this filter.`,
-    `Positions under ${layer.pressFloor} presses in range show no data`
-    + (layer.belowFloor > 0 ? ` (${layer.belowFloor} hidden that carry corrections).` : "."),
-  ];
-  if (layer.withoutPosition.unattributed + layer.withoutPosition.absent > 0) {
-    parts.push(
-      `${percentage(layer.withoutPosition.share)} had no position to draw: `
-      + `${layer.withoutPosition.unattributed} unattributed, ${layer.withoutPosition.absent} with no `
-      + "key before the correction.",
-    );
-  }
-  if (layer.latency === "all") {
-    parts.push("Ambiguous corrections (400–1000 ms) count here and in neither other filter.");
-  }
-  return parts.join(" ");
 }
 
 function renderFingers(fingers) {
@@ -287,16 +242,7 @@ function renderControl(state) {
       profileSelect.append(option);
     }
   }
-  if (pendingProfile && state.profile === pendingProfile.profile) {
-    pendingProfile = null;
-  } else if (pendingProfile && Date.now() - pendingProfile.since > PROFILE_CONFIRM_MS) {
-    // The daemon rejects a profile it has not been configured with, and auto-reverts to `default`
-    // after an idle stretch. Either way the user asked for something that did not happen.
-    controlError = `The daemon did not switch to ${pendingProfile.profile};`
-      + ` it still reports ${state.profile}.`;
-    pendingProfile = null;
-  }
-  profileSelect.value = pendingProfile ? pendingProfile.profile : state.profile;
+  profileSelect.value = controlTracker.observe(state, Date.now());
   // The chip stays the daemon's word rather than the selection: that is what makes a rejected
   // switch or an idle auto-revert visible instead of assumed.
   controlChip.textContent = state.paused ? `paused · ${state.profile}` : `profile · ${state.profile}`;
@@ -400,12 +346,10 @@ profileSelect.addEventListener("change", () => {
   // Optimistic on purpose: the write has been accepted by the time the POST returns, but the
   // daemon publishes its state up to a second later. `renderControl` holds the selection until
   // then and reports it if the switch never lands.
-  pendingProfile = { profile: profileSelect.value, since: Date.now() };
-  controlError = null;
+  controlTracker.request(profileSelect.value, Date.now());
   showLiveStatus();
   postControl({ profile: profileSelect.value }).catch((error) => {
-    pendingProfile = null;
-    controlError = error.message;
+    controlTracker.reject(error.message);
     showLiveStatus();
     // Snap back to the daemon's state rather than leaving a selection it never accepted.
     profileSelect.value = control.profile;
@@ -413,7 +357,7 @@ profileSelect.addEventListener("change", () => {
 });
 pauseToggle.addEventListener("click", () => {
   postControl({ paused: !control.paused }).catch((error) => {
-    controlError = error.message;
+    controlTracker.fail(error.message);
     showLiveStatus();
   });
 });

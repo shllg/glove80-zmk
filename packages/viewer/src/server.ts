@@ -469,6 +469,9 @@ export function createViewerServer(options: ViewerServerOptions): ViewerApp {
           if (url.pathname === "/refresh-scheduler.js") {
             return staticResponse("refresh-scheduler.js", "text/javascript; charset=utf-8");
           }
+          if (url.pathname === "/view-model.js") {
+            return staticResponse("view-model.js", "text/javascript; charset=utf-8");
+          }
           if (url.pathname === "/events") {
             return sseResponse(request, database, cleanups, pollIntervalMs, keepaliveIntervalMs, logger);
           }

@@ -1,10 +1,10 @@
 # P7 — viewer control plane versus view plane
 
 Date: 2026-08-06
-Status: planned to step level. Depends on nothing.
+Status: implemented. Depends on nothing.
 Design: `docs/specs/2026-08-06-field-hardening-design.md`
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** A control that changes what the daemon records never looks like a control that changes what the page shows.
 
@@ -34,9 +34,9 @@ The header reads as two groups; a control that writes to the daemon is visually 
 
 In `packages/viewer/public/index.html` and `styles.css`.
 
-- [ ] Put the chip, **Pause** and the capture selector in one group; keep the view filters in another, with a divider between them.
-- [ ] Label the groups so the axis is stated rather than implied — the daemon's state on one side, this page's filters on the other.
-- [ ] Rename to make the tense explicit: **Recording as** and **Showing**.
+- [x] Put the chip, **Pause** and the capture selector in one group; keep the view filters in another, with a divider between them.
+- [x] Label the groups so the axis is stated rather than implied — the daemon's state on one side, this page's filters on the other.
+- [x] Rename to make the tense explicit: **Recording as** and **Showing**.
 
 **Requirements**
 - No behaviour change: same endpoints, same payloads, same persistence keys. This task is markup and CSS.
@@ -44,25 +44,27 @@ In `packages/viewer/public/index.html` and `styles.css`.
 - Keep the existing element ids, or update `app.js` and the id cross-check together; a silently missing `querySelector` target fails at runtime and in no test.
 
 **Tests**
-- [ ] `every_element_id_app_js_queries_exists_in_the_page` — mechanical, and the only thing that catches an id drift
+- [x] `every_element_id_app_js_queries_exists_in_the_page` — mechanical, and the only thing that catches an id drift
 
 ## Task 2 — extract the browser logic
 
 In `packages/viewer/public/`.
 
-- [ ] Move the pending-profile state machine, `liveStatus`, the correction footnote and `rateLevel` into a module with a `.d.ts`, following `refresh-scheduler.js`.
-- [ ] Serve it from `server.ts` as a static route and import it from both `app.js` and the test.
+*Landed as `view-model.js` with `view-model.d.ts`, served at `/view-model.js`. `percentage` moved with it, because the footnote is a caller and a second copy in `app.js` is exactly the drift this extraction exists to prevent; `app.js` imports it back for the two places that still format a share.*
+
+- [x] Move the pending-profile state machine, `liveStatus`, the correction footnote and `rateLevel` into a module with a `.d.ts`, following `refresh-scheduler.js`.
+- [x] Serve it from `server.ts` as a static route and import it from both `app.js` and the test.
 
 **Requirements**
 - Same pattern as the two modules that already exist, not a new one. `allowJs` is off, so the `.d.ts` is what makes the import type-check.
 - The extraction must not change behaviour; do it before any further UI work, not alongside it.
 
 **Tests**
-- [ ] `a_pending_switch_survives_a_refresh_that_reports_the_old_profile`
-- [ ] `a_switch_the_daemon_never_confirms_is_reported_after_the_timeout`
-- [ ] `the_correction_footnote_states_the_floor_the_hidden_count_and_the_sentinel_share`
-- [ ] `the_rate_scale_is_linear_against_the_worst_rate_on_the_board`
+- [x] `a_pending_switch_survives_a_refresh_that_reports_the_old_profile`
+- [x] `a_switch_the_daemon_never_confirms_is_reported_after_the_timeout`
+- [x] `the_correction_footnote_states_the_floor_the_hidden_count_and_the_sentinel_share`
+- [x] `the_rate_scale_is_linear_against_the_worst_rate_on_the_board`
 
 ## Task 3 — documentation
 
-- [ ] `docs/keylab.md`: state the two axes in one sentence in the profiles section, and that the viewer covers `keylabctl status`, `pause`, `resume` and `profile set` — the hard pause stays a deliberate filesystem action.
+- [x] `docs/keylab.md`: state the two axes in one sentence in the profiles section, and that the viewer covers `keylabctl status`, `pause`, `resume` and `profile set` — the hard pause stays a deliberate filesystem action.

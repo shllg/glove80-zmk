@@ -14,31 +14,44 @@
         <h1>keylab</h1>
       </div>
       <div class="header-controls">
-        <div class="control-state">
-          <span id="control-chip" class="chip">profile …</span>
-          <button id="pause-toggle" type="button" class="chip-button">Pause</button>
-        </div>
-        <label class="range-control">
-          <span>Capture as</span>
-          <select id="profile"></select>
-        </label>
-        <label class="range-control">
-          <span>View profile</span>
-          <select id="view-profile"></select>
-        </label>
-        <label class="range-control">
-          <span>Keyboard</span>
-          <select id="device"></select>
-        </label>
-        <label class="range-control">
-          <span>Time range</span>
-          <select id="range">
-            <option value="live">Live · 30m</option>
-            <option value="today">Today</option>
-            <option value="7d">7 days</option>
-            <option value="all">All</option>
-          </select>
-        </label>
+        <!--
+          Two opposite axes that used to sit side by side in one identically styled row. The first
+          group writes to the daemon and changes what is recorded from now on, machine-wide; the
+          second filters what is already stored, in this tab only.
+        -->
+        <section class="control-group control-group-daemon" aria-labelledby="daemon-group-label">
+          <p class="group-label" id="daemon-group-label">Writes to the daemon · machine-wide</p>
+          <div class="group-controls">
+            <span id="control-chip" class="chip">profile …</span>
+            <button id="pause-toggle" type="button" class="chip-button">Pause</button>
+            <label class="range-control">
+              <span>Recording as</span>
+              <select id="profile"></select>
+            </label>
+          </div>
+        </section>
+        <section class="control-group control-group-view" aria-labelledby="view-group-label">
+          <p class="group-label" id="view-group-label">Filters this page · nothing is written</p>
+          <div class="group-controls">
+            <label class="range-control">
+              <span>Showing</span>
+              <select id="view-profile"></select>
+            </label>
+            <label class="range-control">
+              <span>Keyboard</span>
+              <select id="device"></select>
+            </label>
+            <label class="range-control">
+              <span>Time range</span>
+              <select id="range">
+                <option value="live">Live · 30m</option>
+                <option value="today">Today</option>
+                <option value="7d">7 days</option>
+                <option value="all">All</option>
+              </select>
+            </label>
+          </div>
+        </section>
       </div>
     </header>
 

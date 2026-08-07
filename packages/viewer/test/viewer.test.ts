@@ -27,6 +27,12 @@ import {
 } from "../src/geometry";
 import { createRefreshScheduler } from "../public/refresh-scheduler.js";
 import {
+  correctionFootnote,
+  createControlTracker,
+  PROFILE_CONFIRM_MS,
+  rateLevel,
+} from "../public/view-model.js";
+import {
   CORRECTION_PRESS_FLOOR,
   createViewerServer,
   parseViewerArgs,
@@ -109,10 +115,29 @@ describe("viewer API", () => {
     const { app } = startViewer();
     const page = await fetch(`${app.url}/`);
     expect(await page.text()).toContain('<script src="/app.js" type="module"></script>');
-    const scheduler = await fetch(`${app.url}/refresh-scheduler.js`);
-    expect(scheduler.status).toBe(200);
-    expect(scheduler.headers.get("content-type")).toBe("text/javascript; charset=utf-8");
-    expect(await scheduler.text()).toContain("export function createRefreshScheduler");
+    // Every module `app.js` imports has to be served from here, or the CSP blocks it at runtime and
+    // nothing in this suite would have noticed.
+    const script = await (await fetch(`${app.url}/app.js`)).text();
+    const imported = [...script.matchAll(/from "(\/[\w.-]+\.js)"/g)].map((match) => match[1]);
+    expect(imported.sort()).toEqual(["/refresh-scheduler.js", "/view-model.js"]);
+    for (const path of imported) {
+      const module = await fetch(`${app.url}${path}`);
+      expect(module.status).toBe(200);
+      expect(module.headers.get("content-type")).toBe("text/javascript; charset=utf-8");
+      expect(await module.text()).toContain("export function");
+    }
+  });
+
+  test("every element id app.js queries exists in the page", () => {
+    // Mechanical, and the only thing that catches an id drift: a `querySelector` that matches
+    // nothing throws at the first render in the browser and in no test.
+    const publicDirectory = join(import.meta.dir, "../public");
+    const script = readFileSync(join(publicDirectory, "app.js"), "utf8");
+    const page = readFileSync(join(publicDirectory, "index.html"), "utf8");
+    const queried = [...script.matchAll(/querySelector\("#([\w-]+)"\)/g)].map((match) => match[1]);
+    const present = new Set([...page.matchAll(/\bid="([\w-]+)"/g)].map((match) => match[1]));
+    expect(queried.length).toBeGreaterThan(10);
+    expect(queried.filter((id) => !present.has(id))).toEqual([]);
   });
 
   test("unknown routes return 404 without a stack trace", async () => {
@@ -525,5 +550,83 @@ describe("viewer boundaries and geometry", () => {
     releaseFirst();
     await first;
     expect(calls).toBe(2);
+  });
+});
+
+describe("browser view model", () => {
+  test("a pending switch survives a refresh that reports the old profile", () => {
+    const tracker = createControlTracker();
+    tracker.request("gaming", 1_000);
+    // The daemon writes `live_snapshot` about once a second, so the next refresh still reports the
+    // profile it was on. Showing that back would make an accepted switch look rejected, and the
+    // user switches again into the same window.
+    expect(tracker.observe({ profile: "default" }, 1_200)).toBe("gaming");
+    expect(tracker.status()).toEqual({ text: "Switching to gaming…", isError: false });
+
+    expect(tracker.observe({ profile: "gaming" }, 1_900)).toBe("gaming");
+    expect(tracker.status()).toEqual({ text: "Live connection active", isError: false });
+  });
+
+  test("a switch the daemon never confirms is reported after the timeout", () => {
+    const tracker = createControlTracker();
+    tracker.request("gaming", 0);
+    expect(tracker.observe({ profile: "default" }, PROFILE_CONFIRM_MS)).toBe("gaming");
+
+    // Past the deadline the selection snaps back to the daemon's word rather than showing a state
+    // it never accepted, and says which is which: an idle auto-revert looks identical otherwise.
+    expect(tracker.observe({ profile: "default" }, PROFILE_CONFIRM_MS + 1)).toBe("default");
+    expect(tracker.status()).toEqual({
+      text: "The daemon did not switch to gaming; it still reports default.",
+      isError: true,
+    });
+
+    // It survives every later refresh tick, or the report is erased a second after it appears.
+    tracker.observe({ profile: "default" }, PROFILE_CONFIRM_MS + 30_000);
+    expect(tracker.status().isError).toBe(true);
+    tracker.request("gaming", 60_000);
+    expect(tracker.status()).toEqual({ text: "Switching to gaming…", isError: false });
+  });
+
+  test("the correction footnote states the floor, the hidden count and the off-board share", () => {
+    const layer = {
+      latency: "all",
+      corrections: 1_234,
+      pressFloor: 50,
+      belowFloor: 3,
+      withoutPosition: { unattributed: 7, absent: 2, share: 9 / 180 },
+    };
+    const footnote = correctionFootnote(layer);
+    // A layer that silently omits the positions it cannot rate, and the corrections that had no
+    // position at all, reads as a complete picture of corrections. All three numbers are stated.
+    expect(footnote).toContain("1,234 corrections on drawable positions");
+    expect(footnote).toContain("under 50 presses in range show no data");
+    expect(footnote).toContain("(3 hidden that carry corrections)");
+    expect(footnote).toContain("5.00% had no position to draw");
+    expect(footnote).toContain("7 unattributed, 2 with no key before the correction");
+    expect(footnote).toContain("Ambiguous corrections (400–1000 ms) count here");
+
+    // Ambiguous corrections count under `all` and nowhere else, so only `all` may say so.
+    expect(correctionFootnote({ ...layer, latency: "fumble" })).not.toContain("Ambiguous");
+    // Nothing hidden and nothing off the board: no parenthetical, no share sentence.
+    const clean = correctionFootnote({
+      ...layer,
+      belowFloor: 0,
+      withoutPosition: { unattributed: 0, absent: 0, share: 0 },
+    });
+    expect(clean).toContain("under 50 presses in range show no data.");
+    expect(clean).not.toContain("had no position to draw");
+  });
+
+  test("the rate scale is linear against the worst rate on the board", () => {
+    // Half the worst rate is half the scale. The log curve `level()` uses for counts would put it
+    // at 6 and push nearly every mid rate to the top, which is the whole reason this is separate.
+    expect(rateLevel(0.25, 0.5)).toBe(5);
+    expect(rateLevel(0.5, 0.5)).toBe(10);
+    expect(rateLevel(0.05, 0.5)).toBe(1);
+    // A measured zero is the empty step; a rate above zero never is, however small.
+    expect(rateLevel(0, 0.5)).toBe(0);
+    expect(rateLevel(0.0001, 0.5)).toBe(1);
+    // Nothing to scale against: no board-wide maximum means no level.
+    expect(rateLevel(0.2, 0)).toBe(0);
   });
 });

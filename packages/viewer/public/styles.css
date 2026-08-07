@@ -53,8 +53,17 @@ h1 { font-size: clamp(2rem, 4vw, 3.4rem); letter-spacing: -.055em; line-height: 
 h2 { font-size: 1.15rem; letter-spacing: -.02em; }
 .eyebrow { color: var(--muted); font-size: .68rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
 
-.header-controls { display: flex; align-items: end; gap: 14px; flex-wrap: wrap; }
-.control-state { display: flex; align-items: center; gap: 8px; }
+.header-controls { display: flex; align-items: stretch; gap: 14px; flex-wrap: wrap; }
+.control-group { display: grid; align-content: end; gap: 9px; padding: 10px 14px; border: 1px solid transparent; border-radius: 12px; }
+.group-controls { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; }
+.group-label { color: var(--muted); font-size: .62rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+/* The group whose controls change what the daemon records is bounded, tinted and labelled with what
+   it does. Making it quieter than the filters beside it would be the wrong fix: it has to be
+   reachable and obvious, and *different*. */
+.control-group-daemon { border-color: var(--accent); background: color-mix(in srgb, var(--accent-soft) 45%, var(--surface)); }
+.control-group-daemon .group-label { color: var(--accent); }
+/* The divider. The two groups are opposites, not two entries in one list of controls. */
+.control-group-view { border-left: 1px solid var(--line); border-radius: 0; padding-left: 20px; }
 .chip {
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -215,6 +224,8 @@ select {
   .totals { grid-template-columns: 1fr 1fr; }
   .columns { grid-template-columns: 1fr; }
   .site-header { align-items: center; }
+  /* Stacked, a left border divides nothing. The rule moves to the edge the groups now meet on. */
+  .control-group-view { border-left: none; border-top: 1px solid var(--line); padding: 12px 0 0; }
 }
 
 @media (max-width: 480px) {
