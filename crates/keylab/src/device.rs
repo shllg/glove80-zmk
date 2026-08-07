@@ -123,8 +123,19 @@ pub fn matching_rule(name: &str, fragments: &[String]) -> Option<usize> {
         .position(|fragment| name.contains(fragment.as_str()))
 }
 
-pub fn for_each_matching<F>(fragments: &[String], mut callback: F) -> Result<DeviceScan>
+pub fn for_each_matching<F>(fragments: &[String], callback: F) -> Result<DeviceScan>
 where
+    F: FnMut(PathBuf, InputDevice, usize) -> Result<()>,
+{
+    scan_with(fragments, set_monotonic_clock, callback)
+}
+
+/// The scan, with the preparation step as a parameter. It is a seam and not a convenience: a
+/// device that refuses `EVIOCSCLOCKID` cannot be conjured on demand, but a preparation that fails
+/// can, and the skip path below is the behaviour that used to take the whole daemon down.
+fn scan_with<P, F>(fragments: &[String], mut prepare: P, mut callback: F) -> Result<DeviceScan>
+where
+    P: FnMut(&RawDevice) -> Result<()>,
     F: FnMut(PathBuf, InputDevice, usize) -> Result<()>,
 {
     let entries = match fs::read_dir("/dev/input") {
@@ -168,7 +179,7 @@ where
         // The device is never captured with realtime timestamps instead: those jump whenever NTP
         // steps the clock, which would silently corrupt every hold and gap measurement in Tier A.
         // A device that cannot be switched is not measurable, so it is left alone and reported.
-        if let Err(error) = set_monotonic_clock(&device) {
+        if let Err(error) = prepare(&device) {
             warn!(
                 device_name = %name,
                 event_path = %path.display(),
@@ -316,6 +327,110 @@ mod tests {
         // KEY_A, KEY_BACKSPACE, KEY_F23, and the high KEY_* block above the button ranges.
         for code in [30_u16, 14, 193, 255, 0x160, 0x1ff] {
             assert!(!is_pointer_button(code), "{code:#x} is a key");
+        }
+    }
+
+    /// Feature-gated because creating a virtual device needs write access to `/dev/uinput` and
+    /// read access to the `/dev/input/event*` node udev then creates — permissions no test suite
+    /// can assume. A test that silently skipped itself would be worse than one that is absent:
+    /// `--features uinput-tests` makes its absence a decision rather than an accident.
+    #[cfg(feature = "uinput-tests")]
+    mod uinput {
+        use super::*;
+        use evdev::uinput::VirtualDevice;
+        use evdev::{AttributeSet, KeyCode};
+        use std::time::{Duration, Instant};
+
+        // `/dev/input` is global and cargo runs these two tests in parallel threads of one
+        // process, so each test needs names no other test creates. A shared name makes one test's
+        // device show up in the other's scan and both fail on the count.
+        const CAPTURED: &str = "keylab uinput fixture captured";
+        const REFUSES: &str = "keylab uinput fixture refuses";
+        const KEPT: &str = "keylab uinput fixture kept";
+
+        /// The device lives exactly as long as this value: dropping it closes the uinput file
+        /// descriptor and the kernel destroys the node, on a panic and unwind as much as on a
+        /// clean return. A failing test never leaves a fake keyboard on the machine.
+        fn virtual_keyboard(name: &str) -> VirtualDevice {
+            let mut keys = AttributeSet::<KeyCode>::new();
+            keys.insert(KeyCode::KEY_A);
+            let mut device = VirtualDevice::builder()
+                .unwrap_or_else(|error| panic!("/dev/uinput is not writable: {error}"))
+                .name(name)
+                .with_keys(&keys)
+                .unwrap_or_else(|error| panic!("{error}"))
+                .build()
+                .unwrap_or_else(|error| panic!("{error}"));
+            wait_until_readable(&mut device, name);
+            device
+        }
+
+        /// udev creates the node and applies its permissions after the ioctl returns, so the scan
+        /// has to wait for the device to become readable rather than for it to exist.
+        fn wait_until_readable(device: &mut VirtualDevice, name: &str) {
+            let deadline = Instant::now() + Duration::from_secs(5);
+            while Instant::now() < deadline {
+                let nodes = device
+                    .enumerate_dev_nodes_blocking()
+                    .unwrap_or_else(|error| panic!("{error}"));
+                let ready = nodes.flatten().any(|path| {
+                    open_raw_device(&path).is_ok_and(|opened| opened.name() == Some(name))
+                });
+                if ready {
+                    return;
+                }
+                std::thread::sleep(Duration::from_millis(50));
+            }
+            panic!(
+                "the virtual device {name} never became readable; is this user in the input group?"
+            );
+        }
+
+        #[test]
+        fn a_virtual_device_matching_a_rule_is_captured() {
+            let _device = virtual_keyboard(CAPTURED);
+            let mut captured = Vec::new();
+            let scan = for_each_matching(&[CAPTURED.to_owned()], |_path, device, rule_index| {
+                captured.push((device.name.clone(), rule_index));
+                Ok(())
+            })
+            .unwrap_or_else(|error| panic!("{error:#}"));
+
+            assert_eq!(scan.matched_count, 1);
+            assert_eq!(scan.skipped_count, 0);
+            assert_eq!(captured, vec![(CAPTURED.to_owned(), 0)]);
+            assert!(scan.present_names.iter().any(|name| name == CAPTURED));
+        }
+
+        #[test]
+        fn a_matched_device_that_cannot_be_prepared_is_skipped_not_fatal() {
+            let _refuses = virtual_keyboard(REFUSES);
+            let _kept = virtual_keyboard(KEPT);
+            let mut captured = Vec::new();
+            let scan = scan_with(
+                &[REFUSES.to_owned(), KEPT.to_owned()],
+                |device| {
+                    if device.name() == Some(REFUSES) {
+                        anyhow::bail!("fixture refuses the monotonic clock");
+                    }
+                    set_monotonic_clock(device)
+                },
+                |_path, device, _rule_index| {
+                    captured.push(device.name.clone());
+                    Ok(())
+                },
+            )
+            .unwrap_or_else(|error| {
+                panic!("a device that cannot be prepared must not be fatal: {error:#}")
+            });
+
+            assert_eq!(scan.skipped_count, 1);
+            assert_eq!(scan.matched_count, 1);
+            assert_eq!(
+                captured,
+                vec![KEPT.to_owned()],
+                "the other matched keyboard is still captured, which is the whole point"
+            );
         }
     }
 

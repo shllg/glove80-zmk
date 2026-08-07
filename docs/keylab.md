@@ -158,10 +158,48 @@ The invariant that matters, and the one easiest to get silently wrong:
 The analysis enforces this: a positional read spanning two position spaces **throws** rather than returning a pooled heatmap of nothing. Pick one keyboard with `--device <id>`; `--device '*'` is only legal when everything in range shares a space.
 
 ```bash
-sqlite3 -readonly "$HOME/.local/share/glove80-lab/keylab.db" \
-  "SELECT id, name, keymap_kind FROM device;"
+keylabctl devices list
 pnpm analysis report --since all --device 1
 ```
+
+### The device registry
+
+`keylabctl devices list` is the read-only view of the `device` table: id, evdev name, position space, when the row was first seen, and how much each tier holds.
+
+```
+  id  name                          space        first seen           tier A  tier B  tier C
+   1  Evsieve Virtual Device        glove80      2026-08-02 21:16      38157      17       0
+   2  Evsieve Virtual Device        glove80      2026-08-02 21:16        223       0       0  no positional data
+```
+
+The figures are the ones the viewer's device menu shows, computed the same way; the listing differs from the menu in one respect only, that it also names rows holding nothing at all, because a merge has to be able to address them. It is safe to run while the daemon is capturing.
+
+**One keyboard can hold several rows.** An older build minted a fresh `device_id` on every reconnect instead of reusing the row for that `(name, uniq)`, so a database that has been running a while may carry a dozen rows for one physical keyboard. Those rows keep their data. The marker in the listing is what makes an orphan recognisable: Tier B is the only tier carrying position identity, so a row with real keystrokes and no Tier B window has history that cannot be drawn on a keyboard.
+
+`keylabctl devices merge <from>[,<from>…] --into <id>` puts them back together:
+
+```bash
+sudo systemctl stop keylab.service
+keylabctl devices merge 2,3,4,5,6,7,8,9,10,11 --into 1
+sudo systemctl start keylab.service
+```
+
+It repoints `bucket`, `key_window` and `ngram_window` onto the target, then deletes the emptied device rows in the same transaction, and prints a per-table count of what moved. In order, and every step before the last leaves the database exactly as it was found:
+
+- **It refuses a merge across position spaces**, naming both, before opening a transaction or taking a backup. `pos` only means something inside one keyboard's geometry, so folding the laptop's `qwerty-ansi` counts into the Glove80's `glove80` row is the same violation as a pooled read, and it fails the same way. This is the guard the command exists for: the obvious hand-written `UPDATE bucket SET device_id = 1 WHERE device_id <> 1` has no such guard and silently does exactly that the moment a second keyboard exists.
+- **It requires the daemon stopped**, and takes the write lock itself as a backstop — a busy database fails cleanly rather than waiting.
+- **It backs the database up first** with `VACUUM INTO`, which writes one self-contained file with the write-ahead log already folded in, so the backup needs no `-wal` companion to be complete. The path and the roll-back command are printed. A merge is not reversible except from that file, which the command says before it writes rather than after.
+- **A collision sums, it never drops.** Since schema v5 a bucket is unique on `(ts, device_id, profile_id)`, so repointing can land on an identity the target already holds — both rows sealed in the same second under the same profile. The counts add, across the bucket and all six of its child tables, and the number of combined buckets is reported. Dropping one would be the defect v5 exists to remove, reintroduced by the back door. The merged row's `span_ms` and `active_ms` add too, so a combined bucket can cover more typing time than one second of wall clock — which is what happened.
+
+### Device scan tests
+
+The device scan's skip path — a matched keyboard that cannot be switched to the monotonic clock is skipped and counted rather than taking the daemon down — is covered by tests that create a real virtual evdev device. They are behind a cargo feature, off by default, because `/dev/uinput` and the `/dev/input/event*` node udev then creates need permissions no test suite can assume:
+
+```bash
+cd crates/keylab && cargo test --features uinput-tests
+```
+
+A test that silently skipped itself would be worse than one that is absent, which is why this is a flag rather than a runtime check. Each test destroys its virtual device when it ends, including when it fails.
 
 ### Trackball buttons
 

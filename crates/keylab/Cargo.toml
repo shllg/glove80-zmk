@@ -19,3 +19,10 @@ zeroize = "1"
 
 [dev-dependencies]
 tempfile = "3"
+
+[features]
+# Off by default. The tests behind it create a virtual evdev device, which needs write access to
+# /dev/uinput and read access to the /dev/input/event* node udev then creates — permissions no
+# suite can assume. Run them deliberately:
+#   cargo test --features uinput-tests
+uinput-tests = []

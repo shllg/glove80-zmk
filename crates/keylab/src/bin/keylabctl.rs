@@ -5,6 +5,8 @@
 mod config;
 #[path = "../control.rs"]
 mod control;
+#[path = "../registry.rs"]
+mod registry;
 
 use anyhow::{bail, Context, Result};
 use config::Config;
@@ -12,10 +14,17 @@ use control::{ControlState, ControlWatcher};
 use rusqlite::{Connection, OpenFlags, OptionalExtension};
 use std::path::Path;
 use std::process::Command as Process;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 const DEVICE_LIVENESS_LIMIT: usize = 4;
-const USAGE: &str = "usage: keylabctl status|pause|resume|profile list|profile set <name>";
+const USAGE: &str = concat!(
+    "usage: keylabctl status|pause|resume|profile list|profile set <name>\n",
+    "       keylabctl devices list\n",
+    "       keylabctl devices merge <from>[,<from>...] --into <id>"
+);
+/// A merge fails rather than queues behind a live daemon, so the wait is only long enough to lose
+/// a race with a checkpoint, not long enough to look like a hang.
+const LOCK_WAIT: Duration = Duration::from_secs(2);
 
 #[derive(Debug, PartialEq, Eq)]
 enum Command {
@@ -24,6 +33,8 @@ enum Command {
     Resume,
     ListProfiles,
     SetProfile(String),
+    ListDevices,
+    MergeDevices { sources: Vec<i64>, target: i64 },
 }
 
 fn parse_command(args: &[String]) -> Result<Command> {
@@ -38,8 +49,30 @@ fn parse_command(args: &[String]) -> Result<Command> {
         ["resume"] => Ok(Command::Resume),
         ["profile", "list"] => Ok(Command::ListProfiles),
         ["profile", "set", name] => Ok(Command::SetProfile((*name).to_owned())),
+        ["devices", "list"] => Ok(Command::ListDevices),
+        ["devices", "merge", sources, "--into", target] => Ok(Command::MergeDevices {
+            sources: parse_device_ids(sources)?,
+            target: parse_device_id(target)?,
+        }),
         _ => bail!("{USAGE}"),
     }
+}
+
+fn parse_device_ids(list: &str) -> Result<Vec<i64>> {
+    list.split(',')
+        .map(str::trim)
+        .map(parse_device_id)
+        .collect()
+}
+
+fn parse_device_id(value: &str) -> Result<i64> {
+    let id: i64 = value
+        .parse()
+        .with_context(|| format!("{value:?} is not a device id"))?;
+    if id <= 0 {
+        bail!("{value:?} is not a device id");
+    }
+    Ok(id)
 }
 
 fn main() {
@@ -106,7 +139,89 @@ fn run() -> Result<()> {
                 },
             )
         }
+        Command::ListDevices => list_devices(&config.db_path),
+        Command::MergeDevices { sources, target } => {
+            merge_devices(&config.db_path, &sources, target)
+        }
     }
+}
+
+fn list_devices(db_path: &Path) -> Result<()> {
+    let connection = open_readonly(db_path)?;
+    let rows = registry::list_devices(&connection)?;
+    print!("{}", registry::format_device_table(&rows));
+    Ok(())
+}
+
+/// The order is the guarantee: refuse, then prove nothing else is writing, then back up, then
+/// write. Every step before the last one leaves the database exactly as it was found.
+fn merge_devices(db_path: &Path, sources: &[i64], target: i64) -> Result<()> {
+    let state = service_state();
+    if !is_stopped(&state) {
+        bail!(
+            "keylab.service is {state}; stop it before merging devices:\n  \
+             sudo systemctl stop keylab.service"
+        );
+    }
+    let mut connection = open_read_write(db_path)?;
+    let plan = registry::plan_merge(&connection, sources, target)?;
+    registry::require_exclusive_write_access(&mut connection)?;
+
+    let listing = registry::list_devices(&connection)?;
+    let moving: i64 = listing
+        .iter()
+        .filter(|row| plan.sources.contains(&row.id))
+        .map(|row| row.keystrokes)
+        .sum();
+    println!(
+        "merging device{} {} into device {} ({})",
+        if plan.sources.len() == 1 { "" } else { "s" },
+        plan.sources
+            .iter()
+            .map(i64::to_string)
+            .collect::<Vec<_>>()
+            .join(", "),
+        plan.target,
+        plan.position_space.as_deref().unwrap_or("(none)")
+    );
+    println!("{moving} Tier A keystrokes change owner; the merged device rows are then removed.");
+    println!("A merge cannot be undone except by restoring the backup.");
+
+    let backup = registry::backup_database(&connection, db_path)?;
+    println!("backup:       {}", backup.display());
+
+    let report = registry::apply_merge(&mut connection, &plan)?;
+    println!("buckets moved:       {}", report.buckets_moved);
+    println!("buckets combined:    {}", report.buckets_combined);
+    println!("Tier B windows:      {}", report.key_windows_moved);
+    println!("Tier C windows:      {}", report.ngram_windows_moved);
+    println!("device rows removed: {}", report.devices_removed);
+    if report.buckets_combined > 0 {
+        println!(
+            "{} bucket{} sealed in the same second under the same profile and were summed rather \
+             than dropped.",
+            report.buckets_combined,
+            if report.buckets_combined == 1 {
+                ""
+            } else {
+                "s"
+            }
+        );
+    }
+    println!(
+        "to roll back: cp '{}' '{}' && rm -f '{}'-wal '{}'-shm",
+        backup.display(),
+        db_path.display(),
+        db_path.display(),
+        db_path.display()
+    );
+    Ok(())
+}
+
+/// `systemctl` reports `activating` and `deactivating` too, and a daemon in either of those is a
+/// daemon that will be writing shortly. Only a definitely-stopped unit passes.
+fn is_stopped(state: &str) -> bool {
+    matches!(state, "inactive" | "failed") || state.starts_with("unknown")
 }
 
 fn set_state(control_path: &Path, state: &ControlState) -> Result<()> {
@@ -236,6 +351,18 @@ fn open_readonly(db_path: &Path) -> Result<Connection> {
     .with_context(|| format!("failed to open {} read-only", db_path.display()))
 }
 
+fn open_read_write(db_path: &Path) -> Result<Connection> {
+    let connection = Connection::open_with_flags(
+        db_path,
+        OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NOFOLLOW,
+    )
+    .with_context(|| format!("failed to open {} for writing", db_path.display()))?;
+    connection
+        .busy_timeout(LOCK_WAIT)
+        .context("failed to set the database busy timeout")?;
+    Ok(connection)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -253,10 +380,61 @@ mod tests {
             parse_command(&["profile".into(), "list".into()]).unwrap(),
             Command::ListProfiles
         );
+        assert_eq!(
+            parse_command(&["devices".into(), "list".into()]).unwrap(),
+            Command::ListDevices
+        );
         assert!(parse_command(&["nonsense".into()]).is_err());
         assert!(parse_command(&["profile".into(), "set".into()]).is_err());
         assert!(parse_command(&[]).is_err());
         assert!(parse_command(&["profile".into()]).is_err());
+    }
+
+    fn merge_args(sources: &str, target: &str) -> Vec<String> {
+        vec![
+            "devices".into(),
+            "merge".into(),
+            sources.into(),
+            "--into".into(),
+            target.into(),
+        ]
+    }
+
+    #[test]
+    fn parses_a_merge_of_one_or_several_devices() {
+        assert_eq!(
+            parse_command(&merge_args("2", "1")).unwrap(),
+            Command::MergeDevices {
+                sources: vec![2],
+                target: 1
+            }
+        );
+        assert_eq!(
+            parse_command(&merge_args("2,7, 9", "1")).unwrap(),
+            Command::MergeDevices {
+                sources: vec![2, 7, 9],
+                target: 1
+            }
+        );
+        // A device id is a positive integer and nothing else; anything looser would make a typo
+        // into a merge of the wrong keyboard.
+        assert!(parse_command(&merge_args("2,", "1")).is_err());
+        assert!(parse_command(&merge_args("0", "1")).is_err());
+        assert!(parse_command(&merge_args("-3", "1")).is_err());
+        assert!(parse_command(&merge_args("2", "all")).is_err());
+        assert!(parse_command(&["devices".into(), "merge".into(), "2".into()]).is_err());
+    }
+
+    #[test]
+    fn only_a_definitely_stopped_unit_may_be_merged_under() {
+        assert!(is_stopped("inactive"));
+        assert!(is_stopped("failed"));
+        assert!(is_stopped("unknown (systemctl unavailable)"));
+        // A unit on its way up or down is a unit that will be writing shortly.
+        assert!(!is_stopped("active"));
+        assert!(!is_stopped("activating"));
+        assert!(!is_stopped("deactivating"));
+        assert!(!is_stopped("reloading"));
     }
 
     #[test]
